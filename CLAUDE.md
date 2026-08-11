@@ -6,9 +6,142 @@ A mobile app that tells patients, before an elective MRI or CT, which route to t
 
 Built for RevenueCat Shipaton 2026, **Next Gen category** (student track: judged on a demo video + this open-source repo, no App Store publication required). Deadline: **September 30, 2026**.
 
+## Market
+
+**Metro:** Indianapolis, IN
+**Primary payer:** Anthem Blue Cross Blue Shield of Indiana (Elevance)
+**Backup payer:** UnitedHealthcare
+**Target CPTs:** 73721 (knee MRI, no contrast), 70450 (head CT, no contrast)
+
+**Anthem MRF entry point:** https://www.anthem.com/machine-readable-file/search/
+
+Known Anthem quirks: Table of Contents is properly formatted but enormous
+(repeats plans/networks hundreds of thousands of times). Many URLs differ only
+by query parameters and point to the same file — strip params and dedupe to
+root files, or you'll get 10k+ files instead of ~1k.
+
+MRFs give NPIs, not facility names. Need NPPES NPI Registry to translate.
+
+**Correction, verified 2026-08-11:** UHC rate files *do* carry facility names —
+each `tin` object has a `business_name` inline. NPPES is still required, but for
+**geography, not naming**: a TIN has no address, and filtering ~86k providers
+down to the Indianapolis metro is only possible via NPI → address lookup.
+
+### UnitedHealthcare MRF mechanics (verified 2026-08-11)
+
+Discovery is easy; the files are big. All confirmed against the 2026-08-01 drop.
+
+- Public listing API, no auth: `transparency-in-coverage.uhc.com/api/v1/uhc/blobs/`
+  → 20 MB JSON, **86,472 files**. Per-employer index files are 2–4 KB of plain
+  JSON. Download endpoints 302 to a signed URL valid through 2030.
+- **Rate files are national per-plan, not per-metro.** Choosing one metro does
+  not shrink the download. Median in-network file is **14.8 GB gzipped**;
+  `Choice-EPO_561` is 8.9 GB. Compression runs 20–40×, so a single file is
+  hundreds of GB of JSON. Never lands on disk.
+- Files under ~1 GB are direct-contract carve-outs — MS-DRG only, or
+  professional-only. They cannot produce a facility price comparison.
+- **`billing_class` is the one that matters, and it is where UHC falls short.**
+  `professional` is the radiologist's read. `institutional` is the
+  facility/technical fee, and that is where site-of-service variance lives.
+  Expected OOP must sum both or every estimate is low by the read.
+
+  Full pass over `Choice-EPO_561` (190 GB decompressed, 11.4 min): CPT 73721,
+  70450 and 72148 returned **532,725 price rows, 100% `professional`, zero
+  `institutional`.** Nothing was dropped — no inline `provider_groups` warning
+  fired. The file does contain institutional rates for MS-DRG, ICD, RC and some
+  CPTs, so this is specific to these outpatient imaging codes, not a parser bug.
+
+  Professional-only medians from that run: 73721 $183, 72148 $174, 70450 $90.
+  These are radiologist reads, **not facility prices**, and cannot drive a
+  site-of-service comparison.
+
+Layout facts the parser depends on:
+
+- `provider_references` always precedes `in_network`, so the group map can be
+  built in the same forward pass.
+- Every `in_network` record opens with `{"negotiation_arrangement"` and carries
+  `billing_code` within ~200 bytes — so records are located with `bytes.find`
+  and only matches are handed to the JSON parser.
+- `negotiated_rates[].provider_references` holds integer group IDs.
+- **These files are concatenated multi-member gzip.** A plain
+  `zlib.decompressobj` silently stops at the first member boundary — 187 bytes
+  in — and returns the rest as `unused_data`. `gzip -dc` hides this, so shell
+  probes succeed while Python truncates. See `pipeline/mrf/stream.py`.
+
+### Hospital price transparency mechanics (verified 2026-08-11)
+
+This is the source for the facility component and the cash price. See
+`pipeline/hospital/`.
+
+- **Discovery is solved.** CMS requires a `cms-hpt.txt` file at the hospital's
+  web root giving location name, source page, and a direct MRF URL. No scraping.
+  Franciscan, Eskenazi, Hendricks, Ascension, Riverview all serve it. Two
+  systems block plain HTTP clients — `iuhealth.org` resolves but refuses
+  connections, `ecommunity.com` returns an Akamai 403 — so those need a browser.
+- **Sizes span three orders of magnitude**, and not in the direction you'd
+  guess: Hendricks is 7 MB, Eskenazi 24 MB, Ascension St Vincent **3.4 GB**,
+  Community Hospital East **7.8 GB uncompressed**. Stream these too.
+- **Format traps**, all three hit in practice:
+  1. The header is not row 0 — one or two metadata rows sit above it. Find the
+     row naming `description`.
+  2. `code|1` is almost always the hospital's internal CDM number, not the CPT.
+     The CPT lives in `code|2` or later. Search every numbered slot.
+  3. Both CMS layouts exist. "Tall" has `payer_name`/`plan_name` columns; "wide"
+     encodes the payer in the column name as
+     `standard_charge|<payer>|<plan>|negotiated_dollar`.
+- **Always check `code|N|type`, never substring-match a code.** Ascension St
+  Vincent Indianapolis contains 1,165 lines matching "70450" — every one is a
+  substring of CDM `702570450`, a catheter. That hospital publishes CDM and
+  revenue codes almost exclusively and has no usable CPT imaging prices at all.
+  File quality varies enormously between hospitals in the same metro.
+- **Known data-quality artifacts** to filter, not trust: UnitedHealthcare's
+  negotiated rate at Franciscan reads $2,761–2,817 against a $2,486 gross
+  charge, and Ascension Carmel shows a $49 Anthem rate. Both come from
+  percent-of-charge methodologies and carve-out rows.
+
+**The core Preclear case appears in real data.** Franciscan Health
+Indianapolis, CPT 73721 (knee MRI, no contrast): Anthem Blue Access PPO
+negotiated **$992.51**, discounted cash **$574.27**. Cash is $418 cheaper and
+earns zero deductible credit. That is the whole thesis, in one real row.
+
+### Anthem MRF mechanics (verified 2026-08-11)
+
+Materially harder than UHC, which is why UHC went first.
+
+- Index: `antm-pt-prod-dataz-nogbd-nophi-us-east1.s3.amazonaws.com/anthem/2026-08-01_anthem_index.json.gz`
+  — **8.7 GB gzipped for the table of contents alone.**
+- Bucket listing is denied, so the exact key must be known. Prior months 403;
+  they prune.
+
 ## Current status
 
-Nothing is built yet. Two validation gates must pass before any real code:
+**Gate 1: not passed.** The pipeline works; the data source is wrong for the
+facility half of the problem.
+
+- `pipeline/mrf/` streams and extracts end-to-end at ~290 MB/s of decompressed
+  JSON, nothing on disk. Validated on two real UHC files.
+- Choice-EPO covers Indianapolis: 941,964 provider rows, 123,880 distinct TINs,
+  with Eskenazi Medical Group, Orthopaedics Indianapolis, Hendricks County
+  Hospital, Franciscan and Ascension St Vincent all present. Many matches are
+  out-of-state (Bronson Methodist in MI, Nebraska Methodist, Park Nicollet in
+  MN), so **NPPES geo-filtering is mandatory, not optional.**
+- But every imaging rate came back `professional`. No facility technical fee, so
+  no site-of-service comparison, so Gate 1's "10 real facility prices" is unmet.
+
+**Consequence for data sources.** The split is cleaner than originally assumed:
+
+| Need | Right source |
+|---|---|
+| Professional rates, network membership | Payer TiC MRF |
+| Facility technical fee, cash price | **Hospital price transparency files** |
+
+Hospital files are per-facility and megabytes, not hundreds of GB — ten
+Indianapolis hospitals is ten small files. They also carry cash/gross prices,
+which route 4 needs anyway. This is likely the better primary source for the
+facility component rather than a fallback.
+
+Gate 2 not started; it depends on none of the above. Two gates must pass before
+any app code:
 
 - **Gate 1 — MRF usability.** Open one target payer's Transparency in Coverage file, extract negotiated rates for CPT 73721 (knee MRI) and 70450 (head CT) at 10 real facilities in the target metro. These files are gigabytes and frequently malformed — stream-parse, don't load. *Pass = 10 real facility prices in a spreadsheet.*
 - **Gate 2 — Policy extraction.** Pull 3 payer medical policy documents for knee MRI and lumbar spine MRI. Extract 5 requirement rules into structured form. *Pass = 5 clean, citable rules.*
