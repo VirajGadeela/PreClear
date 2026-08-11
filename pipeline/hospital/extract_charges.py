@@ -99,12 +99,18 @@ def iter_rows(url, timeout=600, attempts=3):
     with response:
         buffered = io.BufferedReader(response)
         if buffered.peek(2)[:2] == b"PK":
+            # The compressed bytes have to be buffered because zip needs random
+            # access, but the member itself is streamed: Ascension's expands to
+            # 3.4 GB, and decoding that into one string is what we are avoiding.
             archive = zipfile.ZipFile(io.BytesIO(buffered.read()))
             names = [n for n in archive.namelist() if n.lower().endswith(".csv")]
             if not names:
                 raise ValueError(f"zip has no csv member: {archive.namelist()}")
-            text = archive.read(names[0]).decode("utf-8", errors="replace")
-            yield from csv.reader(io.StringIO(text))
+            with archive.open(names[0]) as member:
+                stream = io.TextIOWrapper(
+                    member, encoding="utf-8", errors="replace", newline=""
+                )
+                yield from csv.reader(stream)
             return
         stream = io.TextIOWrapper(
             buffered, encoding="utf-8", errors="replace", newline=""

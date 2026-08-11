@@ -140,8 +140,38 @@ Indianapolis hospitals is ten small files. They also carry cash/gross prices,
 which route 4 needs anyway. This is likely the better primary source for the
 facility component rather than a fallback.
 
-Gate 2 not started; it depends on none of the above. Two gates must pass before
-any app code:
+**Gate 2: passed.** 8 requirements across 3 payers in `pipeline/policies/`, each
+carrying document title, section ID, version, effective date and source URL.
+14 tests green. The bar was 5 rules across 3 payers.
+
+### Payer requirement mechanics (verified 2026-08-11)
+
+- **The payer usually does not write the rules.** Advanced imaging review is
+  delegated, and the governing document is published by the delegate: Anthem →
+  **Carelon** (formerly AIM), Cigna and UnitedHealthcare → **eviCore**. Aetna
+  self-publishes Clinical Policy Bulletins. Always cite the delegate's document
+  and record which payer adopted it.
+- **UnitedHealthcare publishes state-specific radiology guidelines.** The adult
+  spine guideline that surfaces most readily is marked "For Ohio Only" and does
+  not apply in Indiana. Aetna was used as the third payer instead; a UHC
+  Indiana-specific document still needs to be located.
+- Carelon publishes as web pages, eviCore as PDFs, Aetna as HTML. Aetna returns
+  403 to non-browser user agents — a normal UA string is enough.
+- **Criteria are alternatives, not a conjunction.** Payers list them as "any of
+  the following", so a failed pathway means "this pathway is not documented as
+  met", never "this order does not qualify". `Requirement.alternative_pathway`
+  records which ones behave that way and the checklist output hedges them.
+- Distinguish "not documented" from "documented as not met". They call for
+  different action from the ordering office, so `Status` keeps them separate.
+- Red flag indications (eviCore `SP.GG.0001.2.A`) **waive the waiting period**,
+  they do not add a requirement.
+
+The demo's citable failing requirement is real: a lumbar MRI order with 2 weeks
+of treatment documented fails eviCore `SP.LB.0005.1.A`, which requires "Failure
+of a 6-week trial of provider-directed treatment", v1.0.2026, effective
+2026-02-03.
+
+Both gates now pass. Gate definitions, for the record:
 
 - **Gate 1 — MRF usability.** Open one target payer's Transparency in Coverage file, extract negotiated rates for CPT 73721 (knee MRI) and 70450 (head CT) at 10 real facilities in the target metro. These files are gigabytes and frequently malformed — stream-parse, don't load. *Pass = 10 real facility prices in a spreadsheet.*
 - **Gate 2 — Policy extraction.** Pull 3 payer medical policy documents for knee MRI and lumbar spine MRI. Extract 5 requirement rules into structured form. *Pass = 5 clean, citable rules.*
