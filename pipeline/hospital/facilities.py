@@ -93,6 +93,12 @@ FACILITIES = [
     # a single price list, so they cannot be compared against each other.
     # The system's other hospitals (Arnett, Ball Memorial, Bedford, Bloomington,
     # Jay, Paoli, White Memorial) are outside the metro and excluded.
+    #
+    # Verified 2026-08-11: the Indianapolis, North and West files are three
+    # separate EINs at three real addresses, but their imaging prices are
+    # identical row for row. IU Health prices system-wide, so a cheaper
+    # site-of-service comparison can only run *between* systems, never within
+    # this one. Do not read three files as three independent price observations.
     {
         "key": "iu-health-indianapolis",
         "name": "IU Health Methodist",

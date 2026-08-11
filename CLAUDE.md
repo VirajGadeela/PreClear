@@ -171,7 +171,47 @@ of treatment documented fails eviCore `SP.LB.0005.1.A`, which requires "Failure
 of a 6-week trial of provider-directed treatment", v1.0.2026, effective
 2026-02-03.
 
-Both gates now pass. Gate definitions, for the record:
+**Routing engine: working end to end on real data** (Sep 1 milestone, early).
+`pipeline/costing/` does the math, `pipeline/route.py` is the CLI. 44 tests green.
+
+The thesis is demonstrated on real published Indianapolis prices. Anthem member,
+CPT 73721, Franciscan Health Carmel, $2,000 deductible remaining:
+
+| Other care expected this year | Cash $574.27 | In-network $610.44 | Winner |
+|---|---|---|---|
+| $0 | $574.27 | $610.44 | cash, by $36.17 |
+| $8,000 | $3,774.27 | $3,322.09 | **in-network, by $452.18** |
+
+Same scan, same patient, same prices — the ranking flips, because the cash
+payment earns no deductible credit. That is the product in one table.
+
+### Costing and routing mechanics (verified 2026-08-11)
+
+- **`expected_other_allowed_spend` is the hinge and it is an explicit input.**
+  Setting it to 0 is not neutral, it is the assumption that no further care
+  happens this year. Ranking on the scan price alone reproduces exactly the
+  mistake this project exists to correct.
+- **Payer strings must be normalized before anything is compared.** One file
+  carries 46 values. `MANAGED CARE` and `COMMERCIAL` are the two most common and
+  name no payer at all; `BLUE CROSS ILLINOIS` sits next to `BLUE CROSS` at
+  different rates. See `pipeline/payers.py` — buckets, out-of-state Blue plans
+  and government lines are all excluded, for different reasons.
+- **Never represent a facility by its cheapest row.** Doing so picked a $49 knee
+  MRI against a $2,486 gross charge — a carve-out artifact. Facilities are
+  represented by the *median plausible* rate, and plausibility is judged against
+  that hospital's own gross charge (under 5% is a carve-out), not a flat floor.
+- **The payer does not determine the price; the plan does.** Franciscan
+  publishes five different Anthem rates for CPT 73721 — $360.22 (HMO/PPO),
+  $610.44 (employee), $784.08, $888.30, $992.51 (Blue Access PPO). The median is
+  a placeholder and the CLI discloses the spread; `--plan-contains` pins a plan.
+  **Plan-level rate matching is required before this is trustworthy for a real
+  user.** This is the largest open correctness gap in the engine.
+- The cash route is gated, per CLAUDE.md: surfaced when the patient is uninsured
+  or expected spend falls short of the deductible, not offered by default.
+- A "cheaper site" that costs the same is noise, so route 2 requires a real
+  saving before it is offered.
+
+Gate definitions, for the record:
 
 - **Gate 1 — MRF usability.** Open one target payer's Transparency in Coverage file, extract negotiated rates for CPT 73721 (knee MRI) and 70450 (head CT) at 10 real facilities in the target metro. These files are gigabytes and frequently malformed — stream-parse, don't load. *Pass = 10 real facility prices in a spreadsheet.*
 - **Gate 2 — Policy extraction.** Pull 3 payer medical policy documents for knee MRI and lumbar spine MRI. Extract 5 requirement rules into structured form. *Pass = 5 clean, citable rules.*
