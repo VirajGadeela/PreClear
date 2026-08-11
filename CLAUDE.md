@@ -100,9 +100,16 @@ This is the source for the facility component and the cash price. See
   percent-of-charge methodologies and carve-out rows.
 
 **The core Preclear case appears in real data.** Franciscan Health
-Indianapolis, CPT 73721 (knee MRI, no contrast): Anthem Blue Access PPO
-negotiated **$992.51**, discounted cash **$574.27**. Cash is $418 cheaper and
-earns zero deductible credit. That is the whole thesis, in one real row.
+Indianapolis, CPT 73721 (knee MRI, no contrast): Anthem Blue Access PPO with
+COPPS negotiated **$992.51**, discounted cash **$574.27**. Cash is $418 cheaper
+and earns zero deductible credit. That is the whole thesis, in one real row.
+
+Read that row carefully, because it is easy to misuse. $992.51 also appears in
+the same file under `BLUE CROSS ILLINOIS`, `BLUE CROSS OUT OF STATE` and
+`UNICARE` — out-of-state plans that must not be quoted to an Indiana member.
+And $992.51 is only the Blue Access PPO rate: the same hospital publishes
+$360.22 for Anthem HMO/PPO, where cash is the *worse* deal. The comparison is
+only true for the member's specific plan.
 
 ### Anthem MRF mechanics (verified 2026-08-11)
 
@@ -115,8 +122,16 @@ Materially harder than UHC, which is why UHC went first.
 
 ## Current status
 
-**Gate 1: not passed.** The pipeline works; the data source is wrong for the
-facility half of the problem.
+**Gate 1: passed**, via hospital price transparency files rather than the payer
+MRF. 5,380 price rows across 10 named Indianapolis-metro facilities, with
+negotiated *and* cash prices for CPT 73721 and 70450.
+
+Honest count: 10 facilities, but **8 distinct price lists** — IU Health's
+Indianapolis, North and West files are three EINs at three real addresses
+publishing identical prices. Do not present them as three price observations.
+
+The payer MRF still failed for the facility half of the problem, which is what
+sent the work to hospital files:
 
 - `pipeline/mrf/` streams and extracts end-to-end at ~290 MB/s of decompressed
   JSON, nothing on disk. Validated on two real UHC files.
