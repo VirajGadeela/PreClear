@@ -1,0 +1,26 @@
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# Data — never commit payer files or extracted data
+data/
+*.csv
+*.json.gz
+*.parquet
+!data/samples/*.json    # small synthetic fixtures only
+
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+Pods/
+
+# Build
+build/
+dist/
+*.ipa
+*.apk
+.DS_Store
