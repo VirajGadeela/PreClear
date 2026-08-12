@@ -234,10 +234,38 @@ payment earns no deductible credit. That is the product in one table.
   that hospital's own gross charge (under 5% is a carve-out), not a flat floor.
 - **The payer does not determine the price; the plan does.** Franciscan
   publishes five different Anthem rates for CPT 73721 — $360.22 (HMO/PPO),
-  $610.44 (employee), $784.08, $888.30, $992.51 (Blue Access PPO). The median is
-  a placeholder and the CLI discloses the spread; `--plan-contains` pins a plan.
-  **Plan-level rate matching is required before this is trustworthy for a real
-  user.** This is the largest open correctness gap in the engine.
+  $610.44 (employee), $784.08, $888.30, $992.51 (Blue Access PPO). `--plan`
+  matches the member's card against published plan strings; `--plan-contains`
+  pins one directly. See `pipeline/plans.py`.
+
+### Plan-string mechanics (verified 2026-08-12)
+
+Reading plan strings fixed three ways the engine was confidently wrong.
+
+- **Line of business hides in the plan name, not the payer name.** Ascension St.
+  Vincent Carmel files `ANTHEM CONNECT MEDICAID REPLACEMENT` and
+  `ANTHEM MEDICARE REPLACEMENT` under an Anthem payer string. Judging by payer
+  alone offered a commercial member a **$49.04 knee MRI they can never be
+  charged**. A plan string may only ever move a row *out* of commercial, never
+  into it.
+- **Service-line carve-outs masquerade as cheap rates.** Every remaining
+  commercial Anthem row at Ascension St. Vincent Carmel is a `VEIN` fee
+  schedule. The $311.13 that earlier ranked as the metro's cheapest in-network
+  knee MRI was a vein-treatment rate. After filtering, that facility has **zero**
+  usable Anthem rows for this code.
+- **`Elevance Health` is Anthem.** IU Health — the largest system in the metro —
+  files every Anthem rate under the parent company name. Missing that alias
+  dropped the entire system from the comparison; adding it took eligible
+  facilities from 4 to 7 and brought in IU Health's $925 rate against
+  Franciscan's $360.22.
+
+Matching rules: product type must agree, so an HMO member is never quoted a PPO
+fee schedule. Genuine ambiguity is preserved rather than resolved —
+`ANTHEM BLUE ACCESS PPO WITH COPPS` ($992.51) and `ANTHEM BLUE ACCESS PPO-CID`
+($360.22) are the same product name at different rates, and no string matching
+can separate them. A facility with no confident match keeps its full range
+rather than disappearing, because "we cannot tell which applies to you" is a
+usable answer and "this facility has no price" is a false one.
 - The cash route is gated, per CLAUDE.md: surfaced when the patient is uninsured
   or expected spend falls short of the deductible, not offered by default.
 - A "cheaper site" that costs the same is noise, so route 2 requires a real

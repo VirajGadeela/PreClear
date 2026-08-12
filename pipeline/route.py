@@ -28,7 +28,7 @@ from pipeline.costing.routes import (
     is_plausible,
     rank_routes,
 )
-from pipeline.payers import normalize
+from pipeline.plans import rank_matches
 from pipeline.policies.check import unmet
 from pipeline.policies.rules import ImagingOrder
 
@@ -72,20 +72,31 @@ def load_prices(paths, cpt):
     return prices
 
 
-def eligible_by_facility(prices, payer_canonical, plan_contains=None):
-    """Eligible commercial rows for this payer, grouped by facility."""
+def eligible_by_facility(prices, payer_canonical, plan_contains=None, member_plan=None):
+    """Eligible commercial rows for this payer, grouped by facility.
+
+    Uses exactly the same eligibility rules as route building — payer buckets,
+    out-of-state plans, government lines and service-line carve-outs all
+    excluded — so the disclosure block cannot describe rows the routes refused.
+    """
     grouped = {}
-    for price in prices:
-        if price.negotiated_dollar is None:
-            continue
-        if not price.payer.usable_for_commercial_routing:
-            continue
-        if price.payer.canonical != payer_canonical:
-            continue
+    for price in eligible_in_network(prices, payer_canonical):
         if plan_contains and plan_contains.lower() not in price.plan_name.lower():
             continue
         grouped.setdefault(price.facility_key, []).append(price)
-    return grouped
+
+    if not member_plan:
+        return grouped
+
+    # Narrow to the member's own plan where a confident match exists. A facility
+    # with no match keeps its full set rather than disappearing: "we cannot tell
+    # which of these applies to you" is a usable answer, "this facility has no
+    # price" is a false one.
+    narrowed = {}
+    for key, rows in grouped.items():
+        matches = rank_matches(member_plan, [(row.plan_name, row) for row in rows])
+        narrowed[key] = [payload for _, _, payload in matches] or rows
+    return narrowed
 
 
 def plan_spread(rows):
@@ -102,7 +113,7 @@ def plan_spread(rows):
     return max(amounts) / min(amounts)
 
 
-def representative_per_facility(prices, payer_canonical, plan_contains=None):
+def representative_per_facility(prices, payer_canonical, plan_contains=None, member_plan=None):
     """One row per facility: the median plausible rate for this payer.
 
     Two mistakes are easy here and both were made before this was written.
@@ -117,7 +128,7 @@ def representative_per_facility(prices, payer_canonical, plan_contains=None):
     facility has something better; if every row is suspect the facility is still
     represented, carrying its warnings, rather than vanishing.
     """
-    by_facility = eligible_by_facility(prices, payer_canonical, plan_contains)
+    by_facility = eligible_by_facility(prices, payer_canonical, plan_contains, member_plan)
     representatives = []
     for rows in by_facility.values():
         plausible = [row for row in rows if is_plausible(row)] or rows
@@ -157,6 +168,13 @@ def main(argv=None):
         help="restrict to plans whose name contains this text, e.g. 'BLUE ACCESS'. "
         "Hospitals publish several rates per payer and the member's specific plan "
         "decides which one applies.",
+    )
+    parser.add_argument(
+        "--plan", default=None,
+        help="the member's plan as printed on their card, e.g. "
+        "'Anthem Blue Access PPO'. Matched against each hospital's published "
+        "plan strings; where no confident match exists the facility keeps its "
+        "full range rather than being dropped.",
     )
     parser.add_argument("--indication", default="meniscal_tear")
     parser.add_argument("--conservative-weeks", type=float, default=None)
@@ -201,7 +219,9 @@ def main(argv=None):
         args.expected_other_spend < benefits.deductible_remaining
     )
 
-    per_facility = representative_per_facility(all_prices, args.payer, args.plan_contains)
+    per_facility = representative_per_facility(
+        all_prices, args.payer, args.plan_contains, args.plan
+    )
     cash_source = cash_price_for(all_prices, args.ordered_facility)
     if cash_source is not None:
         per_facility = per_facility + [cash_source]
@@ -242,7 +262,9 @@ def main(argv=None):
         print()
     print("Ranking:", explain_ranking(routes))
 
-    grouped = eligible_by_facility(all_prices, args.payer, args.plan_contains)
+    grouped = eligible_by_facility(
+        all_prices, args.payer, args.plan_contains, args.plan
+    )
     wide = {
         key: rows for key, rows in grouped.items() if plan_spread(rows) >= 2.0
     }

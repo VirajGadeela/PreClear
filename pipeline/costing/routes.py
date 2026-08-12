@@ -22,7 +22,8 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from pipeline.costing.oop import YearEstimate, estimate_year, money
-from pipeline.payers import normalize
+from pipeline.payers import resolve
+from pipeline.plans import classify
 
 IN_NETWORK_AS_WRITTEN = "in_network_as_written"
 IN_NETWORK_CHEAPER_SITE = "in_network_cheaper_site"
@@ -58,7 +59,13 @@ class FacilityPrice:
 
     @property
     def payer(self):
-        return normalize(self.payer_raw)
+        # Resolved from payer *and* plan: a plan string is what reveals that an
+        # Anthem-branded row is really Medicaid or Medicare managed care.
+        return resolve(self.payer_raw, self.plan_name)
+
+    @property
+    def plan(self):
+        return classify(self.plan_name)
 
 
 @dataclass(frozen=True)
@@ -130,7 +137,9 @@ def eligible_in_network(prices, payer_canonical):
     """In-network rows for one payer that are safe to compare.
 
     Excludes catch-all payer buckets, out-of-state Blue affiliates, and
-    Medicare/Medicaid lines, none of which a commercial member would pay.
+    Medicare/Medicaid lines, none of which a commercial member would pay — and
+    service-line carve-outs, because a vein-treatment or behavioural-health fee
+    schedule quoted against a knee MRI is not the price for that study.
     """
     eligible = []
     for price in prices:
@@ -140,6 +149,8 @@ def eligible_in_network(prices, payer_canonical):
         if not identity.usable_for_commercial_routing:
             continue
         if identity.canonical != payer_canonical:
+            continue
+        if price.plan.is_carve_out:
             continue
         eligible.append(price)
     return eligible
