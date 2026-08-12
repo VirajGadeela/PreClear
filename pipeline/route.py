@@ -16,11 +16,13 @@ Usage:
 import argparse
 import csv
 import glob
+import json
 import os
 import sys
 
 from pipeline.costing.oop import PlanBenefits, money
 from pipeline.costing.routes import (
+    ROUTE_LABELS,
     FacilityPrice,
     build_routes,
     eligible_in_network,
@@ -147,6 +149,53 @@ def cash_price_for(prices, facility_key=None):
     return min(options, key=lambda p: p.cash_price)
 
 
+def routes_as_json(ranked, args, benefits):
+    """Serialize ranked routes for the app.
+
+    Dollar figures are emitted as numbers *and* as display strings carrying the
+    word "estimate", so a client cannot render a bare figure by accident. The
+    disclosure fields are part of the payload for the same reason.
+    """
+    return {
+        "cpt": args.cpt,
+        "payer": args.payer,
+        "member_plan": args.plan,
+        "metro": "Indianapolis",
+        "benefits": {
+            "deductible_remaining": benefits.deductible_remaining,
+            "coinsurance_rate": benefits.coinsurance_rate,
+            "oop_max_remaining": benefits.oop_max_remaining,
+            "expected_other_allowed_spend": args.expected_other_spend,
+        },
+        "disclosure": (
+            "All figures are estimates from files hospitals and payers publish. "
+            "Requirement findings quote the payer's own criteria and describe "
+            "documentation, not coverage outcomes."
+        ),
+        "routes": [
+            {
+                "kind": route.kind,
+                "label": ROUTE_LABELS.get(route.kind, route.kind),
+                "facility_name": route.facility_name,
+                "facility_address": route.facility_address,
+                "scan_cost": round(route.estimate.scan.patient_pays, 2),
+                "scan_cost_display": money(route.estimate.scan.patient_pays),
+                "total_this_year": round(route.total_this_year, 2),
+                "total_this_year_display": money(route.total_this_year),
+                "counts_toward_deductible": route.estimate.scan.counts_toward_deductible,
+                "deductible_credit_earned": round(
+                    route.estimate.deductible_credit_earned, 2
+                ),
+                "reasoning": route.reasoning,
+                "unmet_requirements": list(route.unmet_requirements),
+                "warnings": list(route.warnings),
+            }
+            for route in ranked
+        ],
+        "ranking_explanation": explain_ranking(ranked),
+    }
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cpt", default="73721")
@@ -184,6 +233,10 @@ def main(argv=None):
     parser.add_argument("--exam-findings", nargs="*", default=())
     parser.add_argument("--uninsured", action="store_true",
                         help="surface the cash route regardless of plan position")
+    parser.add_argument(
+        "--json", dest="as_json", action="store_true",
+        help="emit the ranked routes as JSON for the app to consume",
+    )
     args = parser.parse_args(argv)
 
     paths = args.prices or sorted(glob.glob(os.path.join("data", "gate1", "*.csv")))
@@ -246,6 +299,11 @@ def main(argv=None):
         return 1
 
     ranked = rank_routes(routes)
+
+    if args.as_json:
+        print(json.dumps(routes_as_json(ranked, args, benefits), indent=2))
+        return 0
+
     print(f"CPT {args.cpt} — {args.payer}, Indianapolis metro")
     print(
         f"Deductible remaining {money(benefits.deductible_remaining)}, "
