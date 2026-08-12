@@ -1,16 +1,26 @@
 # Secrets
 .env
 .env.*
+# .env.example holds key names only and must be committable, but `.env.*`
+# above would have swallowed it.
+!.env.example
 *.pem
 *.key
 secrets/
 
-# Data — never commit payer files or extracted data
-data/
+# Data — never commit payer files or extracted data.
+# Ignoring `data/` outright stops git descending into it, which makes any
+# re-include underneath it dead: the previous `!data/samples/*.json` never
+# took effect. Excluding the *contents* keeps the negations live.
+# (Trailing comments are not supported on a pattern line either — the old rule
+# had one, so its pattern included the comment text.)
+data/*
+!data/samples/
+data/samples/*
+!data/samples/*.json
 *.csv
 *.json.gz
 *.parquet
-!data/samples/*.json    # small synthetic fixtures only
 
 # Dependencies
 node_modules/

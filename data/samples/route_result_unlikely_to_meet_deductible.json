@@ -1,0 +1,63 @@
+{
+  "cpt": "73721",
+  "payer": "anthem",
+  "member_plan": "Anthem Blue Access PPO",
+  "metro": "Indianapolis",
+  "benefits": {
+    "deductible_remaining": 2000.0,
+    "coinsurance_rate": 0.2,
+    "oop_max_remaining": 6000.0,
+    "expected_other_allowed_spend": 0.0
+  },
+  "disclosure": "All figures are estimates from files hospitals and payers publish. Requirement findings quote the payer's own criteria and describe documentation, not coverage outcomes.",
+  "routes": [
+    {
+      "kind": "cash_non_contracted",
+      "label": "cash paid directly to the facility",
+      "facility_name": "FRANCISCAN HEALTH INDIANAPOLIS",
+      "facility_address": "8111 S EMERSON AVE, INDIANAPOLIS, IN 46237",
+      "scan_cost": 574.27,
+      "scan_cost_display": "$574.27 (estimate)",
+      "total_this_year": 574.27,
+      "total_this_year_display": "$574.27 (estimate)",
+      "counts_toward_deductible": false,
+      "deductible_credit_earned": 0.0,
+      "reasoning": "Discounted cash price paid directly to the facility. This payment earns no deductible credit, so it does not reduce what later care costs this year.",
+      "unmet_requirements": [],
+      "warnings": []
+    },
+    {
+      "kind": "in_network_as_written",
+      "label": "in-network as ordered",
+      "facility_name": "FRANCISCAN HEALTH CARMEL",
+      "facility_address": "12188 B N MERIDIAN ST CARMEL, IN 46032",
+      "scan_cost": 610.44,
+      "scan_cost_display": "$610.44 (estimate)",
+      "total_this_year": 610.44,
+      "total_this_year_display": "$610.44 (estimate)",
+      "counts_toward_deductible": true,
+      "deductible_credit_earned": 610.44,
+      "reasoning": "In-network at the facility as ordered. Negotiated rate $610.44 (estimate) under BLUE CROSS.",
+      "unmet_requirements": [],
+      "warnings": []
+    },
+    {
+      "kind": "in_network_order_corrected",
+      "label": "in-network with the order corrected first",
+      "facility_name": "FRANCISCAN HEALTH CARMEL",
+      "facility_address": "12188 B N MERIDIAN ST CARMEL, IN 46032",
+      "scan_cost": 610.44,
+      "scan_cost_display": "$610.44 (estimate)",
+      "total_this_year": 610.44,
+      "total_this_year_display": "$610.44 (estimate)",
+      "counts_toward_deductible": true,
+      "deductible_credit_earned": 610.44,
+      "reasoning": "Same facility and the same estimated cost, but the order does not document requirements this payer publishes. The checklist below is for the ordering physician.",
+      "unmet_requirements": [
+        "Either mechanical symptoms with at least two meniscal exam findings, or at least one exam finding with 6 weeks of failed conservative management."
+      ],
+      "warnings": []
+    }
+  ],
+  "ranking_explanation": "Lowest estimated total for this year: FRANCISCAN HEALTH INDIANAPOLIS (cash paid directly to the facility). FRANCISCAN HEALTH CARMEL (in-network as ordered) is $36.17 (estimate) more over the year. FRANCISCAN HEALTH CARMEL (in-network with the order corrected first) is $36.17 (estimate) more over the year."
+}
