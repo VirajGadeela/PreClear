@@ -66,28 +66,6 @@ FACILITIES = [
         "url": "https://riverview.org/sites/default/files/pdf/25-005054-1_riverview-health_standardcharges.csv",
         "covers": ["Noblesville", "Westfield"],
     },
-    # Community Health Network publishes uncompressed CSV, and these are the
-    # largest files in the set — East alone is 7.8 GB. They must be streamed.
-    {
-        "key": "community-east",
-        "name": "Community Hospital East",
-        "url": "https://media.ecommunity.com/PricingTransparency/Community_Hospital_East.csv",
-    },
-    {
-        "key": "community-north",
-        "name": "Community Hospital North",
-        "url": "https://media.ecommunity.com/PricingTransparency/Community_Hospital_North.csv",
-    },
-    {
-        "key": "community-south",
-        "name": "Community Hospital South",
-        "url": "https://media.ecommunity.com/PricingTransparency/Community_Hospital_South.csv",
-    },
-    {
-        "key": "stones-crossing-imaging",
-        "name": "Stones Crossing Imaging Center",
-        "url": "https://media.ecommunity.com/PricingTransparency/CHN_JMH_Ventures_Imaging.csv",
-    },
     # IU Health publishes one file per EIN, and EIN 351955872 covers five
     # hospitals at once — Methodist, University, Riley, Morgan and Saxony share
     # a single price list, so they cannot be compared against each other.
@@ -117,8 +95,47 @@ FACILITIES = [
     },
 ]
 
-# Every major Indianapolis system is now covered. Both IU Health and Community
-# Health Network refuse plain HTTP clients on their cms-hpt.txt (connection
-# reset and Akamai 403 respectively), so their URLs were read from a browser and
-# recorded above. Re-check them by hand when refreshing this registry.
+# Both IU Health and Community Health Network refuse plain HTTP clients on their
+# cms-hpt.txt (connection reset and Akamai 403 respectively), so their URLs were
+# read from a browser. Re-check by hand when refreshing this registry.
 MISSING = []
+
+# Facilities deliberately not attempted, with the reason. Keeping these here
+# rather than deleting them stops the next person rediscovering the same dead
+# ends, and stops a run spending 16.6 GB of bandwidth to learn nothing.
+#
+# A metro's coverage is only as good as the files in it. Two large Indianapolis
+# systems publish no usable CPT-level imaging prices, so a patient whose nearest
+# option is an Ascension St Vincent Indianapolis or Community hospital gets no
+# comparison for that facility. That is a real hole in the product, not a
+# tidy-up detail — see the coverage warning in CLAUDE.md.
+EXCLUDED = [
+    {
+        "name": "Community Hospital East / North / South, Stones Crossing Imaging",
+        "url_pattern": "https://media.ecommunity.com/PricingTransparency/*.csv",
+        "reason": (
+            "No CPT codes found. These files carry a single code slot with types "
+            "CDM, LOCAL and MS-DRG only; a 150,000-row sample of Community "
+            "Hospital North contained zero CPT codes and no imaging-range codes. "
+            "Not conclusively proven across the whole file, because the host is "
+            "too slow to scan it: a full byte scan of the 2.8 GB North file did "
+            "not finish in 10 minutes, and the 7.8 GB East file and Stones "
+            "Crossing both hit read timeouts during extraction. Re-test if their "
+            "publishing format changes."
+        ),
+    },
+    {
+        "name": "Ascension St. Vincent Hospital Indianapolis",
+        "url_pattern": (
+            "https://healthcare.ascension.org/-/media/project/ascension/healthcare/"
+            "price-transparency-files/in-csv/350869066_*.csv"
+        ),
+        "reason": (
+            "Parses cleanly but publishes CDM and revenue codes almost "
+            "exclusively, so it yields no CPT imaging prices. Its 1,165 lines "
+            "matching '70450' are all substrings of CDM 702570450, a catheter. "
+            "Left in FACILITIES because it parses and returning zero rows is the "
+            "correct, informative result."
+        ),
+    },
+]

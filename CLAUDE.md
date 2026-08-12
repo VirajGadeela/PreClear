@@ -126,9 +126,26 @@ Materially harder than UHC, which is why UHC went first.
 MRF. 5,380 price rows across 10 named Indianapolis-metro facilities, with
 negotiated *and* cash prices for CPT 73721 and 70450.
 
-Honest count: 10 facilities, but **8 distinct price lists** — IU Health's
+Honest count: 11 facilities, but **9 distinct price lists** — IU Health's
 Indianapolis, North and West files are three EINs at three real addresses
 publishing identical prices. Do not present them as three price observations.
+
+**The metro is not fully covered, and this is a product hole, not a to-do.**
+Two large Indianapolis systems publish no usable CPT-level imaging prices:
+
+- **Community Health Network** (East, North, South, Stones Crossing Imaging) —
+  one code slot, types CDM/LOCAL/MS-DRG only, zero CPT codes in a 150,000-row
+  sample. Not proven across the whole file because their host is too slow to
+  scan it; the 2.8 GB file did not finish a byte scan in 10 minutes and the
+  7.8 GB file times out during extraction.
+- **Ascension St. Vincent Hospital Indianapolis** — CDM and revenue codes
+  almost exclusively.
+
+A patient whose nearest option is one of these gets no comparison for that
+facility. CLAUDE.md's warning about partial payer coverage applies just as
+sharply to partial *facility* coverage. Both are recorded in
+`pipeline/hospital/facilities.py::EXCLUDED` with reasons, so a future run does
+not spend 16.6 GB rediscovering them.
 
 The payer MRF still failed for the facility half of the problem, which is what
 sent the work to hospital files:
