@@ -26,8 +26,10 @@ differs.
 """
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Optional
+
+from pipeline import plans
 
 COMMERCIAL = "commercial"
 MEDICARE = "medicare"
@@ -76,14 +78,22 @@ _RULES = (
     (r"\bTRICARE\b", None, GOVERNMENT, False),
     (r"WORKERS?\s*COMP", None, WORKERS_COMP, False),
     (r"GOVERNMENT", None, GOVERNMENT, False),
-    # Out-of-state Blue affiliates, before the bare Anthem match.
+    # Out-of-state Blue affiliates, before the bare Anthem match. The state
+    # qualifier only counts inside a Blue-branded string: matching a bare "IL"
+    # anywhere would sweep in unrelated payers.
     (r"BLUE CROSS OUT OF STATE", "anthem", COMMERCIAL, True),
-    (r"(ILLINOIS|\bIL\b)", "anthem", COMMERCIAL, True),
+    (r"BLUE.*(ILLINOIS|\bIL\b)|(ILLINOIS|\bIL\b).*BLUE", "anthem", COMMERCIAL, True),
     # UniCare is an Elevance brand, but the plans observed in Indianapolis files
     # carry out-of-state plan names, so it is not treated as Anthem Indiana.
     (r"\bUNICARE\b", "anthem", COMMERCIAL, True),
     (r"\bANTHEM\b", "anthem", COMMERCIAL, False),
     (r"BLUE CROSS", "anthem", COMMERCIAL, False),
+    # Elevance Health is Anthem's parent. IU Health — the largest system in the
+    # metro — files every Anthem rate under this name, so missing it drops that
+    # system out of the comparison entirely.
+    (r"\bELEVANCE\b", "anthem", COMMERCIAL, False),
+    # Sagamore is a network rented by Cigna in Indiana.
+    (r"SAGAMORE.*CIGNA|CIGNA.*SAGAMORE", "cigna", COMMERCIAL, False),
     # UMR is UnitedHealthcare's third-party administrator.
     (r"UNITED MEDICAL RESOURCES|\bUMR\b", "unitedhealthcare", COMMERCIAL, False),
     (r"UNITED\s*HEALTH", "unitedhealthcare", COMMERCIAL, False),
@@ -98,7 +108,7 @@ _BUCKETS = (
     r"^COMMERCIAL$",
     r"^ALL OTHER",
     r"^OTHER$",
-    r"^SELF PAY$",
+    r"^SELF[\s-]?PAY$",
 )
 
 
@@ -125,3 +135,21 @@ def normalize(raw):
 
     # A specific payer we have no mapping for. Not a bucket.
     return PayerIdentity(raw, label, None, COMMERCIAL)
+
+
+def resolve(payer_raw, plan_raw):
+    """Identify a row from its payer *and* plan strings together.
+
+    The plan name can only ever move a row out of commercial, never into it.
+    Hospitals file Medicaid and Medicare managed-care plans under payer strings
+    that read as commercial — Ascension St. Vincent Carmel publishes
+    `ANTHEM CONNECT MEDICAID REPLACEMENT` under an Anthem payer — and showing a
+    commercial member that $49.04 rate would be a price they can never be
+    charged. Reading only the payer string is how that happens.
+    """
+    identity = normalize(payer_raw)
+    plan = plans.classify(plan_raw)
+
+    if plan.line_of_business in (plans.MEDICAID, plans.MEDICARE):
+        return replace(identity, line_of_business=plan.line_of_business)
+    return identity
