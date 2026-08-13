@@ -21,9 +21,9 @@ review cycles — re-check `effective_date` and `next_review` before relying on
 any rule, and never edit a `quote` field to paraphrase.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Optional
+from typing import Optional
 
 
 class Status(Enum):
@@ -107,9 +107,17 @@ class Requirement:
     summary: str
     quote: str
     citation: Citation
-    evaluate: Callable[[ImagingOrder], Status]
+    # A declarative description of the test this requirement applies. Kept
+    # declarative rather than as a Python callable so the app can evaluate the
+    # identical rule instead of re-deriving it: the first version of the mobile
+    # screen scraped week thresholds out of the quote text with a regex and got
+    # both the threshold and the met/not-documented distinction wrong.
+    check: dict
     alternative_pathway: bool = False
     note: str = ""
+
+    def evaluate(self, order):
+        return evaluate_check(self.check, order)
 
 
 def _weeks_at_least(order, threshold):
@@ -122,6 +130,57 @@ def _flag(value):
     if value is None:
         return Status.NOT_DOCUMENTED
     return Status.MET if value else Status.UNMET
+
+
+def evaluate_check(check, order):
+    """Evaluate one declarative check against an order.
+
+    This is the single implementation in Python, and `app/src/requirements.ts`
+    mirrors it case for case. Adding a new `type` here means adding it there.
+    """
+    kind = check["type"]
+
+    if kind == "boolean":
+        return _flag(getattr(order, check["field"]))
+
+    if kind == "min_weeks":
+        # Red flags waive the waiting period; they do not add a requirement.
+        if check.get("waived_by_red_flag") and order.red_flags:
+            return Status.NOT_APPLICABLE
+        return _weeks_at_least(order, check["weeks"])
+
+    if kind == "radiographs_nondiagnostic":
+        if order.prior_radiographs is None:
+            return Status.NOT_DOCUMENTED
+        return (
+            Status.MET
+            if order.prior_radiographs == "nondiagnostic"
+            else Status.UNMET
+        )
+
+    if kind == "meniscal_pathway":
+        # Either scenario in the guideline satisfies this, so check both.
+        findings = len(order.meniscal_exam_findings)
+        if order.mechanical_symptoms and findings >= 2:
+            return Status.MET
+        if findings >= 1:
+            return _weeks_at_least(order, check["weeks"])
+        if order.mechanical_symptoms is None and not findings:
+            return Status.NOT_DOCUMENTED
+        return Status.UNMET
+
+    if kind == "ligament_pathway":
+        if order.positive_ligament_stress_tests:
+            return Status.MET
+        return _weeks_at_least(order, check["weeks"])
+
+    if kind == "objective_findings_then_weeks":
+        findings = _flag(getattr(order, check["field"]))
+        if findings is not Status.MET:
+            return findings
+        return _weeks_at_least(order, check["weeks"])
+
+    raise ValueError(f"unknown check type: {kind!r}")
 
 
 # --------------------------------------------------------------------------
@@ -137,33 +196,6 @@ CARELON_EXTREMITIES = Citation(
     effective_date="2025-11-15",
     source_url="https://guidelines.carelonmedicalbenefitsmanagement.com/imaging-of-the-extremities-2025-11-15/",
 )
-
-
-def _carelon_radiographs(order):
-    if order.prior_radiographs is None:
-        return Status.NOT_DOCUMENTED
-    return Status.MET if order.prior_radiographs == "nondiagnostic" else Status.UNMET
-
-
-def _carelon_meniscal_pathway(order):
-    """Either scenario in the guideline satisfies this; check both."""
-    findings = len(order.meniscal_exam_findings)
-    if order.mechanical_symptoms and findings >= 2:
-        return Status.MET
-    if findings >= 1:
-        weeks = _weeks_at_least(order, 6)
-        if weeks is Status.MET:
-            return Status.MET
-        return weeks
-    if order.mechanical_symptoms is None and not findings:
-        return Status.NOT_DOCUMENTED
-    return Status.UNMET
-
-
-def _carelon_ligament_pathway(order):
-    if order.positive_ligament_stress_tests:
-        return Status.MET
-    return _weeks_at_least(order, 4)
 
 
 # --------------------------------------------------------------------------
@@ -187,14 +219,6 @@ EVICORE_LUMBAR = Citation(
 )
 
 
-def _evicore_conservative(order):
-    # The guideline waives the waiting period, not the whole pathway, when a
-    # red flag is present.
-    if order.red_flags:
-        return Status.NOT_APPLICABLE
-    return _weeks_at_least(order, 6)
-
-
 # --------------------------------------------------------------------------
 # Aetna, self-published Clinical Policy Bulletin
 # --------------------------------------------------------------------------
@@ -214,13 +238,6 @@ AETNA_SPINE = Citation(
 )
 
 
-def _aetna_radiculopathy(order):
-    findings = _flag(order.radiculopathy_objective_findings)
-    if findings is not Status.MET:
-        return findings
-    return _weeks_at_least(order, 6)
-
-
 REQUIREMENTS = (
     Requirement(
         key="carelon-knee-nondiagnostic-radiographs",
@@ -231,7 +248,7 @@ REQUIREMENTS = (
         quote="Advanced imaging is considered medically necessary following "
         "nondiagnostic radiographs",
         citation=CARELON_EXTREMITIES,
-        evaluate=_carelon_radiographs,
+        check={"type": "radiographs_nondiagnostic"},
     ),
     Requirement(
         key="carelon-knee-meniscal-pathway",
@@ -245,7 +262,7 @@ REQUIREMENTS = (
         "[...] Knee pain with at least ONE physical exam finding of meniscal "
         "tear and failure of at least 6 weeks of conservative management",
         citation=CARELON_EXTREMITIES,
-        evaluate=_carelon_meniscal_pathway,
+        check={"type": "meniscal_pathway", "weeks": 6},
         alternative_pathway=True,
     ),
     Requirement(
@@ -256,7 +273,7 @@ REQUIREMENTS = (
         "stress testing is positive.",
         quote="Failure of at least 4 weeks of conservative management",
         citation=CARELON_EXTREMITIES,
-        evaluate=_carelon_ligament_pathway,
+        check={"type": "ligament_pathway", "weeks": 4},
         alternative_pathway=True,
         note="The guideline also allows postoperative evaluation following "
         "ligament or tendon repair when there are new symptoms.",
@@ -271,7 +288,7 @@ REQUIREMENTS = (
         "condition is required to have been performed before advanced imaging "
         "is considered.",
         citation=EVICORE_LUMBAR,
-        evaluate=lambda order: _flag(order.in_person_evaluation_this_episode),
+        check={"type": "boolean", "field": "in_person_evaluation_this_episode"},
     ),
     Requirement(
         key="evicore-lumbar-six-week-treatment",
@@ -284,7 +301,7 @@ REQUIREMENTS = (
         "(unless presence of a red flag as defined in Red Flag Indications "
         "(SP-1.2))",
         citation=EVICORE_LUMBAR,
-        evaluate=_evicore_conservative,
+        check={"type": "min_weeks", "weeks": 6, "waived_by_red_flag": True},
         note="Red flags per SP.GG.0001.2.A: " + ", ".join(EVICORE_RED_FLAGS),
     ),
     Requirement(
@@ -295,7 +312,7 @@ REQUIREMENTS = (
         quote="Clinical re-evaluation after treatment period (may consist of an "
         "in-person evaluation or other meaningful contact)",
         citation=EVICORE_LUMBAR,
-        evaluate=lambda order: _flag(order.reevaluation_after_treatment),
+        check={"type": "boolean", "field": "reevaluation_after_treatment"},
     ),
     Requirement(
         key="aetna-spine-radiculopathy-six-weeks",
@@ -308,7 +325,8 @@ REQUIREMENTS = (
         "nerve root distribution, and no improvement after 6 weeks of "
         "conservative therapy",
         citation=AETNA_SPINE,
-        evaluate=_aetna_radiculopathy,
+        check={"type": "objective_findings_then_weeks",
+               "field": "radiculopathy_objective_findings", "weeks": 6},
         alternative_pathway=True,
     ),
     Requirement(
@@ -319,7 +337,7 @@ REQUIREMENTS = (
         quote="Spondylolisthesis and degenerative disease of the spine that has not "
         "responded to 4 weeks of conservative therapy",
         citation=AETNA_SPINE,
-        evaluate=lambda order: _weeks_at_least(order, 4),
+        check={"type": "min_weeks", "weeks": 4},
         alternative_pathway=True,
     ),
 )

@@ -3,7 +3,12 @@
 import unittest
 
 from pipeline.policies.check import check_order, checklist, requirements_for, unmet
-from pipeline.policies.rules import REQUIREMENTS, ImagingOrder, Status
+from pipeline.policies.rules import (
+    REQUIREMENTS,
+    ImagingOrder,
+    Status,
+    evaluate_check,
+)
 
 
 class TestRuleSet(unittest.TestCase):
@@ -136,6 +141,49 @@ class TestPayerScoping(unittest.TestCase):
     def test_uncovered_combination_says_so_plainly(self):
         order = ImagingOrder(cpt="70450", payer="Aetna", indication="head_trauma")
         self.assertIn("does not cover it", checklist(order))
+
+
+
+class TestDeclarativeChecks(unittest.TestCase):
+    """The check descriptors are the spec the app mirrors, so they are tested.
+
+    A regex over the quote text used to stand in for these on the mobile side
+    and got both the threshold and the met/not-documented distinction wrong.
+    """
+
+    KNOWN_TYPES = {
+        'boolean',
+        'min_weeks',
+        'radiographs_nondiagnostic',
+        'meniscal_pathway',
+        'ligament_pathway',
+        'objective_findings_then_weeks',
+    }
+
+    def test_every_requirement_has_a_known_check_type(self):
+        for requirement in REQUIREMENTS:
+            self.assertIn(
+                requirement.check['type'], self.KNOWN_TYPES, requirement.key
+            )
+
+    def test_unknown_check_type_is_rejected_loudly(self):
+        order = ImagingOrder(cpt='73721', payer='Anthem', indication='meniscal_tear')
+        with self.assertRaises(ValueError):
+            evaluate_check({'type': 'not_a_real_check'}, order)
+
+    def test_thresholds_live_in_the_check_not_the_prose(self):
+        """The app reads these numbers; they must not be parsed out of quotes."""
+        by_key = {r.key: r for r in REQUIREMENTS}
+        self.assertEqual(by_key['evicore-lumbar-six-week-treatment'].check['weeks'], 6)
+        self.assertEqual(by_key['aetna-spine-degenerative-four-weeks'].check['weeks'], 4)
+        self.assertEqual(by_key['carelon-knee-ligament-conservative'].check['weeks'], 4)
+
+    def test_missing_input_reads_as_not_documented_not_unmet(self):
+        order = ImagingOrder(cpt='72148', payer='Cigna', indication='low_back_pain')
+        for requirement in requirements_for(order):
+            self.assertIs(
+                requirement.evaluate(order), Status.NOT_DOCUMENTED, requirement.key
+            )
 
 
 if __name__ == "__main__":
