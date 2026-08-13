@@ -1,0 +1,315 @@
+/**
+ * Build and rank the four routes, mirroring pipeline/costing/routes.py.
+ *
+ * The bundled data has already had payer buckets, out-of-state plans,
+ * government lines and service-line carve-outs removed by the exporter, so this
+ * only has to handle plausibility against the hospital's own gross charge and
+ * the choice of a representative rate per facility.
+ */
+
+import { PlanBenefits, YearEstimate, estimateYear, money } from './costing';
+
+export type PlanRate = {
+  plan_name: string;
+  rate: number;
+  product: string | null;
+};
+
+export type FacilityBundle = {
+  facility_key: string;
+  facility_name: string;
+  facility_address: string;
+  plans: PlanRate[];
+  cash_price: number | null;
+  gross_charge: number | null;
+};
+
+export type Requirement = {
+  key: string;
+  payer: string;
+  reviewed_by: string;
+  cpt_codes: string[];
+  indication: string;
+  summary: string;
+  quote: string;
+  document_title: string;
+  section_id: string;
+  version: string;
+  effective_date: string;
+  source_url: string;
+  alternative_pathway: boolean;
+};
+
+export const ROUTE_LABELS: Record<string, string> = {
+  in_network_as_written: 'In-network, as ordered',
+  in_network_cheaper_site: 'In-network, different facility',
+  in_network_order_corrected: 'In-network, order corrected first',
+  cash_non_contracted: 'Cash, paid directly to the facility',
+};
+
+export type Route = {
+  kind: string;
+  label: string;
+  facilityName: string;
+  facilityAddress: string;
+  allowedAmount: number;
+  estimate: YearEstimate;
+  reasoning: string;
+  unmetRequirements: Requirement[];
+  warnings: string[];
+};
+
+/**
+ * Rows the hospital files are known to publish badly.
+ *
+ * Judged against this hospital's own gross charge rather than a flat floor: a
+ * $49 row against a $2,486 gross charge is a carve-out, but $49 could be
+ * legitimate elsewhere.
+ */
+function warningsFor(rate: number, grossCharge: number | null): string[] {
+  const warnings: string[] = [];
+  if (grossCharge && rate > grossCharge) {
+    warnings.push(
+      'The published rate is above this hospital’s gross charge, which usually means a percent-of-charge row rather than a real price.',
+    );
+  }
+  if (grossCharge && rate < 0.05 * grossCharge) {
+    warnings.push(
+      'The published rate is under 5% of this hospital’s gross charge, which is characteristic of a carve-out row.',
+    );
+  }
+  return warnings;
+}
+
+/**
+ * One rate per facility: the median plausible rate.
+ *
+ * Taking the cheapest systematically selects carve-out artifacts. The median is
+ * robust to those and to plan variants. If every row is suspect the facility is
+ * still represented, carrying its warnings, rather than vanishing.
+ */
+export function representativeRate(
+  facility: FacilityBundle,
+  memberPlan?: string,
+): PlanRate | null {
+  let candidates = facility.plans;
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  if (memberPlan) {
+    const matched = candidates.filter((plan) =>
+      matchesMemberPlan(memberPlan, plan),
+    );
+    // No confident match keeps the full set: "we cannot tell which of these
+    // applies to you" is usable, "this facility has no price" is false.
+    if (matched.length > 0) {
+      candidates = matched;
+    }
+  }
+
+  const plausible = candidates.filter(
+    (plan) => warningsFor(plan.rate, facility.gross_charge).length === 0,
+  );
+  const pool = plausible.length > 0 ? plausible : candidates;
+  const sorted = [...pool].sort((a, b) => a.rate - b.rate);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
+const STOPWORDS = new Set([
+  'with', 'and', 'the', 'of', 'all', 'plan', 'plans', 'health', 'insurance',
+  'ins', 'locations', 'location', 'outpatient', 'asc',
+]);
+
+function tokenize(text: string): Set<string> {
+  return new Set(
+    text
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter(
+        (word) => word && !STOPWORDS.has(word) && !/^\d+$/.test(word) && word.length > 1,
+      ),
+  );
+}
+
+function productOf(text: string): string | null {
+  const upper = text.toUpperCase();
+  if (/\bPPO\b/.test(upper)) return 'ppo';
+  if (/\bHMO\b/.test(upper)) return 'hmo';
+  if (/\bPOS\b/.test(upper)) return 'pos';
+  if (/\bEPO\b/.test(upper)) return 'epo';
+  return null;
+}
+
+/** Product type must agree: an HMO member is never quoted a PPO schedule. */
+export function matchesMemberPlan(memberPlan: string, plan: PlanRate): boolean {
+  const memberProduct = productOf(memberPlan);
+  const planProduct = plan.product ?? productOf(plan.plan_name);
+  if (memberProduct && planProduct && memberProduct !== planProduct) {
+    return false;
+  }
+  const memberTokens = tokenize(memberPlan);
+  const planTokens = tokenize(plan.plan_name);
+  if (memberTokens.size === 0 || planTokens.size === 0) return false;
+  let overlap = 0;
+  memberTokens.forEach((token) => {
+    if (planTokens.has(token)) overlap += 1;
+  });
+  return overlap / memberTokens.size >= 0.5;
+}
+
+export type BuildOptions = {
+  facilities: FacilityBundle[];
+  benefits: PlanBenefits;
+  expectedOtherAllowedSpend: number;
+  orderedFacilityKey?: string;
+  memberPlan?: string;
+  unmetRequirements?: Requirement[];
+  cashIsAppropriate: boolean;
+};
+
+export function buildRoutes(options: BuildOptions): Route[] {
+  const {
+    facilities,
+    benefits,
+    expectedOtherAllowedSpend,
+    orderedFacilityKey,
+    memberPlan,
+    unmetRequirements = [],
+    cashIsAppropriate,
+  } = options;
+
+  const routes: Route[] = [];
+  const priced = facilities
+    .map((facility) => ({ facility, rate: representativeRate(facility, memberPlan) }))
+    .filter((entry): entry is { facility: FacilityBundle; rate: PlanRate } =>
+      entry.rate !== null,
+    );
+
+  const year = (amount: number, counts: boolean) =>
+    estimateYear(amount, benefits, counts, expectedOtherAllowedSpend);
+
+  if (priced.length > 0) {
+    const sorted = [...priced].sort((a, b) => a.rate.rate - b.rate.rate);
+    let baseline =
+      priced.find((entry) => entry.facility.facility_key === orderedFacilityKey) ??
+      sorted[Math.floor(sorted.length / 2)];
+
+    routes.push({
+      kind: 'in_network_as_written',
+      label: ROUTE_LABELS.in_network_as_written,
+      facilityName: baseline.facility.facility_name,
+      facilityAddress: baseline.facility.facility_address,
+      allowedAmount: baseline.rate.rate,
+      estimate: year(baseline.rate.rate, true),
+      reasoning: `In-network at the facility as ordered, at the ${money(
+        baseline.rate.rate,
+      )} rate published for ${baseline.rate.plan_name}.`,
+      unmetRequirements: [],
+      warnings: warningsFor(baseline.rate.rate, baseline.facility.gross_charge),
+    });
+
+    const cheapest = sorted[0];
+    const saving = baseline.rate.rate - cheapest.rate.rate;
+    // A "cheaper site" that costs the same is noise, so require a real saving.
+    if (cheapest.facility.facility_key !== baseline.facility.facility_key && saving > 1) {
+      routes.push({
+        kind: 'in_network_cheaper_site',
+        label: ROUTE_LABELS.in_network_cheaper_site,
+        facilityName: cheapest.facility.facility_name,
+        facilityAddress: cheapest.facility.facility_address,
+        allowedAmount: cheapest.rate.rate,
+        estimate: year(cheapest.rate.rate, true),
+        reasoning: `Same coverage and the same deductible credit at a different in-network facility, ${money(
+          saving,
+        )} below the facility as ordered.`,
+        unmetRequirements: [],
+        warnings: warningsFor(cheapest.rate.rate, cheapest.facility.gross_charge),
+      });
+    }
+
+    if (unmetRequirements.length > 0) {
+      routes.push({
+        kind: 'in_network_order_corrected',
+        label: ROUTE_LABELS.in_network_order_corrected,
+        facilityName: baseline.facility.facility_name,
+        facilityAddress: baseline.facility.facility_address,
+        allowedAmount: baseline.rate.rate,
+        estimate: year(baseline.rate.rate, true),
+        reasoning:
+          'Same facility and the same estimated cost, but the order does not document requirements this payer publishes. The checklist below is for the ordering physician.',
+        unmetRequirements,
+        warnings: warningsFor(baseline.rate.rate, baseline.facility.gross_charge),
+      });
+    }
+  }
+
+  if (cashIsAppropriate) {
+    const cashOptions = facilities.filter((facility) => facility.cash_price !== null);
+    if (cashOptions.length > 0) {
+      const cheapestCash = cashOptions.reduce((best, facility) =>
+        (facility.cash_price as number) < (best.cash_price as number) ? facility : best,
+      );
+      routes.push({
+        kind: 'cash_non_contracted',
+        label: ROUTE_LABELS.cash_non_contracted,
+        facilityName: cheapestCash.facility_name,
+        facilityAddress: cheapestCash.facility_address,
+        allowedAmount: cheapestCash.cash_price as number,
+        estimate: year(cheapestCash.cash_price as number, false),
+        reasoning:
+          'Discounted cash price paid directly to the facility. This payment earns no deductible credit, so it does not reduce what later care costs this year.',
+        unmetRequirements: [],
+        warnings: [],
+      });
+    }
+  }
+
+  return routes;
+}
+
+/**
+ * Cheapest total for the year first.
+ *
+ * Ranking on the scan alone would favour cash whenever its sticker price is
+ * lower, which is the mistake this product exists to correct.
+ */
+export function rankRoutes(routes: Route[]): Route[] {
+  return [...routes].sort((a, b) => {
+    const totalDelta =
+      Math.round(a.estimate.totalThisYear * 100) -
+      Math.round(b.estimate.totalThisYear * 100);
+    if (totalDelta !== 0) return totalDelta;
+    const creditDelta =
+      (a.estimate.scan.countsTowardDeductible ? 0 : 1) -
+      (b.estimate.scan.countsTowardDeductible ? 0 : 1);
+    if (creditDelta !== 0) return creditDelta;
+    return a.facilityName.localeCompare(b.facilityName);
+  });
+}
+
+export function explainRanking(routes: Route[]): string {
+  const ranked = rankRoutes(routes);
+  if (ranked.length === 0) {
+    return 'No routes could be built from the available published prices.';
+  }
+  const best = ranked[0];
+  const parts = [`Lowest estimated total for this year: ${best.facilityName}.`];
+  for (const route of ranked.slice(1)) {
+    const difference = route.estimate.totalThisYear - best.estimate.totalThisYear;
+    if (Math.abs(difference) < 0.01) {
+      parts.push(`${route.label} is an equivalent estimated total.`);
+      continue;
+    }
+    let note = `${route.label} is ${money(difference)} more over the year`;
+    if (
+      !route.estimate.scan.countsTowardDeductible &&
+      route.estimate.scan.patientPays < best.estimate.scan.patientPays
+    ) {
+      note +=
+        ', even though the scan itself costs less, because paying cash earns no deductible credit';
+    }
+    parts.push(`${note}.`);
+  }
+  return parts.join(' ');
+}

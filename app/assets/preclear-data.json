@@ -1,0 +1,2277 @@
+{
+  "metro": "Indianapolis",
+  "generated_from": "hospital price transparency files",
+  "disclosure": "All figures are estimates built from files hospitals and payers publish. Requirement findings quote the payer's own criteria and describe documentation, not coverage outcomes.",
+  "procedures": [
+    {
+      "cpt": "73721",
+      "label": "Knee MRI",
+      "detail": "MRI, lower extremity joint, without contrast",
+      "indications": [
+        "meniscal_tear",
+        "ligament_tear"
+      ],
+      "payers": {
+        "anthem": [
+          {
+            "facility_key": "franciscan-carmel",
+            "facility_name": "FRANCISCAN HEALTH CARMEL",
+            "facility_address": "12188 B N MERIDIAN ST CARMEL, IN 46032",
+            "plans": [
+              {
+                "plan_name": "ANTHEM FRANCISCAN EMPLOYEE COPPS- ALL LOCATIONS",
+                "rate": 610.44,
+                "product": null
+              },
+              {
+                "plan_name": "ANTHEM HEALTHSYNC HMO WITH COPPS - INDIANAPOLIS & CARMEL",
+                "rate": 784.08,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "ANTHEM HEALTHSYNC POS WITH COPPS - INDIANAPOLIS & CARMEL",
+                "rate": 888.3,
+                "product": "pos"
+              },
+              {
+                "plan_name": "ANTHEM BLUE ACCESS PPO WITH COPPS - INDIANAPOLIS & CARMEL",
+                "rate": 992.51,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ANTHEM BLUE TRADITIONAL WITH COPPS - INDIANAPOLIS & CARMEL",
+                "rate": 992.51,
+                "product": null
+              }
+            ],
+            "cash_price": 574.27,
+            "gross_charge": 2486.0
+          },
+          {
+            "facility_key": "franciscan-indianapolis",
+            "facility_name": "FRANCISCAN HEALTH INDIANAPOLIS",
+            "facility_address": "8111 S EMERSON AVE, INDIANAPOLIS, IN 46237",
+            "plans": [
+              {
+                "plan_name": "ANTHEM HMO",
+                "rate": 360.22,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "ANTHEM PPO",
+                "rate": 360.22,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ANTHEM HEALTHSYNC HPN",
+                "rate": 360.22,
+                "product": null
+              },
+              {
+                "plan_name": "ANTHEM HEALTHSYNC",
+                "rate": 360.22,
+                "product": null
+              },
+              {
+                "plan_name": "ANTHEM FRANCISCAN ALLIANCE EMPLOYEE INS",
+                "rate": 360.22,
+                "product": null
+              },
+              {
+                "plan_name": "ANTHEM BLUE ACCESS PPO-CID",
+                "rate": 360.22,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ANTHEM FRANCISCAN EMPLOYEE COPPS- ALL LOCATIONS",
+                "rate": 610.44,
+                "product": null
+              },
+              {
+                "plan_name": "ANTHEM HEALTHSYNC HMO WITH COPPS - INDIANAPOLIS & CARMEL",
+                "rate": 784.08,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "ANTHEM HEALTHSYNC POS WITH COPPS - INDIANAPOLIS & CARMEL",
+                "rate": 888.3,
+                "product": "pos"
+              },
+              {
+                "plan_name": "ANTHEM BLUE ACCESS PPO WITH COPPS - INDIANAPOLIS & CARMEL",
+                "rate": 992.51,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 574.27,
+            "gross_charge": 2486.0
+          },
+          {
+            "facility_key": "franciscan-mooresville",
+            "facility_name": "FRANCISCAN HEALTH MOORESVILLE",
+            "facility_address": "1201 HADLEY RD., MOORESVILLE, IN 46158",
+            "plans": [
+              {
+                "plan_name": "ANTHEM BLUE ACCESS PPO-CID",
+                "rate": 360.22,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ANTHEM FRANCISCAN EMPLOYEE COPPS- ALL LOCATIONS",
+                "rate": 610.44,
+                "product": null
+              },
+              {
+                "plan_name": "ANTHEM HEALTHSYNC HMO WITH COPPS - MOORESVILLE",
+                "rate": 845.91,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "ANTHEM HEALTHSYNC POS WITH COPPS - MOORESVILLE",
+                "rate": 958.34,
+                "product": "pos"
+              },
+              {
+                "plan_name": "ANTHEM BLUE ACCESS PPO WITH COPPS - MOORESVILLE",
+                "rate": 1070.77,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 631.44,
+            "gross_charge": 2486.0
+          },
+          {
+            "facility_key": "hendricks-regional",
+            "facility_name": "Danville Hospital | Brownsburg Hospital",
+            "facility_address": "1000 East Main Street, Danville, IN 46122 | 5492 North Ronald Reagan Parkway, Brownsburg, IN 46112",
+            "plans": [
+              {
+                "plan_name": "ppo",
+                "rate": 252.44,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "copps",
+                "rate": 373.82,
+                "product": null
+              },
+              {
+                "plan_name": "ppo",
+                "rate": 1040.43,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 565.2,
+            "gross_charge": 1413.0
+          },
+          {
+            "facility_key": "iu-health-indianapolis",
+            "facility_name": "IU Health University Hospital|IU Health Methodist Hospital|Riley Hospital for Children|IU Health Fishers Hospital|IU Health Morgan Hospital",
+            "facility_address": "550 University Blvd, Indianapolis, IN 46202|1701 N Senate Ave, Indianapolis, IN 46202|705 Riley Hospital Dr, Indianapolis, IN 46202|13000 E 136th St, Fishers, IN 46037|2209 John R Wooden Dr, Martinsville, IN 46151",
+            "plans": [
+              {
+                "plan_name": "HMO - Anthem Pathway Essentials",
+                "rate": 278.7,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "All Traditional Plans",
+                "rate": 925.0,
+                "product": null
+              },
+              {
+                "plan_name": "All IUHP Employee Plans",
+                "rate": 925.0,
+                "product": null
+              },
+              {
+                "plan_name": "All PPO",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "All HMO/POS",
+                "rate": 925.0,
+                "product": "hmo"
+              }
+            ],
+            "cash_price": 367.93,
+            "gross_charge": 1296.0
+          },
+          {
+            "facility_key": "iu-health-north",
+            "facility_name": "IU Health North Hospital",
+            "facility_address": "11700 N Meridian St, Carmel, IN 46032",
+            "plans": [
+              {
+                "plan_name": "HMO - Anthem Pathway Essentials",
+                "rate": 278.7,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "All IUHP Employee Plans",
+                "rate": 925.0,
+                "product": null
+              },
+              {
+                "plan_name": "All Traditional Plans",
+                "rate": 925.0,
+                "product": null
+              },
+              {
+                "plan_name": "All PPO",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "All HMO/POS",
+                "rate": 925.0,
+                "product": "hmo"
+              }
+            ],
+            "cash_price": 367.93,
+            "gross_charge": 1981.0
+          },
+          {
+            "facility_key": "iu-health-west",
+            "facility_name": "IU Health West Hospital",
+            "facility_address": "1111 Ronald Reagan Pkwy, Avon, IN 46123",
+            "plans": [
+              {
+                "plan_name": "HMO - Anthem Pathway Essentials",
+                "rate": 278.7,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "All PPO",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "All HMO/POS",
+                "rate": 925.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "All Traditional Plans",
+                "rate": 925.0,
+                "product": null
+              },
+              {
+                "plan_name": "All IUHP Employee Plans",
+                "rate": 925.0,
+                "product": null
+              }
+            ],
+            "cash_price": 367.93,
+            "gross_charge": 1296.0
+          }
+        ],
+        "unitedhealthcare": [
+          {
+            "facility_key": "franciscan-carmel",
+            "facility_name": "FRANCISCAN HEALTH CARMEL",
+            "facility_address": "12188 B N MERIDIAN ST CARMEL, IN 46032",
+            "plans": [
+              {
+                "plan_name": "UNITED HEALTHCARE CHARTER-CID",
+                "rate": 2761.0,
+                "product": null
+              },
+              {
+                "plan_name": "UNITED HEALTHCARE-CID",
+                "rate": 2817.0,
+                "product": null
+              }
+            ],
+            "cash_price": 574.27,
+            "gross_charge": 2486.0
+          },
+          {
+            "facility_key": "franciscan-indianapolis",
+            "facility_name": "FRANCISCAN HEALTH INDIANAPOLIS",
+            "facility_address": "8111 S EMERSON AVE, INDIANAPOLIS, IN 46237",
+            "plans": [
+              {
+                "plan_name": "UNITED HEALTHCARE CHARTER-CID",
+                "rate": 2761.0,
+                "product": null
+              },
+              {
+                "plan_name": "UNITED HEALTHCARE CHARTER",
+                "rate": 2761.0,
+                "product": null
+              },
+              {
+                "plan_name": "UNITED HEALTHCARE-CID",
+                "rate": 2817.0,
+                "product": null
+              },
+              {
+                "plan_name": "UNITED HEALTHCARE PPO",
+                "rate": 2817.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "UNITED HEALTHCARE",
+                "rate": 2817.0,
+                "product": null
+              },
+              {
+                "plan_name": "UNITED HEALTHCARE CHOICE",
+                "rate": 2817.0,
+                "product": null
+              },
+              {
+                "plan_name": "BIND/SUREST INSURANCE",
+                "rate": 2817.0,
+                "product": null
+              },
+              {
+                "plan_name": "UNITED MEDICAL RESOURCES",
+                "rate": 2817.0,
+                "product": null
+              },
+              {
+                "plan_name": "UMR-DARDEN",
+                "rate": 2817.0,
+                "product": null
+              },
+              {
+                "plan_name": "UNITED HEALTHCARE CORE",
+                "rate": 2817.0,
+                "product": null
+              },
+              {
+                "plan_name": "UMR-WAUSAU",
+                "rate": 2817.0,
+                "product": null
+              }
+            ],
+            "cash_price": 574.27,
+            "gross_charge": 2486.0
+          },
+          {
+            "facility_key": "franciscan-mooresville",
+            "facility_name": "FRANCISCAN HEALTH MOORESVILLE",
+            "facility_address": "1201 HADLEY RD., MOORESVILLE, IN 46158",
+            "plans": [
+              {
+                "plan_name": "UNITED HEALTHCARE CHARTER-CID",
+                "rate": 2761.0,
+                "product": null
+              },
+              {
+                "plan_name": "UNITED HEALTHCARE-CID",
+                "rate": 2817.0,
+                "product": null
+              }
+            ],
+            "cash_price": 631.44,
+            "gross_charge": 2486.0
+          },
+          {
+            "facility_key": "franciscan-ortho-carmel",
+            "facility_name": "FRANCISCAN ALLIANCE, INC. dba FRANCISCAN HEALTH ORTHOPEDIC HOSPITAL - CARMEL",
+            "facility_address": "10777 ILLINOIS STREET CARMEL, IN 46032",
+            "plans": [
+              {
+                "plan_name": "UNITED HEALTHCARE-CID",
+                "rate": 2762.0,
+                "product": null
+              }
+            ],
+            "cash_price": 634.88,
+            "gross_charge": 2414.0
+          },
+          {
+            "facility_key": "hendricks-regional",
+            "facility_name": "Danville Hospital | Brownsburg Hospital",
+            "facility_address": "1000 East Main Street, Danville, IN 46122 | 5492 North Ronald Reagan Parkway, Brownsburg, IN 46112",
+            "plans": [
+              {
+                "plan_name": "ppo",
+                "rate": 847.8,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ppo",
+                "rate": 1271.7,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 565.2,
+            "gross_charge": 1413.0
+          },
+          {
+            "facility_key": "iu-health-indianapolis",
+            "facility_name": "IU Health University Hospital|IU Health Methodist Hospital|Riley Hospital for Children|IU Health Fishers Hospital|IU Health Morgan Hospital",
+            "facility_address": "550 University Blvd, Indianapolis, IN 46202|1701 N Senate Ave, Indianapolis, IN 46202|705 Riley Hospital Dr, Indianapolis, IN 46202|13000 E 136th St, Fishers, IN 46037|2209 John R Wooden Dr, Martinsville, IN 46151",
+            "plans": [
+              {
+                "plan_name": "ASO",
+                "rate": 342.04,
+                "product": null
+              },
+              {
+                "plan_name": "All Managed Care",
+                "rate": 925.0,
+                "product": null
+              }
+            ],
+            "cash_price": 367.93,
+            "gross_charge": 1296.0
+          },
+          {
+            "facility_key": "iu-health-north",
+            "facility_name": "IU Health North Hospital",
+            "facility_address": "11700 N Meridian St, Carmel, IN 46032",
+            "plans": [
+              {
+                "plan_name": "ASO",
+                "rate": 342.04,
+                "product": null
+              },
+              {
+                "plan_name": "All Managed Care",
+                "rate": 925.0,
+                "product": null
+              }
+            ],
+            "cash_price": 367.93,
+            "gross_charge": 1981.0
+          },
+          {
+            "facility_key": "iu-health-west",
+            "facility_name": "IU Health West Hospital",
+            "facility_address": "1111 Ronald Reagan Pkwy, Avon, IN 46123",
+            "plans": [
+              {
+                "plan_name": "ASO",
+                "rate": 342.04,
+                "product": null
+              },
+              {
+                "plan_name": "All Managed Care",
+                "rate": 925.0,
+                "product": null
+              }
+            ],
+            "cash_price": 367.93,
+            "gross_charge": 1296.0
+          }
+        ],
+        "aetna": [
+          {
+            "facility_key": "ascension-st-vincent-carmel",
+            "facility_name": "Ascension St. Vincent Carmel",
+            "facility_address": "13500 N Meridian St Carmel IN 46032",
+            "plans": [
+              {
+                "plan_name": "AETNA VCIN",
+                "rate": 700.0,
+                "product": null
+              },
+              {
+                "plan_name": "AETNA SVIN VFIN VHIN",
+                "rate": 700.0,
+                "product": null
+              }
+            ],
+            "cash_price": 582.6,
+            "gross_charge": 1942.0
+          },
+          {
+            "facility_key": "franciscan-indianapolis",
+            "facility_name": "FRANCISCAN HEALTH INDIANAPOLIS",
+            "facility_address": "8111 S EMERSON AVE, INDIANAPOLIS, IN 46237",
+            "plans": [
+              {
+                "plan_name": "AETNA CHOICE PPO",
+                "rate": 528.75,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "AETNA",
+                "rate": 528.75,
+                "product": null
+              },
+              {
+                "plan_name": "AETNA HMO/POS",
+                "rate": 528.75,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "AETNA OAP/POS STATE OF ILLINOIS",
+                "rate": 528.75,
+                "product": "pos"
+              },
+              {
+                "plan_name": "AETNA QCHP STATE OF ILLINOIS",
+                "rate": 528.75,
+                "product": null
+              },
+              {
+                "plan_name": "AETNA-NID-DYER-MUNSTER-CRN POINT",
+                "rate": 528.75,
+                "product": null
+              }
+            ],
+            "cash_price": 574.27,
+            "gross_charge": 2486.0
+          },
+          {
+            "facility_key": "franciscan-mooresville",
+            "facility_name": "FRANCISCAN HEALTH MOORESVILLE",
+            "facility_address": "1201 HADLEY RD., MOORESVILLE, IN 46158",
+            "plans": [
+              {
+                "plan_name": "AETNA-NID-DYER-MUNSTER-CRN POINT",
+                "rate": 528.75,
+                "product": null
+              }
+            ],
+            "cash_price": 631.44,
+            "gross_charge": 2486.0
+          },
+          {
+            "facility_key": "franciscan-ortho-carmel",
+            "facility_name": "FRANCISCAN ALLIANCE, INC. dba FRANCISCAN HEALTH ORTHOPEDIC HOSPITAL - CARMEL",
+            "facility_address": "10777 ILLINOIS STREET CARMEL, IN 46032",
+            "plans": [
+              {
+                "plan_name": "AETNA-CID",
+                "rate": 2136.0,
+                "product": null
+              }
+            ],
+            "cash_price": 634.88,
+            "gross_charge": 2414.0
+          },
+          {
+            "facility_key": "hendricks-regional",
+            "facility_name": "Danville Hospital | Brownsburg Hospital",
+            "facility_address": "1000 East Main Street, Danville, IN 46122 | 5492 North Ronald Reagan Parkway, Brownsburg, IN 46112",
+            "plans": [
+              {
+                "plan_name": "ppo",
+                "rate": 1102.14,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ppo",
+                "rate": 1201.05,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ppo",
+                "rate": 1328.22,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ppo",
+                "rate": 1653.21,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ppo",
+                "rate": 1801.58,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ppo",
+                "rate": 1992.33,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 565.2,
+            "gross_charge": 1413.0
+          },
+          {
+            "facility_key": "iu-health-indianapolis",
+            "facility_name": "IU Health University Hospital|IU Health Methodist Hospital|Riley Hospital for Children|IU Health Fishers Hospital|IU Health Morgan Hospital",
+            "facility_address": "550 University Blvd, Indianapolis, IN 46202|1701 N Senate Ave, Indianapolis, IN 46202|705 Riley Hospital Dr, Indianapolis, IN 46202|13000 E 136th St, Fishers, IN 46037|2209 John R Wooden Dr, Martinsville, IN 46151",
+            "plans": [
+              {
+                "plan_name": "POS - Cox Medical Plans",
+                "rate": 925.0,
+                "product": "pos"
+              },
+              {
+                "plan_name": "PPO - IN Preferred",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO/POS",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO - Coventry Plans",
+                "rate": 925.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 1121.04,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 1121.04,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - IN Preferred",
+                "rate": 1129.17,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "POS - Cox Medical Plans",
+                "rate": 1129.17,
+                "product": "pos"
+              },
+              {
+                "plan_name": "PPO/POS",
+                "rate": 1331.23,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO - Coventry Plans",
+                "rate": 1331.23,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 1680.7,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 1680.7,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "POS - Cox Medical Plans",
+                "rate": 1694.04,
+                "product": "pos"
+              },
+              {
+                "plan_name": "PPO - IN Preferred",
+                "rate": 1694.04,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 1713.57,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 1713.57,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO - Coventry Plans",
+                "rate": 1997.18,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO/POS",
+                "rate": 1997.18,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 2570.78,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 2570.78,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 367.93,
+            "gross_charge": 1296.0
+          },
+          {
+            "facility_key": "iu-health-north",
+            "facility_name": "IU Health North Hospital",
+            "facility_address": "11700 N Meridian St, Carmel, IN 46032",
+            "plans": [
+              {
+                "plan_name": "POS - Cox Medical Plans",
+                "rate": 925.0,
+                "product": "pos"
+              },
+              {
+                "plan_name": "PPO - IN Preferred",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO - Coventry Plans",
+                "rate": 925.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO/POS",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 1121.04,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 1121.04,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - IN Preferred",
+                "rate": 1129.17,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "POS - Cox Medical Plans",
+                "rate": 1129.17,
+                "product": "pos"
+              },
+              {
+                "plan_name": "PPO/POS",
+                "rate": 1331.23,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO - Coventry Plans",
+                "rate": 1331.23,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 1680.7,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 1680.7,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - IN Preferred",
+                "rate": 1694.04,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "POS - Cox Medical Plans",
+                "rate": 1694.04,
+                "product": "pos"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 1713.57,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 1713.57,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO/POS",
+                "rate": 1997.18,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO - Coventry Plans",
+                "rate": 1997.18,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 2570.78,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 2570.78,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 367.93,
+            "gross_charge": 1981.0
+          },
+          {
+            "facility_key": "iu-health-west",
+            "facility_name": "IU Health West Hospital",
+            "facility_address": "1111 Ronald Reagan Pkwy, Avon, IN 46123",
+            "plans": [
+              {
+                "plan_name": "HMO - Coventry Plans",
+                "rate": 925.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO/POS",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "POS - Cox Medical Plans",
+                "rate": 925.0,
+                "product": "pos"
+              },
+              {
+                "plan_name": "PPO - IN Preferred",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 1121.04,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 1121.04,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "POS - Cox Medical Plans",
+                "rate": 1129.17,
+                "product": "pos"
+              },
+              {
+                "plan_name": "PPO - IN Preferred",
+                "rate": 1129.17,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO/POS",
+                "rate": 1331.23,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO - Coventry Plans",
+                "rate": 1331.23,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 1680.7,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 1680.7,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - IN Preferred",
+                "rate": 1694.04,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "POS - Cox Medical Plans",
+                "rate": 1694.04,
+                "product": "pos"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 1713.57,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 1713.57,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO - Coventry Plans",
+                "rate": 1997.18,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO/POS",
+                "rate": 1997.18,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 2570.78,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 2570.78,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 367.93,
+            "gross_charge": 1296.0
+          }
+        ],
+        "cigna": [
+          {
+            "facility_key": "hendricks-regional",
+            "facility_name": "Danville Hospital | Brownsburg Hospital",
+            "facility_address": "1000 East Main Street, Danville, IN 46122 | 5492 North Ronald Reagan Parkway, Brownsburg, IN 46112",
+            "plans": [
+              {
+                "plan_name": "ppo",
+                "rate": 1045.62,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ppo",
+                "rate": 1568.43,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 565.2,
+            "gross_charge": 1413.0
+          },
+          {
+            "facility_key": "iu-health-indianapolis",
+            "facility_name": "IU Health University Hospital|IU Health Methodist Hospital|Riley Hospital for Children|IU Health Fishers Hospital|IU Health Morgan Hospital",
+            "facility_address": "550 University Blvd, Indianapolis, IN 46202|1701 N Senate Ave, Indianapolis, IN 46202|705 Riley Hospital Dr, Indianapolis, IN 46202|13000 E 136th St, Fishers, IN 46037|2209 John R Wooden Dr, Martinsville, IN 46151",
+            "plans": [
+              {
+                "plan_name": "PPO",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - DRG Plans",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO",
+                "rate": 925.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO - New Business",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO/POS - Arnett Hospital Plans",
+                "rate": 925.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "HMO - Open Access",
+                "rate": 925.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO - NON-DRG",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - New Business",
+                "rate": 1129.17,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NON-DRG",
+                "rate": 1473.86,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - New Business",
+                "rate": 1694.04,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NON-DRG",
+                "rate": 2211.17,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 367.93,
+            "gross_charge": 1296.0
+          },
+          {
+            "facility_key": "iu-health-north",
+            "facility_name": "IU Health North Hospital",
+            "facility_address": "11700 N Meridian St, Carmel, IN 46032",
+            "plans": [
+              {
+                "plan_name": "PPO - DRG Plans",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO - Open Access",
+                "rate": 925.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO - New Business",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO/POS - Arnett Hospital Plans",
+                "rate": 925.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO - NON-DRG",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO",
+                "rate": 925.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - New Business",
+                "rate": 1129.17,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NON-DRG",
+                "rate": 1473.86,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - New Business",
+                "rate": 1694.04,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NON-DRG",
+                "rate": 2211.17,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 367.93,
+            "gross_charge": 1981.0
+          },
+          {
+            "facility_key": "iu-health-west",
+            "facility_name": "IU Health West Hospital",
+            "facility_address": "1111 Ronald Reagan Pkwy, Avon, IN 46123",
+            "plans": [
+              {
+                "plan_name": "HMO/POS - Arnett Hospital Plans",
+                "rate": 925.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "HMO",
+                "rate": 925.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO - DRG Plans",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NON-DRG",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - New Business",
+                "rate": 925.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO - Open Access",
+                "rate": 925.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO - New Business",
+                "rate": 1129.17,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NON-DRG",
+                "rate": 1473.86,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - New Business",
+                "rate": 1694.04,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NON-DRG",
+                "rate": 2211.17,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 367.93,
+            "gross_charge": 1296.0
+          }
+        ]
+      }
+    },
+    {
+      "cpt": "70450",
+      "label": "Head CT",
+      "detail": "CT, head or brain, without contrast",
+      "indications": [],
+      "payers": {
+        "anthem": [
+          {
+            "facility_key": "eskenazi",
+            "facility_name": "Eskenazi Health",
+            "facility_address": "",
+            "plans": [
+              {
+                "plan_name": "ANTHEM TRADITIONAL",
+                "rate": 291.0,
+                "product": null
+              }
+            ],
+            "cash_price": 1111.5,
+            "gross_charge": 1235.0
+          },
+          {
+            "facility_key": "franciscan-carmel",
+            "facility_name": "FRANCISCAN HEALTH CARMEL",
+            "facility_address": "12188 B N MERIDIAN ST CARMEL, IN 46032",
+            "plans": [
+              {
+                "plan_name": "ANTHEM FRANCISCAN EMPLOYEE COPPS- ALL LOCATIONS",
+                "rate": 267.47,
+                "product": null
+              },
+              {
+                "plan_name": "ANTHEM HEALTHSYNC HMO WITH COPPS - INDIANAPOLIS & CARMEL",
+                "rate": 343.55,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "ANTHEM HEALTHSYNC POS WITH COPPS - INDIANAPOLIS & CARMEL",
+                "rate": 389.22,
+                "product": "pos"
+              },
+              {
+                "plan_name": "ANTHEM BLUE ACCESS PPO WITH COPPS - INDIANAPOLIS & CARMEL",
+                "rate": 434.88,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ANTHEM BLUE TRADITIONAL WITH COPPS - INDIANAPOLIS & CARMEL",
+                "rate": 434.88,
+                "product": null
+              }
+            ],
+            "cash_price": 297.53,
+            "gross_charge": 1288.0
+          },
+          {
+            "facility_key": "franciscan-indianapolis",
+            "facility_name": "FRANCISCAN HEALTH INDIANAPOLIS",
+            "facility_address": "8111 S EMERSON AVE, INDIANAPOLIS, IN 46237",
+            "plans": [
+              {
+                "plan_name": "ANTHEM HMO",
+                "rate": 170.75,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "ANTHEM PPO",
+                "rate": 170.75,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ANTHEM HEALTHSYNC HPN",
+                "rate": 170.75,
+                "product": null
+              },
+              {
+                "plan_name": "ANTHEM HEALTHSYNC",
+                "rate": 170.75,
+                "product": null
+              },
+              {
+                "plan_name": "ANTHEM FRANCISCAN ALLIANCE EMPLOYEE INS",
+                "rate": 170.75,
+                "product": null
+              },
+              {
+                "plan_name": "ANTHEM BLUE ACCESS PPO-CID",
+                "rate": 170.75,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ANTHEM FRANCISCAN EMPLOYEE COPPS- ALL LOCATIONS",
+                "rate": 267.47,
+                "product": null
+              },
+              {
+                "plan_name": "ANTHEM HEALTHSYNC HMO WITH COPPS - INDIANAPOLIS & CARMEL",
+                "rate": 343.55,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "ANTHEM HEALTHSYNC POS WITH COPPS - INDIANAPOLIS & CARMEL",
+                "rate": 389.22,
+                "product": "pos"
+              },
+              {
+                "plan_name": "ANTHEM BLUE ACCESS PPO WITH COPPS - INDIANAPOLIS & CARMEL",
+                "rate": 434.88,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 297.53,
+            "gross_charge": 1288.0
+          },
+          {
+            "facility_key": "franciscan-mooresville",
+            "facility_name": "FRANCISCAN HEALTH MOORESVILLE",
+            "facility_address": "1201 HADLEY RD., MOORESVILLE, IN 46158",
+            "plans": [
+              {
+                "plan_name": "ANTHEM BLUE ACCESS PPO-CID",
+                "rate": 170.75,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ANTHEM FRANCISCAN EMPLOYEE COPPS- ALL LOCATIONS",
+                "rate": 267.47,
+                "product": null
+              },
+              {
+                "plan_name": "ANTHEM HEALTHSYNC HMO WITH COPPS - MOORESVILLE",
+                "rate": 370.65,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "ANTHEM HEALTHSYNC POS WITH COPPS - MOORESVILLE",
+                "rate": 419.91,
+                "product": "pos"
+              },
+              {
+                "plan_name": "ANTHEM BLUE ACCESS PPO WITH COPPS - MOORESVILLE",
+                "rate": 469.17,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 327.15,
+            "gross_charge": 1288.0
+          },
+          {
+            "facility_key": "hendricks-regional",
+            "facility_name": "Danville Hospital | Brownsburg Hospital",
+            "facility_address": "1000 East Main Street, Danville, IN 46122 | 5492 North Ronald Reagan Parkway, Brownsburg, IN 46112",
+            "plans": [
+              {
+                "plan_name": "ppo",
+                "rate": 110.61,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "copps",
+                "rate": 274.42,
+                "product": null
+              },
+              {
+                "plan_name": "ppo",
+                "rate": 764.85,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 328.8,
+            "gross_charge": 822.0
+          },
+          {
+            "facility_key": "iu-health-indianapolis",
+            "facility_name": "IU Health University Hospital|IU Health Methodist Hospital|Riley Hospital for Children|IU Health Fishers Hospital|IU Health Morgan Hospital",
+            "facility_address": "550 University Blvd, Indianapolis, IN 46202|1701 N Senate Ave, Indianapolis, IN 46202|705 Riley Hospital Dr, Indianapolis, IN 46202|13000 E 136th St, Fishers, IN 46037|2209 John R Wooden Dr, Martinsville, IN 46151",
+            "plans": [
+              {
+                "plan_name": "HMO - Anthem Pathway Essentials",
+                "rate": 122.12,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "All Traditional Plans",
+                "rate": 725.0,
+                "product": null
+              },
+              {
+                "plan_name": "All HMO/POS",
+                "rate": 725.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "All PPO",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "All IUHP Employee Plans",
+                "rate": 725.0,
+                "product": null
+              }
+            ],
+            "cash_price": 252.39,
+            "gross_charge": 968.0
+          },
+          {
+            "facility_key": "iu-health-north",
+            "facility_name": "IU Health North Hospital",
+            "facility_address": "11700 N Meridian St, Carmel, IN 46032",
+            "plans": [
+              {
+                "plan_name": "HMO - Anthem Pathway Essentials",
+                "rate": 122.12,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "All IUHP Employee Plans",
+                "rate": 725.0,
+                "product": null
+              },
+              {
+                "plan_name": "All PPO",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "All HMO/POS",
+                "rate": 725.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "All Traditional Plans",
+                "rate": 725.0,
+                "product": null
+              }
+            ],
+            "cash_price": 252.39,
+            "gross_charge": 968.0
+          },
+          {
+            "facility_key": "iu-health-west",
+            "facility_name": "IU Health West Hospital",
+            "facility_address": "1111 Ronald Reagan Pkwy, Avon, IN 46123",
+            "plans": [
+              {
+                "plan_name": "HMO - Anthem Pathway Essentials",
+                "rate": 122.12,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "All IUHP Employee Plans",
+                "rate": 725.0,
+                "product": null
+              },
+              {
+                "plan_name": "All PPO",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "All HMO/POS",
+                "rate": 725.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "All Traditional Plans",
+                "rate": 725.0,
+                "product": null
+              }
+            ],
+            "cash_price": 252.39,
+            "gross_charge": 968.0
+          }
+        ],
+        "unitedhealthcare": [
+          {
+            "facility_key": "eskenazi",
+            "facility_name": "Eskenazi Health",
+            "facility_address": "",
+            "plans": [
+              {
+                "plan_name": "UNITED MEDICAL RESOURCES",
+                "rate": 661.0,
+                "product": null
+              }
+            ],
+            "cash_price": 1111.5,
+            "gross_charge": 1235.0
+          },
+          {
+            "facility_key": "franciscan-carmel",
+            "facility_name": "FRANCISCAN HEALTH CARMEL",
+            "facility_address": "12188 B N MERIDIAN ST CARMEL, IN 46032",
+            "plans": [
+              {
+                "plan_name": "UNITED HEALTHCARE CHARTER-CID",
+                "rate": 1651.0,
+                "product": null
+              },
+              {
+                "plan_name": "UNITED HEALTHCARE-CID",
+                "rate": 1684.0,
+                "product": null
+              }
+            ],
+            "cash_price": 297.53,
+            "gross_charge": 1288.0
+          },
+          {
+            "facility_key": "franciscan-indianapolis",
+            "facility_name": "FRANCISCAN HEALTH INDIANAPOLIS",
+            "facility_address": "8111 S EMERSON AVE, INDIANAPOLIS, IN 46237",
+            "plans": [
+              {
+                "plan_name": "UNITED HEALTHCARE CHARTER-CID",
+                "rate": 1651.0,
+                "product": null
+              },
+              {
+                "plan_name": "UNITED HEALTHCARE CHARTER",
+                "rate": 1651.0,
+                "product": null
+              },
+              {
+                "plan_name": "UNITED HEALTHCARE-CID",
+                "rate": 1684.0,
+                "product": null
+              },
+              {
+                "plan_name": "UNITED HEALTHCARE PPO",
+                "rate": 1684.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "UNITED HEALTHCARE",
+                "rate": 1684.0,
+                "product": null
+              },
+              {
+                "plan_name": "UNITED HEALTHCARE CHOICE",
+                "rate": 1684.0,
+                "product": null
+              },
+              {
+                "plan_name": "BIND/SUREST INSURANCE",
+                "rate": 1684.0,
+                "product": null
+              },
+              {
+                "plan_name": "UNITED MEDICAL RESOURCES",
+                "rate": 1684.0,
+                "product": null
+              },
+              {
+                "plan_name": "UMR-DARDEN",
+                "rate": 1684.0,
+                "product": null
+              },
+              {
+                "plan_name": "UNITED HEALTHCARE CORE",
+                "rate": 1684.0,
+                "product": null
+              },
+              {
+                "plan_name": "UMR-WAUSAU",
+                "rate": 1684.0,
+                "product": null
+              }
+            ],
+            "cash_price": 297.53,
+            "gross_charge": 1288.0
+          },
+          {
+            "facility_key": "franciscan-mooresville",
+            "facility_name": "FRANCISCAN HEALTH MOORESVILLE",
+            "facility_address": "1201 HADLEY RD., MOORESVILLE, IN 46158",
+            "plans": [
+              {
+                "plan_name": "UNITED HEALTHCARE CHARTER-CID",
+                "rate": 1651.0,
+                "product": null
+              },
+              {
+                "plan_name": "UNITED HEALTHCARE-CID",
+                "rate": 1684.0,
+                "product": null
+              }
+            ],
+            "cash_price": 327.15,
+            "gross_charge": 1288.0
+          },
+          {
+            "facility_key": "franciscan-ortho-carmel",
+            "facility_name": "FRANCISCAN ALLIANCE, INC. dba FRANCISCAN HEALTH ORTHOPEDIC HOSPITAL - CARMEL",
+            "facility_address": "10777 ILLINOIS STREET CARMEL, IN 46032",
+            "plans": [
+              {
+                "plan_name": "UNITED HEALTHCARE-CID",
+                "rate": 1651.0,
+                "product": null
+              }
+            ],
+            "cash_price": 328.75,
+            "gross_charge": 1250.0
+          },
+          {
+            "facility_key": "hendricks-regional",
+            "facility_name": "Danville Hospital | Brownsburg Hospital",
+            "facility_address": "1000 East Main Street, Danville, IN 46122 | 5492 North Ronald Reagan Parkway, Brownsburg, IN 46112",
+            "plans": [
+              {
+                "plan_name": "ppo",
+                "rate": 493.2,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 328.8,
+            "gross_charge": 822.0
+          },
+          {
+            "facility_key": "iu-health-indianapolis",
+            "facility_name": "IU Health University Hospital|IU Health Methodist Hospital|Riley Hospital for Children|IU Health Fishers Hospital|IU Health Morgan Hospital",
+            "facility_address": "550 University Blvd, Indianapolis, IN 46202|1701 N Senate Ave, Indianapolis, IN 46202|705 Riley Hospital Dr, Indianapolis, IN 46202|13000 E 136th St, Fishers, IN 46037|2209 John R Wooden Dr, Martinsville, IN 46151",
+            "plans": [
+              {
+                "plan_name": "ASO",
+                "rate": 149.87,
+                "product": null
+              },
+              {
+                "plan_name": "All Managed Care",
+                "rate": 725.0,
+                "product": null
+              }
+            ],
+            "cash_price": 252.39,
+            "gross_charge": 968.0
+          },
+          {
+            "facility_key": "iu-health-north",
+            "facility_name": "IU Health North Hospital",
+            "facility_address": "11700 N Meridian St, Carmel, IN 46032",
+            "plans": [
+              {
+                "plan_name": "ASO",
+                "rate": 149.87,
+                "product": null
+              },
+              {
+                "plan_name": "All Managed Care",
+                "rate": 725.0,
+                "product": null
+              }
+            ],
+            "cash_price": 252.39,
+            "gross_charge": 968.0
+          },
+          {
+            "facility_key": "iu-health-west",
+            "facility_name": "IU Health West Hospital",
+            "facility_address": "1111 Ronald Reagan Pkwy, Avon, IN 46123",
+            "plans": [
+              {
+                "plan_name": "ASO",
+                "rate": 149.87,
+                "product": null
+              },
+              {
+                "plan_name": "All Managed Care",
+                "rate": 725.0,
+                "product": null
+              }
+            ],
+            "cash_price": 252.39,
+            "gross_charge": 968.0
+          }
+        ],
+        "aetna": [
+          {
+            "facility_key": "ascension-st-vincent-carmel",
+            "facility_name": "Ascension St. Vincent Carmel",
+            "facility_address": "13500 N Meridian St Carmel IN 46032",
+            "plans": [
+              {
+                "plan_name": "AETNA VCIN",
+                "rate": 650.0,
+                "product": null
+              },
+              {
+                "plan_name": "AETNA SVIN VFIN VHIN",
+                "rate": 650.0,
+                "product": null
+              }
+            ],
+            "cash_price": 542.4,
+            "gross_charge": 904.0
+          },
+          {
+            "facility_key": "eskenazi",
+            "facility_name": "Eskenazi Health",
+            "facility_address": "",
+            "plans": [
+              {
+                "plan_name": "AETNA COMMERCIAL",
+                "rate": 470.0,
+                "product": null
+              }
+            ],
+            "cash_price": 1111.5,
+            "gross_charge": 1235.0
+          },
+          {
+            "facility_key": "franciscan-indianapolis",
+            "facility_name": "FRANCISCAN HEALTH INDIANAPOLIS",
+            "facility_address": "8111 S EMERSON AVE, INDIANAPOLIS, IN 46237",
+            "plans": [
+              {
+                "plan_name": "AETNA CHOICE PPO",
+                "rate": 250.18,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "AETNA",
+                "rate": 250.18,
+                "product": null
+              },
+              {
+                "plan_name": "AETNA HMO/POS",
+                "rate": 250.18,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "AETNA OAP/POS STATE OF ILLINOIS",
+                "rate": 250.18,
+                "product": "pos"
+              },
+              {
+                "plan_name": "AETNA QCHP STATE OF ILLINOIS",
+                "rate": 250.18,
+                "product": null
+              },
+              {
+                "plan_name": "AETNA-NID-DYER-MUNSTER-CRN POINT",
+                "rate": 250.18,
+                "product": null
+              }
+            ],
+            "cash_price": 297.53,
+            "gross_charge": 1288.0
+          },
+          {
+            "facility_key": "franciscan-mooresville",
+            "facility_name": "FRANCISCAN HEALTH MOORESVILLE",
+            "facility_address": "1201 HADLEY RD., MOORESVILLE, IN 46158",
+            "plans": [
+              {
+                "plan_name": "AETNA-NID-DYER-MUNSTER-CRN POINT",
+                "rate": 250.18,
+                "product": null
+              }
+            ],
+            "cash_price": 327.15,
+            "gross_charge": 1288.0
+          },
+          {
+            "facility_key": "franciscan-ortho-carmel",
+            "facility_name": "FRANCISCAN ALLIANCE, INC. dba FRANCISCAN HEALTH ORTHOPEDIC HOSPITAL - CARMEL",
+            "facility_address": "10777 ILLINOIS STREET CARMEL, IN 46032",
+            "plans": [
+              {
+                "plan_name": "AETNA-CID",
+                "rate": 1836.0,
+                "product": null
+              }
+            ],
+            "cash_price": 328.75,
+            "gross_charge": 1250.0
+          },
+          {
+            "facility_key": "hendricks-regional",
+            "facility_name": "Danville Hospital | Brownsburg Hospital",
+            "facility_address": "1000 East Main Street, Danville, IN 46122 | 5492 North Ronald Reagan Parkway, Brownsburg, IN 46112",
+            "plans": [
+              {
+                "plan_name": "ppo",
+                "rate": 641.16,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ppo",
+                "rate": 698.7,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "ppo",
+                "rate": 772.68,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 328.8,
+            "gross_charge": 822.0
+          },
+          {
+            "facility_key": "iu-health-indianapolis",
+            "facility_name": "IU Health University Hospital|IU Health Methodist Hospital|Riley Hospital for Children|IU Health Fishers Hospital|IU Health Morgan Hospital",
+            "facility_address": "550 University Blvd, Indianapolis, IN 46202|1701 N Senate Ave, Indianapolis, IN 46202|705 Riley Hospital Dr, Indianapolis, IN 46202|13000 E 136th St, Fishers, IN 46037|2209 John R Wooden Dr, Martinsville, IN 46151",
+            "plans": [
+              {
+                "plan_name": "PPO - IN Preferred",
+                "rate": 551.76,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "POS - Cox Medical Plans",
+                "rate": 551.76,
+                "product": "pos"
+              },
+              {
+                "plan_name": "HMO - Coventry Plans",
+                "rate": 650.5,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO/POS",
+                "rate": 650.5,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "POS - Cox Medical Plans",
+                "rate": 725.0,
+                "product": "pos"
+              },
+              {
+                "plan_name": "PPO/POS",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO - Coventry Plans",
+                "rate": 725.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO - IN Preferred",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 768.99,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 768.99,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 837.32,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 837.32,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 252.39,
+            "gross_charge": 968.0
+          },
+          {
+            "facility_key": "iu-health-north",
+            "facility_name": "IU Health North Hospital",
+            "facility_address": "11700 N Meridian St, Carmel, IN 46032",
+            "plans": [
+              {
+                "plan_name": "PPO - IN Preferred",
+                "rate": 551.76,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "POS - Cox Medical Plans",
+                "rate": 551.76,
+                "product": "pos"
+              },
+              {
+                "plan_name": "HMO - Coventry Plans",
+                "rate": 650.5,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO/POS",
+                "rate": 650.5,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - IN Preferred",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO - Coventry Plans",
+                "rate": 725.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "POS - Cox Medical Plans",
+                "rate": 725.0,
+                "product": "pos"
+              },
+              {
+                "plan_name": "PPO/POS",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 768.99,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 768.99,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 837.32,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 837.32,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 252.39,
+            "gross_charge": 968.0
+          },
+          {
+            "facility_key": "iu-health-west",
+            "facility_name": "IU Health West Hospital",
+            "facility_address": "1111 Ronald Reagan Pkwy, Avon, IN 46123",
+            "plans": [
+              {
+                "plan_name": "POS - Cox Medical Plans",
+                "rate": 551.76,
+                "product": "pos"
+              },
+              {
+                "plan_name": "PPO - IN Preferred",
+                "rate": 551.76,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO/POS",
+                "rate": 650.5,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO - Coventry Plans",
+                "rate": 650.5,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO/POS",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - IN Preferred",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO - Coventry Plans",
+                "rate": 725.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "POS - Cox Medical Plans",
+                "rate": 725.0,
+                "product": "pos"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 768.99,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 768.99,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - First Health",
+                "rate": 837.32,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NAP",
+                "rate": 837.32,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 252.39,
+            "gross_charge": 968.0
+          }
+        ],
+        "cigna": [
+          {
+            "facility_key": "eskenazi",
+            "facility_name": "Eskenazi Health",
+            "facility_address": "",
+            "plans": [
+              {
+                "plan_name": "CIGNA HMO",
+                "rate": 1235.0,
+                "product": "hmo"
+              }
+            ],
+            "cash_price": 1111.5,
+            "gross_charge": 1235.0
+          },
+          {
+            "facility_key": "hendricks-regional",
+            "facility_name": "Danville Hospital | Brownsburg Hospital",
+            "facility_address": "1000 East Main Street, Danville, IN 46122 | 5492 North Ronald Reagan Parkway, Brownsburg, IN 46112",
+            "plans": [
+              {
+                "plan_name": "ppo",
+                "rate": 608.28,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 328.8,
+            "gross_charge": 822.0
+          },
+          {
+            "facility_key": "iu-health-indianapolis",
+            "facility_name": "IU Health University Hospital|IU Health Methodist Hospital|Riley Hospital for Children|IU Health Fishers Hospital|IU Health Morgan Hospital",
+            "facility_address": "550 University Blvd, Indianapolis, IN 46202|1701 N Senate Ave, Indianapolis, IN 46202|705 Riley Hospital Dr, Indianapolis, IN 46202|13000 E 136th St, Fishers, IN 46037|2209 John R Wooden Dr, Martinsville, IN 46151",
+            "plans": [
+              {
+                "plan_name": "PPO - New Business",
+                "rate": 551.76,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NON-DRG",
+                "rate": 720.19,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - DRG Plans",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO - Open Access",
+                "rate": 725.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO - New Business",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO/POS - Arnett Hospital Plans",
+                "rate": 725.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "HMO",
+                "rate": 725.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO - NON-DRG",
+                "rate": 725.0,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 252.39,
+            "gross_charge": 968.0
+          },
+          {
+            "facility_key": "iu-health-north",
+            "facility_name": "IU Health North Hospital",
+            "facility_address": "11700 N Meridian St, Carmel, IN 46032",
+            "plans": [
+              {
+                "plan_name": "PPO - New Business",
+                "rate": 551.76,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NON-DRG",
+                "rate": 720.19,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO",
+                "rate": 725.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "HMO - Open Access",
+                "rate": 725.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO - DRG Plans",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NON-DRG",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - New Business",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO/POS - Arnett Hospital Plans",
+                "rate": 725.0,
+                "product": "hmo"
+              }
+            ],
+            "cash_price": 252.39,
+            "gross_charge": 968.0
+          },
+          {
+            "facility_key": "iu-health-west",
+            "facility_name": "IU Health West Hospital",
+            "facility_address": "1111 Ronald Reagan Pkwy, Avon, IN 46123",
+            "plans": [
+              {
+                "plan_name": "PPO - New Business",
+                "rate": 551.76,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NON-DRG",
+                "rate": 720.19,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - DRG Plans",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO/POS - Arnett Hospital Plans",
+                "rate": 725.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "HMO - Open Access",
+                "rate": 725.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO - New Business",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "HMO",
+                "rate": 725.0,
+                "product": "hmo"
+              },
+              {
+                "plan_name": "PPO",
+                "rate": 725.0,
+                "product": "ppo"
+              },
+              {
+                "plan_name": "PPO - NON-DRG",
+                "rate": 725.0,
+                "product": "ppo"
+              }
+            ],
+            "cash_price": 252.39,
+            "gross_charge": 968.0
+          }
+        ]
+      }
+    }
+  ],
+  "requirements": [
+    {
+      "key": "carelon-knee-nondiagnostic-radiographs",
+      "payer": "Anthem Blue Cross and Blue Shield",
+      "reviewed_by": "Carelon Medical Benefits Management",
+      "cpt_codes": [
+        "73721"
+      ],
+      "indication": "meniscal_tear",
+      "summary": "Radiographs must have been obtained and be nondiagnostic before advanced imaging of the knee.",
+      "quote": "Advanced imaging is considered medically necessary following nondiagnostic radiographs",
+      "document_title": "Clinical Appropriateness Guidelines: Imaging of the Extremities",
+      "section_id": "Imaging of the Extremities \u2014 Knee",
+      "version": "2025-11-15",
+      "effective_date": "2025-11-15",
+      "source_url": "https://guidelines.carelonmedicalbenefitsmanagement.com/imaging-of-the-extremities-2025-11-15/",
+      "alternative_pathway": false
+    },
+    {
+      "key": "carelon-knee-meniscal-pathway",
+      "payer": "Anthem Blue Cross and Blue Shield",
+      "reviewed_by": "Carelon Medical Benefits Management",
+      "cpt_codes": [
+        "73721"
+      ],
+      "indication": "meniscal_tear",
+      "summary": "Either mechanical symptoms with at least two meniscal exam findings, or at least one exam finding with 6 weeks of failed conservative management.",
+      "quote": "Knee pain with symptoms of locking, catching, or instability AND at least TWO of the following physical exam findings of meniscal tear [...] Knee pain with at least ONE physical exam finding of meniscal tear and failure of at least 6 weeks of conservative management",
+      "document_title": "Clinical Appropriateness Guidelines: Imaging of the Extremities",
+      "section_id": "Imaging of the Extremities \u2014 Knee",
+      "version": "2025-11-15",
+      "effective_date": "2025-11-15",
+      "source_url": "https://guidelines.carelonmedicalbenefitsmanagement.com/imaging-of-the-extremities-2025-11-15/",
+      "alternative_pathway": true
+    },
+    {
+      "key": "carelon-knee-ligament-conservative",
+      "payer": "Anthem Blue Cross and Blue Shield",
+      "reviewed_by": "Carelon Medical Benefits Management",
+      "cpt_codes": [
+        "73721"
+      ],
+      "indication": "ligament_tear",
+      "summary": "4 weeks of failed conservative management, unless preoperative stress testing is positive.",
+      "quote": "Failure of at least 4 weeks of conservative management",
+      "document_title": "Clinical Appropriateness Guidelines: Imaging of the Extremities",
+      "section_id": "Imaging of the Extremities \u2014 Knee",
+      "version": "2025-11-15",
+      "effective_date": "2025-11-15",
+      "source_url": "https://guidelines.carelonmedicalbenefitsmanagement.com/imaging-of-the-extremities-2025-11-15/",
+      "alternative_pathway": true
+    },
+    {
+      "key": "evicore-lumbar-in-person-evaluation",
+      "payer": "Cigna Healthcare",
+      "reviewed_by": "eviCore by EVERNORTH",
+      "cpt_codes": [
+        "72148"
+      ],
+      "indication": "low_back_pain",
+      "summary": "An in-person clinical evaluation for the current episode must precede advanced imaging.",
+      "quote": "An in-person clinical evaluation for the current episode of the condition is required to have been performed before advanced imaging is considered.",
+      "document_title": "Cigna Medical Coverage Policies - Radiology: Spine Imaging Guidelines, Low Back (Lumbar Spine) Pain without Neurological Features (SP-5.1)",
+      "section_id": "SP.LB.0005.1.A",
+      "version": "v1.0.2026",
+      "effective_date": "2026-02-03",
+      "source_url": "https://www.evicore.com/sites/default/files/clinical-guidelines/2025-10/Cigna_Spine%20Imaging%20Guidelines_V1.0.2026_eff02.03.2026_PUB10.29.2025.pdf",
+      "alternative_pathway": false
+    },
+    {
+      "key": "evicore-lumbar-six-week-treatment",
+      "payer": "Cigna Healthcare",
+      "reviewed_by": "eviCore by EVERNORTH",
+      "cpt_codes": [
+        "72148"
+      ],
+      "indication": "low_back_pain",
+      "summary": "6-week trial of provider-directed treatment must have failed, unless a red flag indication is present.",
+      "quote": "Failure of a 6-week trial of provider-directed treatment after the current set of symptoms or physical exam findings started or changed (unless presence of a red flag as defined in Red Flag Indications (SP-1.2))",
+      "document_title": "Cigna Medical Coverage Policies - Radiology: Spine Imaging Guidelines, Low Back (Lumbar Spine) Pain without Neurological Features (SP-5.1)",
+      "section_id": "SP.LB.0005.1.A",
+      "version": "v1.0.2026",
+      "effective_date": "2026-02-03",
+      "source_url": "https://www.evicore.com/sites/default/files/clinical-guidelines/2025-10/Cigna_Spine%20Imaging%20Guidelines_V1.0.2026_eff02.03.2026_PUB10.29.2025.pdf",
+      "alternative_pathway": false
+    },
+    {
+      "key": "evicore-lumbar-reevaluation",
+      "payer": "Cigna Healthcare",
+      "reviewed_by": "eviCore by EVERNORTH",
+      "cpt_codes": [
+        "72148"
+      ],
+      "indication": "low_back_pain",
+      "summary": "Clinical re-evaluation must occur after the treatment period.",
+      "quote": "Clinical re-evaluation after treatment period (may consist of an in-person evaluation or other meaningful contact)",
+      "document_title": "Cigna Medical Coverage Policies - Radiology: Spine Imaging Guidelines, Low Back (Lumbar Spine) Pain without Neurological Features (SP-5.1)",
+      "section_id": "SP.LB.0005.1.A",
+      "version": "v1.0.2026",
+      "effective_date": "2026-02-03",
+      "source_url": "https://www.evicore.com/sites/default/files/clinical-guidelines/2025-10/Cigna_Spine%20Imaging%20Guidelines_V1.0.2026_eff02.03.2026_PUB10.29.2025.pdf",
+      "alternative_pathway": false
+    },
+    {
+      "key": "aetna-spine-radiculopathy-six-weeks",
+      "payer": "Aetna",
+      "reviewed_by": "Aetna (self-published)",
+      "cpt_codes": [
+        "72148"
+      ],
+      "indication": "low_back_pain_with_radiculopathy",
+      "summary": "Objective motor or reflex findings in the nerve root distribution plus no improvement after 6 weeks of conservative therapy.",
+      "quote": "Persistent back or neck pain with radiculopathy as evidenced by pain plus objective findings of motor or reflex changes in the specific nerve root distribution, and no improvement after 6 weeks of conservative therapy",
+      "document_title": "Clinical Policy Bulletin 0236: Magnetic Resonance Imaging (MRI) and Computed Tomography (CT) of the Spine",
+      "section_id": "CPB 0236 \u2014 Medical Necessity",
+      "version": "Last Review 2026-04-09",
+      "effective_date": "1998-05-06",
+      "source_url": "https://www.aetna.com/cpb/medical/data/200_299/0236.html",
+      "alternative_pathway": true
+    },
+    {
+      "key": "aetna-spine-degenerative-four-weeks",
+      "payer": "Aetna",
+      "reviewed_by": "Aetna (self-published)",
+      "cpt_codes": [
+        "72148"
+      ],
+      "indication": "degenerative_spine_disease",
+      "summary": "Has not responded to 4 weeks of conservative therapy.",
+      "quote": "Spondylolisthesis and degenerative disease of the spine that has not responded to 4 weeks of conservative therapy",
+      "document_title": "Clinical Policy Bulletin 0236: Magnetic Resonance Imaging (MRI) and Computed Tomography (CT) of the Spine",
+      "section_id": "CPB 0236 \u2014 Medical Necessity",
+      "version": "Last Review 2026-04-09",
+      "effective_date": "1998-05-06",
+      "source_url": "https://www.aetna.com/cpb/medical/data/200_299/0236.html",
+      "alternative_pathway": true
+    }
+  ]
+}
