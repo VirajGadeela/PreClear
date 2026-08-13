@@ -14,7 +14,7 @@ payments don't count toward the deductible.
 4. Adjusts for deductible remaining → one recommendation, reasoning shown
 
 ## Data sources
-- Payer Transparency in Coverage files (federally mandated) — real rates
+- Hospital price transparency files (federally mandated) — real rates
 - Payer medical policy documents — real requirements
 
 ## Running it

@@ -23,10 +23,11 @@ import {
   View,
 } from 'react-native';
 import Purchases from 'react-native-purchases';
-import RevenueCatUI from 'react-native-purchases-ui';
+import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 
 import raw from './assets/preclear-data.json';
 import { Money } from './src/Money';
+import { AccessStatus, ENTITLEMENT_ID } from './src/purchases';
 import { Slider } from './src/Slider';
 import { PlanBenefits, money } from './src/costing';
 import { OrderFacts, checkOrder, statusLabel, unmetFindings } from './src/requirements';
@@ -57,7 +58,6 @@ type Bundle = {
 const data = raw as unknown as Bundle;
 
 const revenueCatApiKey = process.env.EXPO_PUBLIC_REVENUECAT_PUBLIC_SDK_KEY;
-const ENTITLEMENT = 'full_comparison';
 
 const PAYER_LABELS: Record<string, string> = {
   anthem: 'Anthem Blue Cross Blue Shield',
@@ -77,19 +77,27 @@ export default function App() {
   const [coinsurance, setCoinsurance] = useState(0.2);
   const [expectedOtherSpend, setExpectedOtherSpend] = useState(0);
   const [treatmentWeeks, setTreatmentWeeks] = useState(2);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [note, setNote] = useState<string | null>(null);
+  const [access, setAccess] = useState<AccessStatus>('checking');
+
+  // Re-checks the entitlement without re-configuring the SDK, so this is safe
+  // to call again as a retry from the "unavailable" state.
+  const refreshAccess = useCallback(async () => {
+    try {
+      const info = await Purchases.getCustomerInfo();
+      setAccess(info.entitlements.active[ENTITLEMENT_ID] ? 'entitled' : 'locked');
+    } catch {
+      setAccess('unavailable');
+    }
+  }, []);
 
   useEffect(() => {
     if (!revenueCatApiKey) {
-      setNote('RevenueCat key is missing from app/.env.');
+      setAccess('unavailable');
       return;
     }
     Purchases.configure({ apiKey: revenueCatApiKey });
-    Purchases.getCustomerInfo()
-      .then((info) => setIsSubscribed(Boolean(info.entitlements.active[ENTITLEMENT])))
-      .catch(() => setIsSubscribed(false));
-  }, []);
+    refreshAccess();
+  }, [refreshAccess]);
 
   const procedure = useMemo(
     () => data.procedures.find((item) => item.cpt === cpt) ?? data.procedures[0],
@@ -158,11 +166,21 @@ export default function App() {
 
   const unlock = useCallback(async () => {
     try {
-      await RevenueCatUI.presentPaywall({ displayCloseButton: true });
-      const info = await Purchases.getCustomerInfo();
-      setIsSubscribed(Boolean(info.entitlements.active[ENTITLEMENT]));
-    } catch (error) {
-      setNote(error instanceof Error ? error.message : String(error));
+      // No explicit offering: this loads whichever offering is marked
+      // "Current" in the RevenueCat dashboard.
+      const result = await RevenueCatUI.presentPaywall({ displayCloseButton: true });
+      // Any resolved result means the paywall was reachable, so this also
+      // recovers out of 'unavailable' on a successful retry. Cancelling or an
+      // in-paywall purchase error both leave the entitlement unchanged.
+      setAccess(
+        result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED
+          ? 'entitled'
+          : 'locked',
+      );
+    } catch {
+      // The paywall itself could not be presented — offline, or nothing
+      // configured in the dashboard yet. Distinct from "declined to buy."
+      setAccess('unavailable');
     }
   }, []);
 
@@ -207,8 +225,7 @@ export default function App() {
           <RoutesStep
             routes={routes}
             findings={findings}
-            isSubscribed={isSubscribed}
-            note={note}
+            access={access}
             onUnlock={unlock}
           />
         )}
@@ -302,7 +319,6 @@ function ScanStep({
           />
         ))}
       </View>
-      <Text style={styles.caption}>{procedure.detail} · CPT {procedure.cpt}</Text>
 
       {procedure.indications.length > 0 && (
         <>
@@ -363,7 +379,6 @@ function CoverageStep({
   return (
     <View>
       <Text style={styles.h1}>Your coverage</Text>
-      <Text style={styles.caption}>From your plan documents. Nothing is stored.</Text>
 
       <View style={styles.sliderBlock}>
         <Slider
@@ -478,14 +493,12 @@ function Headline({ routes }: { routes: Route[] }) {
 function RoutesStep({
   routes,
   findings,
-  isSubscribed,
-  note,
+  access,
   onUnlock,
 }: {
   routes: Route[];
   findings: { requirement: Requirement; status: string }[];
-  isSubscribed: boolean;
-  note: string | null;
+  access: AccessStatus;
   onUnlock: () => void;
 }) {
   const [open, setOpen] = useState<string | null>(null);
@@ -502,7 +515,8 @@ function RoutesStep({
     );
   }
 
-  const visible = isSubscribed ? routes : routes.slice(0, 1);
+  // 'checking' renders exactly like 'locked' so there is no loading flash.
+  const visible = access === 'entitled' ? routes : routes.slice(0, 1);
   const hidden = routes.length - visible.length;
 
   return (
@@ -520,25 +534,43 @@ function RoutesStep({
         />
       ))}
 
-      {hidden > 0 && (
-        <Pressable
-          accessibilityRole="button"
-          onPress={onUnlock}
-          style={styles.lock}
-        >
-          <Text style={styles.lockTitle}>
-            {hidden} more {hidden === 1 ? 'option' : 'options'}
-          </Text>
-          <Text style={styles.lockBody}>
-            The full site-of-service comparison, and the checklist for your
-            doctor’s office where it applies.
-          </Text>
-          <Text style={styles.lockCta}>Unlock →</Text>
-        </Pressable>
-      )}
-
-      {note ? <Text style={styles.note}>{note}</Text> : null}
+      {hidden > 0 && <AccessCard status={access} hidden={hidden} onPress={onUnlock} />}
     </View>
+  );
+}
+
+/**
+ * The upsell touchpoint, in its three possible readings.
+ *
+ * 'locked' and 'unavailable' share one visual — same card, same position — on
+ * purpose. A stressed reader in a waiting room should never see something
+ * that looks broken; a configuration or network failure gets calm, honest
+ * copy and a retry, not an error screen.
+ */
+function AccessCard({
+  status,
+  hidden,
+  onPress,
+}: {
+  status: AccessStatus;
+  hidden: number;
+  onPress: () => void;
+}) {
+  const unavailable = status === 'unavailable';
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.lock}>
+      <Text style={styles.lockTitle}>
+        {unavailable
+          ? 'Full comparison unavailable right now'
+          : `${hidden} more ${hidden === 1 ? 'option' : 'options'}`}
+      </Text>
+      <Text style={styles.lockBody}>
+        {unavailable
+          ? 'Your top route is still shown above.'
+          : 'The full site-of-service comparison, and the checklist for your doctor’s office where it applies.'}
+      </Text>
+      <Text style={styles.lockCta}>{unavailable ? 'Try again' : 'Unlock →'}</Text>
+    </Pressable>
   );
 }
 
@@ -736,10 +768,9 @@ const styles = StyleSheet.create({
   stepLabelActive: { color: color.ink },
   stepLabelPending: { opacity: 0.45 },
 
-  h1: { ...type.hero, color: color.ink, marginTop: space.lg, marginBottom: space.sm },
+  h1: { ...type.hero, color: color.ink, marginTop: space.lg, marginBottom: space.md },
   h2: { ...type.title, color: color.ink, marginTop: space.xl, marginBottom: space.md },
   body: { ...type.body, color: color.inkMuted, marginBottom: space.md },
-  caption: { ...type.caption, color: color.inkMuted, marginBottom: space.md },
 
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: {
@@ -856,7 +887,6 @@ const styles = StyleSheet.create({
   lockBody: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
   lockCta: { ...type.label, color: color.accent, marginTop: space.sm },
 
-  note: { ...type.caption, color: color.flag, marginTop: space.md },
   disclosure: {
     ...type.caption,
     color: color.inkMuted,

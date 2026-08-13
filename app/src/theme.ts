@@ -49,7 +49,7 @@ export const radius = {
 } as const;
 
 export const type = {
-  hero: { fontSize: 30, fontWeight: '700' as const, letterSpacing: -0.4 },
+  hero: { fontSize: 32, fontWeight: '700' as const, letterSpacing: -0.5 },
   title: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.2 },
   amount: { fontSize: 26, fontWeight: '700' as const, letterSpacing: -0.3 },
   body: { fontSize: 15, lineHeight: 21 },
