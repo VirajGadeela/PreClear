@@ -389,6 +389,13 @@ function CoverageStep({
           step={250}
           onChange={onDeductible}
           format={money}
+          rangeLabels={['$0', '$10,000+']}
+          presets={[
+            { label: '$500', value: 500 },
+            { label: '$1,500', value: 1500 },
+            { label: '$3,000', value: 3000 },
+            { label: '$6,000', value: 6000 },
+          ]}
         />
         <Slider
           label="Coinsurance after deductible"
@@ -398,6 +405,7 @@ function CoverageStep({
           step={0.05}
           onChange={onCoinsurance}
           format={(value) => `${Math.round(value * 100)}%`}
+          rangeLabels={['0%', '50%']}
         />
         <Slider
           label="Other care you expect this year"
@@ -407,19 +415,28 @@ function CoverageStep({
           step={500}
           onChange={onExpectedOtherSpend}
           format={money}
+          rangeLabels={['$0', '$20,000+']}
+          presets={[
+            { label: 'None planned', value: 0 },
+            { label: 'A few visits', value: 1500 },
+            { label: 'Ongoing care', value: 6000 },
+          ]}
           helpText="Zero assumes no further care this year — an assumption, not a neutral default."
         />
         {showTreatment && (
-          <Slider
-            label="Weeks of treatment so far"
-            value={treatmentWeeks}
-            minimum={0}
-            maximum={12}
-            step={1}
-            onChange={onTreatmentWeeks}
-            format={(value) => `${value} ${value === 1 ? 'week' : 'weeks'}`}
-            helpText="Checked against requirements your insurer publishes."
-          />
+          <>
+            <Text style={styles.eyebrow}>Requirement check</Text>
+            <Slider
+              label="Treatment tried before this scan"
+              value={treatmentWeeks}
+              minimum={0}
+              maximum={12}
+              step={1}
+              onChange={onTreatmentWeeks}
+              format={(value) => `${value} ${value === 1 ? 'week' : 'weeks'}`}
+              rangeLabels={['0 weeks', '12 weeks']}
+            />
+          </>
         )}
       </View>
 
@@ -786,6 +803,16 @@ const styles = StyleSheet.create({
   chipTextSelected: { color: color.surface },
 
   sliderBlock: { marginTop: space.lg },
+  // Muted, not accent — accent is reserved for the recommended route and this
+  // is a section label inside a form, not a ranked option.
+  eyebrow: {
+    ...type.caption,
+    fontWeight: '700',
+    letterSpacing: 1,
+    color: color.inkMuted,
+    marginTop: space.sm,
+    marginBottom: space.sm,
+  },
 
   button: {
     alignItems: 'center',

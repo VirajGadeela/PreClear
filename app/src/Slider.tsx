@@ -11,12 +11,15 @@ import { useCallback, useRef, useState } from 'react';
 import {
   LayoutChangeEvent,
   PanResponder,
+  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
 import { color, radius, space, type as typography } from './theme';
+
+export type Preset = { label: string; value: number };
 
 type Props = {
   label: string;
@@ -27,6 +30,16 @@ type Props = {
   onChange: (value: number) => void;
   format: (value: number) => string;
   helpText?: string;
+  // Shown once at each end of the track. This is how a slider communicates
+  // its range without a sentence of prose next to it — two or three
+  // characters do the same job as a caption.
+  rangeLabels?: [string, string];
+  // Quick-jump chips for a value nobody can be expected to know exactly —
+  // most people don't have their deductible or their expected medical
+  // spend memorized. Tapping one moves the slider; it doesn't stay "selected,"
+  // because the underlying value is continuous and dragging afterward would
+  // desync it from any one preset.
+  presets?: Preset[];
 };
 
 const THUMB = 30;
@@ -40,6 +53,8 @@ export function Slider({
   onChange,
   format,
   helpText,
+  rangeLabels,
+  presets,
 }: Props) {
   const [width, setWidth] = useState(0);
   // The responder closes over these, so they have to be refs rather than state.
@@ -83,6 +98,21 @@ export function Slider({
         <Text style={styles.label}>{label}</Text>
         <Text style={styles.value}>{format(value)}</Text>
       </View>
+      {presets && presets.length > 0 && (
+        <View style={styles.presetRow}>
+          {presets.map((preset) => (
+            <Pressable
+              key={preset.label}
+              accessibilityRole="button"
+              accessibilityLabel={`Set ${label} to ${preset.label}`}
+              onPress={() => onChangeRef.current(preset.value)}
+              style={styles.preset}
+            >
+              <Text style={styles.presetText}>{preset.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
       <View
         accessible
         accessibilityRole="adjustable"
@@ -96,6 +126,12 @@ export function Slider({
         <View style={[styles.fill, { width: thumbLeft + THUMB / 2 }]} />
         <View style={[styles.thumb, { left: thumbLeft }]} />
       </View>
+      {rangeLabels && (
+        <View style={styles.rangeRow}>
+          <Text style={styles.rangeText}>{rangeLabels[0]}</Text>
+          <Text style={styles.rangeText}>{rangeLabels[1]}</Text>
+        </View>
+      )}
       {helpText ? <Text style={styles.help}>{helpText}</Text> : null}
     </View>
   );
@@ -123,6 +159,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  presetRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.xs,
+    marginBottom: space.sm,
+  },
+  preset: {
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: color.line,
+    paddingHorizontal: space.sm,
+    paddingVertical: 5,
+  },
+  presetText: {
+    ...typography.caption,
+    fontWeight: '600',
+    color: color.inkMuted,
+  },
   track: {
     height: THUMB,
     justifyContent: 'center',
@@ -149,6 +203,16 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     borderWidth: 3,
     borderColor: color.slate,
+  },
+  rangeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  rangeText: {
+    ...typography.caption,
+    color: color.inkMuted,
+    opacity: 0.75,
   },
   help: {
     color: color.inkMuted,
