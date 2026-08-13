@@ -16,6 +16,8 @@ import {
   View,
 } from 'react-native';
 
+import { color, radius, space, type as typography } from './theme';
+
 type Props = {
   label: string;
   value: number;
@@ -110,15 +112,15 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   label: {
-    color: '#13231c',
-    fontSize: 15,
-    fontWeight: '600',
+    color: color.ink,
+    ...typography.label,
+    fontSize: 14,
     flexShrink: 1,
     paddingRight: 12,
   },
   value: {
-    color: '#1e6047',
-    fontSize: 15,
+    color: color.ink,
+    fontSize: 14,
     fontWeight: '700',
   },
   track: {
@@ -131,27 +133,26 @@ const styles = StyleSheet.create({
     right: 0,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#d9e2dc',
+    backgroundColor: color.line,
   },
   fill: {
     position: 'absolute',
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#1e6047',
+    backgroundColor: color.slate,
   },
   thumb: {
     position: 'absolute',
     width: THUMB,
     height: THUMB,
     borderRadius: THUMB / 2,
-    backgroundColor: '#ffffff',
+    backgroundColor: color.surface,
     borderWidth: 3,
-    borderColor: '#1e6047',
+    borderColor: color.slate,
   },
   help: {
-    color: '#6b7a72',
-    fontSize: 13,
-    lineHeight: 18,
+    color: color.inkMuted,
+    ...typography.caption,
     marginTop: 2,
   },
 });

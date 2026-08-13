@@ -29,7 +29,25 @@ PROCEDURES = {
     "73721": {
         "label": "Knee MRI",
         "detail": "MRI, lower extremity joint, without contrast",
-        "indications": ["meniscal_tear", "ligament_tear"],
+        "indications": [
+            {"key": "meniscal_tear", "label": "Suspected meniscal tear"},
+            {"key": "ligament_tear", "label": "Suspected ligament tear"},
+        ],
+    },
+    "72148": {
+        "label": "Lower back MRI",
+        "detail": "MRI, lumbar spine, without contrast",
+        "indications": [
+            {"key": "low_back_pain", "label": "Low back pain"},
+            {
+                "key": "low_back_pain_with_radiculopathy",
+                "label": "Low back pain with leg symptoms",
+            },
+            {
+                "key": "degenerative_spine_disease",
+                "label": "Known degenerative spine disease",
+            },
+        ],
     },
     "70450": {
         "label": "Head CT",
@@ -86,10 +104,18 @@ def facility_bundle(prices, payer):
                 continue
             seen.add(token)
             unique.append(plan)
+        # Hospitals that publish one price list for several locations put every
+        # location in `location_name`, pipe separated. Show the first as the
+        # facility and carry the rest, because the price genuinely applies to
+        # all of them and hiding that would overstate how many independent
+        # price observations the comparison has.
+        raw_name = names.get(key, key)
+        locations = [part.strip() for part in raw_name.split("|") if part.strip()]
         bundles.append(
             {
                 "facility_key": key,
-                "facility_name": names.get(key, key),
+                "facility_name": locations[0] if locations else raw_name,
+                "also_at": locations[1:],
                 "facility_address": addresses.get(key, ""),
                 "plans": unique,
                 "cash_price": cash.get(key),
@@ -113,6 +139,10 @@ def requirement_bundle():
                 "indication": requirement.indication,
                 "summary": requirement.summary,
                 "quote": requirement.quote,
+                # The declarative check the app evaluates. Exported so the app
+                # applies the identical rule rather than re-deriving thresholds
+                # from the quote text.
+                "check": requirement.check,
                 "document_title": citation.document_title,
                 "section_id": citation.section_id,
                 "version": citation.version,

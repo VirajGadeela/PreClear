@@ -299,6 +299,20 @@ route.
 - Verification that works without a simulator: `npx tsc --noEmit` and
   `npx expo export --platform ios`. The export catches import and resolution
   errors the type checker does not.
+- **Palette is deliberately not blue/white and deliberately not red/green.**
+  Green-means-cheap would assert the opposite of the product's finding, so
+  ranking is carried by position, number size, and one accent (`#B2542A`)
+  reserved for the recommended route and used nowhere else. Tokens in
+  `app/src/theme.ts`.
+- **`<Money>` is the only way a dollar figure renders.** Hard rule 5 says the
+  word "estimate" lives inside the string, so it is a component rather than a
+  formatter — there is no call path that emits a bare number, and the
+  accessibility label carries the word too.
+- **Requirement checks are declarative, not code.** `Requirement.check` in
+  `pipeline/policies/rules.py` holds the thresholds and `evaluate_check` is the
+  one implementation; `app/src/requirements.ts` mirrors it case for case. The
+  first mobile version scraped week counts out of the quote text with a regex
+  and got both the threshold and the met/not-documented distinction wrong.
 - **Card capture is deliberately not built.** It needs `expo-camera` (a native
   rebuild) and creates the one compliance risk with no upside for the demo —
   hard rule 3 requires discarding the image immediately. Plan is chosen from a

@@ -18,6 +18,9 @@ export type PlanRate = {
 export type FacilityBundle = {
   facility_key: string;
   facility_name: string;
+  // Other locations sharing this exact price list. Carried so the app can say
+  // so rather than implying more independent price points than exist.
+  also_at?: string[];
   facility_address: string;
   plans: PlanRate[];
   cash_price: number | null;
@@ -32,6 +35,9 @@ export type Requirement = {
   indication: string;
   summary: string;
   quote: string;
+  // The declarative test, mirrored from pipeline/policies/rules.py. Thresholds
+  // live here so they are never re-derived from the quote text.
+  check: { type: string; [param: string]: unknown };
   document_title: string;
   section_id: string;
   version: string;
@@ -51,6 +57,7 @@ export type Route = {
   kind: string;
   label: string;
   facilityName: string;
+  alsoAt: string[];
   facilityAddress: string;
   allowedAmount: number;
   estimate: YearEstimate;
@@ -199,6 +206,7 @@ export function buildRoutes(options: BuildOptions): Route[] {
       kind: 'in_network_as_written',
       label: ROUTE_LABELS.in_network_as_written,
       facilityName: baseline.facility.facility_name,
+      alsoAt: baseline.facility.also_at ?? [],
       facilityAddress: baseline.facility.facility_address,
       allowedAmount: baseline.rate.rate,
       estimate: year(baseline.rate.rate, true),
@@ -217,6 +225,7 @@ export function buildRoutes(options: BuildOptions): Route[] {
         kind: 'in_network_cheaper_site',
         label: ROUTE_LABELS.in_network_cheaper_site,
         facilityName: cheapest.facility.facility_name,
+        alsoAt: cheapest.facility.also_at ?? [],
         facilityAddress: cheapest.facility.facility_address,
         allowedAmount: cheapest.rate.rate,
         estimate: year(cheapest.rate.rate, true),
@@ -233,6 +242,7 @@ export function buildRoutes(options: BuildOptions): Route[] {
         kind: 'in_network_order_corrected',
         label: ROUTE_LABELS.in_network_order_corrected,
         facilityName: baseline.facility.facility_name,
+        alsoAt: baseline.facility.also_at ?? [],
         facilityAddress: baseline.facility.facility_address,
         allowedAmount: baseline.rate.rate,
         estimate: year(baseline.rate.rate, true),
@@ -254,6 +264,7 @@ export function buildRoutes(options: BuildOptions): Route[] {
         kind: 'cash_non_contracted',
         label: ROUTE_LABELS.cash_non_contracted,
         facilityName: cheapestCash.facility_name,
+        alsoAt: cheapestCash.also_at ?? [],
         facilityAddress: cheapestCash.facility_address,
         allowedAmount: cheapestCash.cash_price as number,
         estimate: year(cheapestCash.cash_price as number, false),
