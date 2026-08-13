@@ -271,6 +271,39 @@ usable answer and "this facility has no price" is a false one.
 - A "cheaper site" that costs the same is noise, so route 2 requires a real
   saving before it is offered.
 
+**Consumer flow: working** (Sep 8 milestone, early). `app/` is Expo SDK 57 with
+the RevenueCat SDK. Procedure and insurer, then sliders for deductible
+remaining, coinsurance, expected other care and documented treatment weeks, then
+four ranked routes that recompute live. Paywall gates everything past the top
+route.
+
+### App mechanics (verified 2026-08-12)
+
+- **Expo SDK 57 needs Node 22.13+.** Node 18 fails `create-expo-app` with
+  `ReferenceError: File is not defined`. `/opt/homebrew/opt/node@26/bin` is the
+  working toolchain on this machine; nvm's default 18 is not.
+- **Read `app/AGENTS.md` before touching app code** — it points at the exact
+  versioned docs, and SDK 57 moved a lot.
+- **Adding a native module costs a rebuild.** `@react-native-community/slider`
+  and `@expo/ui` both ship native code, so the deductible slider is PanResponder
+  over plain Views instead. Core-only React Native keeps the existing dev client
+  valid. Prefer this whenever a JS implementation is reasonable.
+- **The deductible math now exists twice.** `pipeline/costing/oop.py` is the
+  source of truth; `app/src/costing.ts` is a port so the slider recomputes
+  without a round trip. Two implementations of the same arithmetic drift, so
+  `scripts/check-math-parity.sh` compares them on the cases that matter — the
+  out-of-pocket cap and the ranking flip included. Run it after touching either.
+- `pipeline/export_app_data.py` generates `app/assets/preclear-data.json` using
+  the routing engine's own eligibility rules, so the app cannot surface a rate
+  the engine would refuse.
+- Verification that works without a simulator: `npx tsc --noEmit` and
+  `npx expo export --platform ios`. The export catches import and resolution
+  errors the type checker does not.
+- **Card capture is deliberately not built.** It needs `expo-camera` (a native
+  rebuild) and creates the one compliance risk with no upside for the demo —
+  hard rule 3 requires discarding the image immediately. Plan is chosen from a
+  list instead.
+
 Gate definitions, for the record:
 
 - **Gate 1 — MRF usability.** Open one target payer's Transparency in Coverage file, extract negotiated rates for CPT 73721 (knee MRI) and 70450 (head CT) at 10 real facilities in the target metro. These files are gigabytes and frequently malformed — stream-parse, don't load. *Pass = 10 real facility prices in a spreadsheet.*
