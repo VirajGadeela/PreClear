@@ -8,7 +8,7 @@ payments don't count toward the deductible.
 [3 sentences]
 
 ## How it works
-1. Photo of insurance card + procedure
+1. Select procedure + insurer
 2. Checks the order against the payer's published requirements
 3. Compares 4 routes on real negotiated rates
 4. Adjusts for deductible remaining → one recommendation, reasoning shown
