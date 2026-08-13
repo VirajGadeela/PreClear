@@ -172,10 +172,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.sm,
     paddingVertical: 5,
   },
+  // Matches the Chip component's unselected-state text (type.label, ink) —
+  // this is a small button label, the same idiom used for the Step 1 chips,
+  // not an explanatory caption.
   presetText: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: color.inkMuted,
+    ...typography.label,
+    color: color.ink,
   },
   track: {
     height: THUMB,
@@ -209,14 +211,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 4,
   },
+  // Kept small — this is an axis endpoint, not a sentence someone reads and
+  // decides from — but not muted: a faint "$10,000+" is exactly the kind of
+  // thing this pass is trying to stop people skimming past.
   rangeText: {
     ...typography.caption,
-    color: color.inkMuted,
-    opacity: 0.75,
+    color: color.ink,
   },
+  // Promoted to the slider's own body size and full ink, not caption-muted:
+  // this is the one sentence that changes what value someone enters, so it
+  // reads as part of the control, not an annotation trailing under it.
   help: {
-    color: color.inkMuted,
-    ...typography.caption,
-    marginTop: 2,
+    color: color.ink,
+    fontSize: 14,
+    lineHeight: 19,
+    marginTop: 6,
   },
 });

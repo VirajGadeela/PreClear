@@ -36,6 +36,7 @@ import {
   Requirement,
   Route,
   buildRoutes,
+  describeRecommendation,
   rankRoutes,
 } from './src/routes';
 import { color, radius, space, type } from './src/theme';
@@ -76,7 +77,7 @@ export default function App() {
   const [deductible, setDeductible] = useState(2000);
   const [coinsurance, setCoinsurance] = useState(0.2);
   const [expectedOtherSpend, setExpectedOtherSpend] = useState(0);
-  const [treatmentWeeks, setTreatmentWeeks] = useState(2);
+  const [treatmentWeeks, setTreatmentWeeks] = useState(0);
   const [access, setAccess] = useState<AccessStatus>('checking');
 
   // Re-checks the entitlement without re-configuring the SDK, so this is safe
@@ -535,6 +536,9 @@ function RoutesStep({
   // 'checking' renders exactly like 'locked' so there is no loading flash.
   const visible = access === 'entitled' ? routes : routes.slice(0, 1);
   const hidden = routes.length - visible.length;
+  // Computed against the full route list, not just what's visible, so this
+  // never depends on entitlement — it ships to free-tier readers on purpose.
+  const recommendationNote = describeRecommendation(routes);
 
   return (
     <View>
@@ -545,6 +549,7 @@ function RoutesStep({
           route={route}
           rank={index + 1}
           recommended={index === 0}
+          note={index === 0 ? recommendationNote : null}
           expanded={open === route.kind}
           findings={findings}
           onToggle={() => setOpen(open === route.kind ? null : route.kind)}
@@ -586,7 +591,7 @@ function AccessCard({
           ? 'Your top route is still shown above.'
           : 'The full site-of-service comparison, and the checklist for your doctor’s office where it applies.'}
       </Text>
-      <Text style={styles.lockCta}>{unavailable ? 'Try again' : 'Unlock →'}</Text>
+      <Text style={styles.lockCta}>{unavailable ? 'Try again →' : 'Unlock →'}</Text>
     </Pressable>
   );
 }
@@ -595,6 +600,7 @@ function RouteCard({
   route,
   rank,
   recommended,
+  note,
   expanded,
   findings,
   onToggle,
@@ -602,12 +608,19 @@ function RouteCard({
   route: Route;
   rank: number;
   recommended: boolean;
+  // Only ever set on the recommended card — the one-sentence comparison
+  // against the specific alternative it beat. Everything else uses the
+  // shorter, plainer per-route fact below.
+  note: string | null;
   expanded: boolean;
   findings: { requirement: Requirement; status: string }[];
   onToggle: () => void;
 }) {
   const statusFor = (key: string) =>
     findings.find((finding) => finding.requirement.key === key)?.status ?? 'unmet';
+
+  const requirementsCount = route.unmetRequirements.length;
+  const showScanSplit = route.estimate.expectedOtherCareCost > 0.01;
 
   return (
     <View style={[styles.card, recommended && styles.cardRecommended]}>
@@ -632,27 +645,38 @@ function RouteCard({
         </View>
 
         <View style={styles.amountRow}>
-          <Money
-            value={route.estimate.totalThisYear}
-            size="large"
-            tone={recommended ? 'accent' : 'ink'}
-          />
-          <Text style={styles.amountCaption}>total this year</Text>
+          <View>
+            <Money
+              value={route.estimate.totalThisYear}
+              size="large"
+              tone={recommended ? 'accent' : 'ink'}
+            />
+            <Text style={styles.amountLabel}>total this year</Text>
+          </View>
+          {showScanSplit && (
+            <View>
+              <Money value={route.estimate.scan.patientPays} size="small" tone="ink" />
+              <Text style={styles.amountLabel}>for this scan</Text>
+            </View>
+          )}
         </View>
 
-        <View style={styles.whyRow}>
-          <Text style={styles.why} numberOfLines={expanded ? undefined : 2}>
-            {route.estimate.scan.countsTowardDeductible
+        <Text style={styles.reasoningPrimary}>
+          {recommended && note
+            ? note
+            : route.estimate.scan.countsTowardDeductible
               ? 'Counts toward your deductible.'
-              : 'Earns no deductible credit.'}{' '}
-            {route.unmetRequirements.length > 0
-              ? `${route.unmetRequirements.length} requirement${
-                  route.unmetRequirements.length === 1 ? '' : 's'
-                } not documented.`
-              : ''}
+              : 'Earns no deductible credit.'}
+        </Text>
+
+        {requirementsCount > 0 && (
+          <Text style={styles.requirementsNotice}>
+            {requirementsCount} requirement{requirementsCount === 1 ? '' : 's'}{' '}
+            your doctor's office hasn't documented yet.
           </Text>
-          <Text style={styles.chevron}>{expanded ? 'Hide' : 'Details'}</Text>
-        </View>
+        )}
+
+        <Text style={styles.chevron}>{expanded ? 'Hide details' : 'Show details'}</Text>
       </Pressable>
 
       {expanded && (
@@ -779,7 +803,11 @@ const styles = StyleSheet.create({
   },
   stepDotActive: { backgroundColor: color.accent },
   stepDotDone: { backgroundColor: color.slate },
-  stepNumber: { ...type.caption, fontWeight: '700', color: color.inkMuted },
+  // Same token as the route-card rank digit, for the same reason: a number
+  // inside a solid badge. The colour isn't the "grey subtext" pattern — the
+  // whole dot is a deliberately de-emphasised wayfinding element while a step
+  // is still ahead, not a secondary annotation on top of primary content.
+  stepNumber: { ...type.label, fontWeight: '700', color: color.inkMuted },
   stepNumberActive: { color: color.accentInk },
   stepLabel: { ...type.label, color: color.inkMuted },
   stepLabelActive: { color: color.ink },
@@ -787,7 +815,7 @@ const styles = StyleSheet.create({
 
   h1: { ...type.hero, color: color.ink, marginTop: space.lg, marginBottom: space.md },
   h2: { ...type.title, color: color.ink, marginTop: space.xl, marginBottom: space.md },
-  body: { ...type.body, color: color.inkMuted, marginBottom: space.md },
+  body: { ...type.body, color: color.ink, marginBottom: space.md },
 
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: {
@@ -803,13 +831,14 @@ const styles = StyleSheet.create({
   chipTextSelected: { color: color.surface },
 
   sliderBlock: { marginTop: space.lg },
-  // Muted, not accent — accent is reserved for the recommended route and this
-  // is a section label inside a form, not a ranked option.
+  // Ink, not accent and not muted — accent is reserved for the recommended
+  // route, and this is a section heading (small-caps kicker), not an
+  // annotation trailing under something else.
   eyebrow: {
     ...type.caption,
     fontWeight: '700',
     letterSpacing: 1,
-    color: color.inkMuted,
+    color: color.ink,
     marginTop: space.sm,
     marginBottom: space.sm,
   },
@@ -827,7 +856,10 @@ const styles = StyleSheet.create({
 
   hero: { marginTop: space.lg, marginBottom: space.lg },
   heroLead: { ...type.title, color: color.ink, marginVertical: 2 },
-  heroWhy: { ...type.body, color: color.inkMuted, marginTop: space.md },
+  // Ink, not muted: this sentence explains why cash loses despite costing
+  // less today — arguably the single most important line on the screen, and
+  // exactly the kind of thing a muted color quietly teaches people to skip.
+  heroWhy: { ...type.body, color: color.ink, marginTop: space.md },
 
   card: {
     backgroundColor: color.surface,
@@ -859,21 +891,29 @@ const styles = StyleSheet.create({
   },
   rankRecommended: { backgroundColor: color.accent },
   cardHead: { flex: 1 },
-  routeLabel: { ...type.caption, fontWeight: '700', color: color.inkMuted },
+  // Ink and letter-spaced, like a kicker over a headline — a category tag
+  // read alongside the facility name below it, not a muted afterthought.
+  routeLabel: {
+    ...type.caption,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    color: color.ink,
+  },
   facility: { ...type.body, fontWeight: '700', color: color.ink, marginTop: 2 },
 
-  amountRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm, marginTop: space.md },
-  amountCaption: { ...type.caption, color: color.inkMuted },
+  amountRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.lg, marginTop: space.md },
+  // Same tone as the figure it labels, not a separate muted colour — this is
+  // what tells you whether you're looking at the scan price or the year
+  // total, so it has to survive being skimmed.
+  amountLabel: { ...type.caption, fontWeight: '600', color: color.ink, marginTop: 2 },
 
-  whyRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    gap: space.md,
-    marginTop: space.sm,
-  },
-  why: { ...type.caption, color: color.inkMuted, flex: 1 },
-  chevron: { ...type.label, color: color.slate },
+  // The card's single most important sentence: on the recommended card, the
+  // comparison against the alternative it beat; everywhere else, the
+  // deductible fact. Full ink, body-level weight — this is exactly the line
+  // that used to be styled as a caption and get skimmed past.
+  reasoningPrimary: { ...type.body, color: color.ink, marginTop: space.md },
+  requirementsNotice: { ...type.body, color: color.flag, marginTop: space.sm },
+  chevron: { ...type.label, color: color.slate, marginTop: space.md },
 
   details: { borderTopWidth: 1, borderTopColor: color.line, marginTop: space.md, paddingTop: space.md },
   row: {
@@ -882,9 +922,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: space.sm,
   },
-  rowLabel: { ...type.caption, color: color.inkMuted },
-  address: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
-  reasoning: { ...type.caption, color: color.inkMuted, marginTop: space.sm },
+  rowLabel: { ...type.caption, fontWeight: '600', color: color.ink },
+  address: { ...type.caption, color: color.ink, marginTop: space.xs },
+  reasoning: { ...type.caption, color: color.ink, marginTop: space.sm },
   warning: {
     ...type.caption,
     color: color.flag,
@@ -896,11 +936,15 @@ const styles = StyleSheet.create({
 
   requirement: { borderTopWidth: 1, borderTopColor: color.line, marginTop: space.md, paddingTop: space.md },
   requirementStatus: { ...type.caption, fontWeight: '700', color: color.flag },
-  requirementSummary: { ...type.caption, color: color.ink, marginTop: space.xs },
-  requirementQuote: { ...type.caption, color: color.inkMuted, fontStyle: 'italic', marginTop: space.xs },
-  citation: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
-  link: { ...type.caption, fontWeight: '700', color: color.accent, marginTop: space.xs },
-  hedge: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
+  requirementSummary: { ...type.body, color: color.ink, marginTop: space.xs },
+  requirementQuote: { ...type.body, color: color.ink, fontStyle: 'italic', marginTop: space.xs },
+  // The demo's credibility rests on this line naming a real document, section
+  // and version — bold and full ink, not a trailing footnote.
+  citation: { ...type.caption, fontWeight: '700', color: color.ink, marginTop: space.sm },
+  // Slate, not accent: accent is reserved for the recommended route, and a
+  // source link can appear on any card.
+  link: { ...type.caption, fontWeight: '700', color: color.slate, marginTop: space.xs },
+  hedge: { ...type.caption, color: color.ink, marginTop: space.xs },
 
   lock: {
     backgroundColor: color.surface,
@@ -911,12 +955,16 @@ const styles = StyleSheet.create({
     padding: space.md + 2,
   },
   lockTitle: { ...type.body, fontWeight: '700', color: color.ink },
-  lockBody: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
-  lockCta: { ...type.label, color: color.accent, marginTop: space.sm },
+  lockBody: { ...type.caption, color: color.ink, marginTop: space.xs },
+  // Slate, not accent — see `link` above.
+  lockCta: { ...type.label, color: color.slate, marginTop: space.sm },
 
+  // Full body weight and ink: this line is what keeps the app from being
+  // read as denial prediction and keeps every dollar figure labelled as an
+  // estimate. That is not a footnote.
   disclosure: {
-    ...type.caption,
-    color: color.inkMuted,
+    ...type.body,
+    color: color.ink,
     borderTopWidth: 1,
     borderTopColor: color.line,
     marginTop: space.xl,
