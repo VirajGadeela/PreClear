@@ -36,10 +36,10 @@ publishes.
 
 ## How it works
 
-You pick the procedure, your insurer, and your plan from a list, then set four
-things you actually know: deductible remaining, coinsurance, treatment weeks
-already documented, and roughly how much other care you expect this year. The
-app ranks four routes and shows its reasoning for each:
+You pick the procedure, why it was ordered, your insurer and your plan type,
+then set what you actually know: deductible remaining, coinsurance, and roughly
+how much other care you expect this year. The app ranks four routes and shows
+its reasoning for each:
 
 1. **In-network, as ordered** — the baseline
 2. **In-network, cheaper site of service** — same coverage and same deductible
@@ -54,9 +54,17 @@ reports which ones are not documented. It does **not** predict denials, and it
 never suggests a different procedure or imaging modality — outputs are financial
 and administrative only.
 
-There is no insurance-card photo capture. Plan is chosen from a list instead,
-deliberately: parsing a card image adds a native dependency and a data-handling
-risk with no benefit to the comparison.
+**Plan type is asked for because the plan sets the price, not the payer.** One
+Anthem facility publishes five different rates for the same knee MRI; picking
+PPO returns $992.51 where HMO returns $784.08. Answering "not sure" is a real
+answer — it keeps every rate the insurer publishes there rather than guessing
+one.
+
+There is no insurance-card photo capture and nothing asks for a member ID.
+Both are deliberate. A card image adds a native dependency and a data-handling
+risk; a member ID is a direct identifier whose only use is an eligibility
+lookup this app does not perform. Plan type is the one fact on the card that
+changes the answer, and it identifies nobody.
 
 ## What's actually behind it
 
