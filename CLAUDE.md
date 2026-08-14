@@ -172,9 +172,23 @@ Indianapolis hospitals is ten small files. They also carry cash/gross prices,
 which route 4 needs anyway. This is likely the better primary source for the
 facility component rather than a fallback.
 
-**Gate 2: passed.** 8 requirements across 3 payers in `pipeline/policies/`, each
+**Gate 2: passed.** 11 requirements across 3 payers in `pipeline/policies/`, each
 carrying document title, section ID, version, effective date and source URL.
-14 tests green. The bar was 5 rules across 3 payers.
+The bar was 5 rules across 3 payers.
+
+**Requirement coverage, corrected 2026-08-13.** Rule count was never the real
+measure — coverage across (payer × CPT) was, and it was far thinner than the
+headline number suggested. Anthem, the primary payer for this metro, carried
+knee rules only, so an Anthem member ordering a lumbar MRI or a head CT reached
+route 3 and found nothing. CPT 70450 had no indications at all in the app, so
+route 3 could not fire for head CT under any payer. Anthem now covers all three
+target codes via Carelon's spine and brain guidelines.
+
+**UnitedHealthcare still has zero requirements** while carrying facility prices
+in the app — the exact silent failure this file warns about under "How expansion
+actually works". The app now says so on the results screen rather than omitting
+route 3 without explanation, but the honest fix is a UHC Indiana document, which
+is still not located.
 
 ### Payer requirement mechanics (verified 2026-08-11)
 
@@ -198,13 +212,34 @@ carrying document title, section ID, version, effective date and source URL.
 - Red flag indications (eviCore `SP.GG.0001.2.A`) **waive the waiting period**,
   they do not add a requirement.
 
+### Carelon document mechanics (verified 2026-08-13)
+
+- **Carelon splits imaging by body region across separate documents**, and the
+  split is not where you would guess. Headache criteria are in *Imaging of the
+  Brain*, not *Imaging of the Head and Neck* — the head-and-neck document covers
+  sinusitis, trauma, hearing loss and similar and has no headache section at
+  all. Looking in the obviously-named document returns nothing and reads like
+  the criteria do not exist.
+- **Version dates are the URL.** Carelon publishes each revision at its own
+  path, e.g. `/imaging-of-the-spine-2025-11-15/`, and keeps archived and
+  future-dated revisions live at the same time. On 2026-08-13 the spine
+  guideline had a `2026-09-19` revision already published but not yet effective.
+  Cite the one in force on the date of use, not the newest one on the site.
+- Brain and spine both sit on the same `2025-11-15` cycle as extremities, so
+  one review date covers all three Anthem documents. Brain additionally carries
+  an `updated 2026-01-01`.
+- **Carelon's lumbar threshold agrees with eviCore's**: both require 6 weeks of
+  conservative management for uncomplicated low back pain. Independent
+  corroboration across two delegates, not a copy — worth knowing before assuming
+  a discrepancy is a extraction bug.
+
 The demo's citable failing requirement is real: a lumbar MRI order with 2 weeks
 of treatment documented fails eviCore `SP.LB.0005.1.A`, which requires "Failure
 of a 6-week trial of provider-directed treatment", v1.0.2026, effective
 2026-02-03.
 
 **Routing engine: working end to end on real data** (Sep 1 milestone, early).
-`pipeline/costing/` does the math, `pipeline/route.py` is the CLI. 44 tests green.
+`pipeline/costing/` does the math, `pipeline/route.py` is the CLI. 76 tests green.
 
 The thesis is demonstrated on real published Indianapolis prices. Anthem member,
 CPT 73721, Franciscan Health Carmel, $2,000 deductible remaining:
@@ -319,6 +354,27 @@ route.
   one implementation; `app/src/requirements.ts` mirrors it case for case. The
   first mobile version scraped week counts out of the quote text with a regex
   and got both the threshold and the met/not-documented distinction wrong.
+- **That mirror is guarded by `scripts/check-requirements-parity.sh`**, which
+  evaluates every requirement against every fact case in both languages. It was
+  added 2026-08-13; before that only the costing port had a parity check. This
+  drift is quieter than a wrong number: an unmapped field and an unknown check
+  type *both* fall through to `not_documented`, so a rule the app cannot
+  evaluate looks identical to one the order does not satisfy, and the app shows
+  a citable checklist item the engine never asserted. Run it after touching
+  either side. A new check type needs a new fact case or it passes vacuously.
+- **Ask for a fact only when a check reads it.** The coverage screen derives its
+  inputs from the applicable checks (`usesTreatmentWeeks`, `readsField`) rather
+  than from "any requirement matches". Before that, a head CT for headache
+  showed a weeks-of-treatment slider no headache criterion consumes, while the
+  fact that actually decides the rule had no control at all.
+- **Zero unmet findings is ambiguous and the app must say which kind.** "Every
+  recorded requirement is met" and "no requirement is recorded for this payer
+  and scan" both hide route 3. `pipeline/policies/check.py` distinguished them
+  from the start; the app did not, so a UHC member saw a comparison with no
+  order check and no indication that one was missing.
+- **`export_app_data.py --metadata-only`** rewrites indications and requirements
+  in an existing bundle and leaves prices alone. Rule edits otherwise require
+  the gigabyte price files to be present, which they usually are not.
 - **Card capture is deliberately not built.** It needs `expo-camera` (a native
   rebuild) and creates the one compliance risk with no upside for the demo —
   hard rule 3 requires discarding the image immediately. Plan is chosen from a
@@ -367,12 +423,16 @@ Partial payer coverage in a metro means the product silently fails for anyone ho
 
 ## How it works
 
-User photographs insurance card + enters procedure → app returns four ranked routes, each with reasoning shown:
+User enters procedure, indication and plan → app returns four ranked routes,
+each with reasoning shown:
 
 1. **In-network, order as written** (baseline)
 2. **In-network, cheaper site of service** — same coverage, same deductible credit, lower cost because negotiated rates vary by facility
 3. **In-network, order corrected first** — the order fails a specific published payer requirement; output is a checklist for the ordering physician
 4. **Cash at a non-contracted facility** — surfaced only when the patient is uninsured, on a high-deductible plan unlikely to be met, or the study is non-covered
+
+Card capture was considered and dropped — see App mechanics. Anything in this
+file describing a card photo is stale; the plan is chosen from a list.
 
 **Critical:** this does NOT predict denial probability. It checks orders against payers' own published, deterministic criteria and reports which are unmet. Never describe it as denial prediction in code comments, docs, or UI.
 

@@ -33,7 +33,14 @@ import {
   refreshEntitlement,
   restore as restorePurchases,
 } from './src/purchases';
-import { OrderFacts, checkOrder, statusLabel, unmetFindings } from './src/requirements';
+import {
+  OrderFacts,
+  checkOrder,
+  readsField,
+  statusLabel,
+  unmetFindings,
+  usesTreatmentWeeks,
+} from './src/requirements';
 import {
   FacilityBundle,
   Requirement,
@@ -118,23 +125,39 @@ export default function App() {
     [procedure, payer],
   );
 
+  // Left undefined until the patient says otherwise, so an unanswered question
+  // reports as "not documented" rather than as a failed criterion.
+  const [headacheFeature, setHeadacheFeature] = useState<boolean | undefined>(
+    undefined,
+  );
+
   const facts: OrderFacts = useMemo(
-    () => ({ conservativeTherapyWeeks: treatmentWeeks }),
-    [treatmentWeeks],
+    () => ({
+      conservativeTherapyWeeks: treatmentWeeks,
+      headacheConcerningFeature: headacheFeature,
+    }),
+    [treatmentWeeks, headacheFeature],
+  );
+
+  // Kept separate from the unmet subset below, because "every recorded
+  // requirement is met" and "no requirement is recorded for this payer and
+  // scan" both produce zero unmet findings and mean entirely different things.
+  // Route 3 is absent either way, so without this the app cannot say which.
+  const applicableFindings = useMemo(
+    () =>
+      checkOrder(
+        data.requirements,
+        PAYER_LABELS[payer] ?? '',
+        cpt,
+        indication,
+        facts,
+      ),
+    [payer, cpt, indication, facts],
   );
 
   const findings = useMemo(
-    () =>
-      unmetFindings(
-        checkOrder(
-          data.requirements,
-          PAYER_LABELS[payer] ?? '',
-          cpt,
-          indication,
-          facts,
-        ),
-      ),
-    [payer, cpt, indication, facts],
+    () => unmetFindings(applicableFindings),
+    [applicableFindings],
   );
 
   const benefits: PlanBenefits = useMemo(
@@ -201,15 +224,18 @@ export default function App() {
             coinsurance={coinsurance}
             expectedOtherSpend={expectedOtherSpend}
             treatmentWeeks={treatmentWeeks}
-            showTreatment={data.requirements.some(
-              (requirement) =>
-                requirement.cpt_codes.includes(cpt) &&
-                requirement.indication === indication,
+            showTreatment={applicableFindings.some((finding) =>
+              usesTreatmentWeeks(finding.requirement.check),
+            )}
+            headacheFeature={headacheFeature}
+            showHeadacheFeature={applicableFindings.some((finding) =>
+              readsField(finding.requirement.check, 'headache_concerning_feature'),
             )}
             onDeductible={setDeductible}
             onCoinsurance={setCoinsurance}
             onExpectedOtherSpend={setExpectedOtherSpend}
             onTreatmentWeeks={setTreatmentWeeks}
+            onHeadacheFeature={setHeadacheFeature}
             onNext={() => setStep(2)}
           />
         )}
@@ -222,6 +248,8 @@ export default function App() {
             note={note}
             onUnlock={unlock}
             onRestore={restore}
+            requirementsChecked={applicableFindings.length}
+            payerLabel={PAYER_LABELS[payer] ?? ''}
           />
         )}
 
@@ -355,10 +383,13 @@ function CoverageStep({
   expectedOtherSpend,
   treatmentWeeks,
   showTreatment,
+  headacheFeature,
+  showHeadacheFeature,
   onDeductible,
   onCoinsurance,
   onExpectedOtherSpend,
   onTreatmentWeeks,
+  onHeadacheFeature,
   onNext,
 }: {
   deductible: number;
@@ -366,10 +397,13 @@ function CoverageStep({
   expectedOtherSpend: number;
   treatmentWeeks: number;
   showTreatment: boolean;
+  headacheFeature: boolean | undefined;
+  showHeadacheFeature: boolean;
   onDeductible: (value: number) => void;
   onCoinsurance: (value: number) => void;
   onExpectedOtherSpend: (value: number) => void;
   onTreatmentWeeks: (value: number) => void;
+  onHeadacheFeature: (value: boolean | undefined) => void;
   onNext: () => void;
 }) {
   return (
@@ -419,6 +453,39 @@ function CoverageStep({
           />
         )}
       </View>
+
+      {/* Three states, not two. Neither chip selected means the order does not
+          record this, which is the common case and reads as "not documented"
+          rather than as a criterion the order failed. Tapping a selected chip
+          clears it back to unanswered. */}
+      {showHeadacheFeature && (
+        <View style={styles.featureBlock}>
+          <Text style={styles.rowLabel}>
+            Does the order document a concerning headache feature?
+          </Text>
+          <Text style={styles.caption}>
+            For example sudden severe onset, a change in pattern, a new headache
+            after age 50, or an abnormal neurological exam. Your insurer
+            publishes the full list.
+          </Text>
+          <View style={styles.chipWrap}>
+            <Chip
+              label="Yes"
+              selected={headacheFeature === true}
+              onPress={() =>
+                onHeadacheFeature(headacheFeature === true ? undefined : true)
+              }
+            />
+            <Chip
+              label="No"
+              selected={headacheFeature === false}
+              onPress={() =>
+                onHeadacheFeature(headacheFeature === false ? undefined : false)
+              }
+            />
+          </View>
+        </View>
+      )}
 
       <PrimaryButton label="See my routes" onPress={onNext} />
     </View>
@@ -494,6 +561,8 @@ function RoutesStep({
   note,
   onUnlock,
   onRestore,
+  requirementsChecked,
+  payerLabel,
 }: {
   routes: Route[];
   findings: { requirement: Requirement; status: string }[];
@@ -501,6 +570,8 @@ function RoutesStep({
   note: string | null;
   onUnlock: () => void;
   onRestore: () => void;
+  requirementsChecked: number;
+  payerLabel: string;
 }) {
   const [open, setOpen] = useState<string | null>(null);
 
@@ -549,6 +620,20 @@ function RoutesStep({
           </Text>
           <Text style={styles.lockCta}>Unlock →</Text>
         </Pressable>
+      )}
+
+      {/* Route 3 is missing whenever nothing is unmet, but "nothing is unmet"
+          and "nothing is recorded" are different answers and the patient cannot
+          tell them apart. Saying so is the honest output — CLAUDE.md treats a
+          silent gap as worse than an admitted one. */}
+      {requirementsChecked === 0 && (
+        <View style={styles.coverageGap}>
+          <Text style={styles.coverageGapText}>
+            No published requirements are recorded for {payerLabel} for this
+            scan, so no order check was run. That is a gap in this app's rule
+            set, not a sign that the order has none.
+          </Text>
+        </View>
       )}
 
       {/* App Store review requires a restore path, and it is the only way a
@@ -769,6 +854,7 @@ const styles = StyleSheet.create({
   caption: { ...type.caption, color: color.inkMuted, marginBottom: space.md },
 
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  featureBlock: { marginTop: space.lg, gap: space.sm },
   chip: {
     borderRadius: radius.md,
     borderWidth: 1.5,
@@ -882,6 +968,16 @@ const styles = StyleSheet.create({
   lockTitle: { ...type.body, fontWeight: '700', color: color.ink },
   lockBody: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
   lockCta: { ...type.label, color: color.accent, marginTop: space.sm },
+
+  // Uses the data-quality flag colour, not an alarm colour. A missing rule is
+  // a limit of the data, the same class of thing as a suspect rate.
+  coverageGap: {
+    backgroundColor: color.flagBg,
+    borderRadius: radius.md,
+    padding: space.md,
+    marginTop: space.md,
+  },
+  coverageGapText: { ...type.caption, color: color.flag },
 
   // Deliberately quiet. Restore is a recovery path, not an offer, so it must
   // not compete with the unlock card above it.
