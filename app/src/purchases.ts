@@ -29,8 +29,14 @@ import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
  * Must match the entitlement identifier in the RevenueCat dashboard exactly.
  * A mismatch here is silent: purchases succeed, `entitlements.active` stays
  * empty, and the app never unlocks.
+ *
+ * Deliberately named for who it covers, not for what it currently unlocks. It
+ * gates the full route comparison today and is intended to gate household
+ * claims monitoring later, with the comparison becoming free. An entitlement
+ * identifier is expensive to change once products exist in App Store Connect
+ * and RevenueCat, so it must survive that shift without being renamed.
  */
-export const ENTITLEMENT = 'full_comparison';
+export const ENTITLEMENT = 'preclear_household';
 
 const apiKey = process.env.EXPO_PUBLIC_REVENUECAT_PUBLIC_SDK_KEY;
 
