@@ -280,8 +280,14 @@ route.
 ### App mechanics (verified 2026-08-12)
 
 - **Expo SDK 57 needs Node 22.13+.** Node 18 fails `create-expo-app` with
-  `ReferenceError: File is not defined`. `/opt/homebrew/opt/node@26/bin` is the
-  working toolchain on this machine; nvm's default 18 is not.
+  `ReferenceError: File is not defined`. The working toolchain is Homebrew's
+  keg-only `node@22` (22.23.2), at `/opt/homebrew/opt/node@22/bin` — keg-only
+  means it is not symlinked into PATH, so `~/.zprofile` must prepend it, and a
+  terminal opened before that edit still has the wrong node. An earlier note
+  here recorded
+  `node@26`; **corrected 2026-08-13, that path has never existed on this
+  machine.** The default `node` is 18.16.1 from the nodejs.org pkg installer at
+  `/usr/local/bin`, and it is the one that fails.
 - **Read `app/AGENTS.md` before touching app code** — it points at the exact
   versioned docs, and SDK 57 moved a lot.
 - **Adding a native module costs a rebuild.** `@react-native-community/slider`
