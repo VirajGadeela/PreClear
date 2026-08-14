@@ -340,6 +340,17 @@ route.
 - Verification that works without a simulator: `npx tsc --noEmit` and
   `npx expo export --platform ios`. The export catches import and resolution
   errors the type checker does not.
+- **A `ScrollView` in a flex column needs `flex: 1` on the ScrollView itself**,
+  not just on the parent. Without it the ScrollView takes its height from its
+  content instead of from the space left over, overflows the screen and never
+  scrolls — so the primary button at the bottom of a step becomes unreachable
+  and the flow dead-ends. This was latent from the start and invisible while
+  every step happened to fit on one screen; adding two plan controls to the scan
+  step exposed it. Symptom reads as "the button disappeared", cause is layout,
+  not rendering.
+- **`KeyboardAvoidingView` is core React Native**, so the plan-name field can
+  push the primary button clear of the keyboard without a native module. Use
+  `behavior="padding"` on iOS only.
 - **Palette is deliberately not blue/white and deliberately not red/green.**
   Green-means-cheap would assert the opposite of the product's finding, so
   ranking is carried by position, number size, and one accent (`#B2542A`)

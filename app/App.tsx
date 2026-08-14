@@ -14,7 +14,9 @@
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  KeyboardAvoidingView,
   Linking,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -238,7 +240,24 @@ export default function App() {
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
       <StepBar current={step} onJump={setStep} />
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      {/* The plan-name field sits above the primary button, so without this the
+          keyboard covers the way forward. Core React Native, no native module —
+          see App mechanics in CLAUDE.md. */}
+      <KeyboardAvoidingView
+        style={styles.scrollView}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+      {/* flex: 1 is load-bearing. Without it the ScrollView sizes to its
+          content rather than to the space left by the step bar, so it overflows
+          the screen and never scrolls — the primary button simply becomes
+          unreachable. It only looked fine while every step fitted on one
+          screen. */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         {step === 0 && (
           <ScanStep
             procedure={procedure}
@@ -295,6 +314,7 @@ export default function App() {
 
         <Text style={styles.disclosure}>{data.disclosure}</Text>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -929,6 +949,7 @@ function PrimaryButton({ label, onPress }: { label: string; onPress: () => void 
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: color.canvas },
+  scrollView: { flex: 1 },
   scroll: { paddingHorizontal: space.lg, paddingBottom: space.xl * 2 },
 
   stepBar: {
