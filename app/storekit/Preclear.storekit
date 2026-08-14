@@ -1,0 +1,35 @@
+{
+  "identifier" : "E72929A7-D62B-481D-BFA3-2589085B332E",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "BE2A1C3F-4176-46C2-8895-023E1CC39E0B",
+      "localizations" : [
+        {
+          "description" : "See every route for this scan, including the cheaper in-network site and the checklist for the ordering office.",
+          "displayName" : "Full comparison",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.viraj.preclear.full_comparison",
+      "referenceName" : "Full comparison",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "",
+    "_developerTeamID" : "",
+    "_lastSynchronizedDate" : 0
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

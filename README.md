@@ -110,6 +110,10 @@ cp ../.env.example .env                  # add your RevenueCat public SDK key
 npx expo run:ios
 ```
 
+Purchases are gated behind the `full_comparison` entitlement. Setting that up —
+and testing it on the simulator without an App Store Connect product — is
+described in [app/REVENUECAT.md](app/REVENUECAT.md).
+
 The deductible math is implemented twice — `pipeline/costing/oop.py` is the
 source of truth and `app/src/costing.ts` is a port, so the sliders recompute
 without a round trip. Two copies of the same arithmetic drift, so after changing
