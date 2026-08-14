@@ -165,6 +165,33 @@ export function matchesMemberPlan(memberPlan: string, plan: PlanRate): boolean {
   return overlap / memberTokens.size >= 0.5;
 }
 
+const PRODUCT_ORDER = ['ppo', 'hmo', 'pos', 'epo'];
+
+/**
+ * Product types this payer actually publishes here.
+ *
+ * Offering a type with no published plans is worse than offering nothing: the
+ * member picks it, nothing matches, and `representativeRate` falls back to the
+ * full range — so the app silently ignores an answer it just asked for.
+ *
+ * Product type rather than plan name is deliberate. The published strings do
+ * not reduce to anything a member would recognise: Anthem alone files 21
+ * variants for one CPT, differing by campus and contract suffix
+ * ("BLUE ACCESS PPO WITH COPPS" against "BLUE ACCESS PPO-CID"), and CLAUDE.md
+ * is explicit that no string matching separates those. Product type is the one
+ * field a member can read off their card and answer correctly.
+ */
+export function availableProducts(facilities: FacilityBundle[]): string[] {
+  const found = new Set<string>();
+  for (const facility of facilities) {
+    for (const plan of facility.plans) {
+      const product = plan.product ?? productOf(plan.plan_name);
+      if (product) found.add(product);
+    }
+  }
+  return PRODUCT_ORDER.filter((product) => found.has(product));
+}
+
 export type BuildOptions = {
   facilities: FacilityBundle[];
   benefits: PlanBenefits;

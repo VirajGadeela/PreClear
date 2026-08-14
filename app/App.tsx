@@ -45,6 +45,7 @@ import {
   FacilityBundle,
   Requirement,
   Route,
+  availableProducts,
   buildRoutes,
   rankRoutes,
 } from './src/routes';
@@ -81,6 +82,10 @@ export default function App() {
   const [cpt, setCpt] = useState('73721');
   const [indication, setIndication] = useState('meniscal_tear');
   const [payer, setPayer] = useState('anthem');
+  // The plan, not the payer, sets the price — one Anthem facility publishes
+  // five different rates for the same knee MRI. Undefined means "not sure",
+  // which keeps the full published range rather than guessing one.
+  const [product, setProduct] = useState<string | undefined>(undefined);
   const [deductible, setDeductible] = useState(2000);
   const [coinsurance, setCoinsurance] = useState(0.2);
   const [expectedOtherSpend, setExpectedOtherSpend] = useState(0);
@@ -124,6 +129,19 @@ export default function App() {
     () => procedure.payers[payer] ?? [],
     [procedure, payer],
   );
+
+  const productOptions = useMemo(
+    () => availableProducts(facilities),
+    [facilities],
+  );
+
+  // Clear a product this payer does not publish here, so a stale selection from
+  // a previous payer cannot silently stop matching anything.
+  useEffect(() => {
+    if (product && !productOptions.includes(product)) {
+      setProduct(undefined);
+    }
+  }, [product, productOptions]);
 
   // Left undefined until the patient says otherwise, so an unanswered question
   // reports as "not documented" rather than as a failed criterion.
@@ -177,13 +195,16 @@ export default function App() {
           facilities,
           benefits,
           expectedOtherAllowedSpend: expectedOtherSpend,
+          // Uppercased because matchesMemberPlan reads the product out of the
+          // string the same way it reads a real plan name off a card.
+          memberPlan: product ? product.toUpperCase() : undefined,
           unmetRequirements: findings.map((finding) => finding.requirement),
           // Surfaced when the deductible is unlikely to be met, which is when
           // the missing credit costs the patient least.
           cashIsAppropriate: expectedOtherSpend < deductible,
         }),
       ),
-    [facilities, benefits, expectedOtherSpend, deductible, findings],
+    [facilities, benefits, expectedOtherSpend, deductible, findings, product],
   );
 
   const unlock = useCallback(async () => {
@@ -211,9 +232,12 @@ export default function App() {
             cpt={cpt}
             indication={indication}
             payer={payer}
+            product={product}
+            productOptions={productOptions}
             onCpt={setCpt}
             onIndication={setIndication}
             onPayer={setPayer}
+            onProduct={setProduct}
             onNext={() => setStep(1)}
           />
         )}
@@ -315,18 +339,24 @@ function ScanStep({
   cpt,
   indication,
   payer,
+  product,
+  productOptions,
   onCpt,
   onIndication,
   onPayer,
+  onProduct,
   onNext,
 }: {
   procedure: Procedure;
   cpt: string;
   indication: string;
   payer: string;
+  product: string | undefined;
+  productOptions: string[];
   onCpt: (value: string) => void;
   onIndication: (value: string) => void;
   onPayer: (value: string) => void;
+  onProduct: (value: string | undefined) => void;
   onNext: () => void;
 }) {
   return (
@@ -371,6 +401,35 @@ function ScanStep({
           />
         ))}
       </View>
+
+      {/* The plan sets the price, not the payer. Product type is asked for
+          because it is the one plan fact a member can read off their card and
+          answer correctly — the published plan strings differ by campus and
+          contract suffix and match nothing a patient would recognise. */}
+      {productOptions.length > 1 && (
+        <>
+          <Text style={styles.h2}>Your plan type</Text>
+          <View style={styles.chipWrap}>
+            {productOptions.map((option) => (
+              <Chip
+                key={option}
+                selected={option === product}
+                label={option.toUpperCase()}
+                onPress={() => onProduct(option === product ? undefined : option)}
+              />
+            ))}
+            <Chip
+              label="Not sure"
+              selected={product === undefined}
+              onPress={() => onProduct(undefined)}
+            />
+          </View>
+          <Text style={styles.caption}>
+            It is on your insurance card. Not sure keeps every rate your insurer
+            publishes here, which is a wider range.
+          </Text>
+        </>
+      )}
 
       <PrimaryButton label="Next: your coverage" onPress={onNext} />
     </View>

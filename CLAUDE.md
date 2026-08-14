@@ -377,8 +377,26 @@ route.
   the gigabyte price files to be present, which they usually are not.
 - **Card capture is deliberately not built.** It needs `expo-camera` (a native
   rebuild) and creates the one compliance risk with no upside for the demo —
-  hard rule 3 requires discarding the image immediately. Plan is chosen from a
-  list instead.
+  hard rule 3 requires discarding the image immediately. Plan type is chosen
+  from a list instead.
+- **Member ID is deliberately not collected either, for the same reason.** Its
+  only use is an eligibility lookup, and CLAUDE.md defers eligibility to beta —
+  so the field would be a direct identifier, collected and unused, against hard
+  rule 1. The fact on the card that actually changes the answer is the plan, and
+  it identifies nobody.
+- **Ask for plan *type*, not plan name.** `buildRoutes` and `representativeRate`
+  accepted `memberPlan` from the start but the app never passed it, so every
+  member saw the median across all of that payer's plans — $888.30 at Franciscan
+  Carmel where a PPO member owes $992.51 and an HMO member $784.08. The fix is
+  not a plan-name picker: Anthem files 21 distinct strings for one CPT, they
+  differ by campus and contract suffix, and cleaning them collapses 21 to 19
+  with an empty label. Product type (PPO/HMO/POS/EPO) is the one plan fact a
+  member can read off a card and answer correctly, `matchesMemberPlan` already
+  gates on it, and passing the bare string `"PPO"` matches by both product and
+  token overlap. `availableProducts()` offers only types that payer actually
+  publishes — offering an absent type is worse than offering none, because
+  nothing matches and the app silently ignores the answer it just asked for.
+  "Not sure" is a real answer that keeps the full published range.
 
 Gate definitions, for the record:
 
