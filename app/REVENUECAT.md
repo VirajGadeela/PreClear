@@ -49,8 +49,14 @@ Connect, and a sandbox tester Apple ID.
    ```
    EXPO_PUBLIC_REVENUECAT_PUBLIC_SDK_KEY=appl_xxxxxxxxxxxx
    ```
-   Restart the bundler afterward — Expo reads `.env` at startup only.
-   Use the *public* key. The secret key must never enter this repo.
+   `EXPO_PUBLIC_` values are inlined into the bundle, not read at runtime, so
+   after editing `.env` you need a **full reload** of the app — shake gesture or
+   `Cmd+R` in the simulator. Fast Refresh will not pick it up, and restarting
+   Metro is not what fixes it.
+
+   Use the *public* key, which is designed to ship in the client. The secret key
+   must never enter this repo or an `EXPO_PUBLIC_` variable — anything with that
+   prefix is readable in plain text in the compiled app.
 4. **Product catalog → Products → + New**. Store: App Store.
    Product ID: `com.viraj.preclear.full_comparison`. Type: non-consumable.
 5. **Product catalog → Entitlements → + New**. Identifier: `full_comparison`.
