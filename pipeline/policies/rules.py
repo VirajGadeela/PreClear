@@ -58,6 +58,27 @@ MENISCAL_EXAM_FINDINGS = (
     "reduced_range_of_motion",
 )
 
+# Concerning headache features, Carelon Imaging of the Brain — Headache.
+# The guideline lists these as alternatives ("ANY of the following"), so one
+# documented feature satisfies the criterion and none documented means the
+# pathway is undocumented, never that the study fails to qualify.
+#
+# Deliberately NOT recorded here: the same section names a preferred modality.
+# Hard rule 6 forbids this product suggesting a different study, so modality
+# preference is left out of the rule set entirely rather than carried in a field
+# that some later screen might surface.
+CARELON_HEADACHE_FEATURES = (
+    "thunderclap_or_sentinel_headache",
+    "exertional_or_valsalva_trigger",
+    "positional_or_orthostatic",
+    "new_onset_after_age_50",
+    "change_in_headache_pattern",
+    "abnormal_neurological_exam",
+    "unexplained_increase_in_frequency_or_severity",
+    "trigeminal_autonomic_cephalgia",
+    "comorbidity_raising_intracranial_lesion_likelihood",
+)
+
 
 @dataclass(frozen=True)
 class Citation:
@@ -97,6 +118,11 @@ class ImagingOrder:
     positive_ligament_stress_tests: tuple = ()
     radiculopathy_objective_findings: Optional[bool] = None
     red_flags: tuple = ()
+    # At least one concerning headache feature documented, per
+    # CARELON_HEADACHE_FEATURES. A single flag rather than a list because the
+    # criterion is satisfied by any one of them, so which one does not change
+    # the outcome and asking a patient to name it would not be answerable.
+    headache_concerning_feature: Optional[bool] = None
 
 
 @dataclass(frozen=True)
@@ -195,6 +221,34 @@ CARELON_EXTREMITIES = Citation(
     version="2025-11-15",
     effective_date="2025-11-15",
     source_url="https://guidelines.carelonmedicalbenefitsmanagement.com/imaging-of-the-extremities-2025-11-15/",
+)
+
+CARELON_SPINE = Citation(
+    payer="Anthem Blue Cross and Blue Shield",
+    reviewed_by="Carelon Medical Benefits Management",
+    document_title="Clinical Appropriateness Guidelines: Imaging of the Spine",
+    section_id="Imaging of the Spine — Low back pain or lumbar radiculopathy",
+    version="2025-11-15",
+    effective_date="2025-11-15",
+    source_url="https://guidelines.carelonmedicalbenefitsmanagement.com/imaging-of-the-spine-2025-11-15/",
+    retrieved_on="2026-08-13",
+)
+
+# Headache criteria live in Imaging of the Brain, not Imaging of the Head and
+# Neck. The head-and-neck document covers sinusitis, trauma, hearing loss and
+# similar, and carries no headache section at all — checked 2026-08-13.
+CARELON_BRAIN = Citation(
+    payer="Anthem Blue Cross and Blue Shield",
+    reviewed_by="Carelon Medical Benefits Management",
+    document_title="Clinical Appropriateness Guidelines: Imaging of the Brain",
+    section_id="Imaging of the Brain — Headache",
+    version="2025-11-15, updated 2026-01-01",
+    effective_date="2025-11-15",
+    source_url=(
+        "https://guidelines.carelonmedicalbenefitsmanagement.com/"
+        "imaging-of-the-brain-2025-11-15-updated-2026-01-01/"
+    ),
+    retrieved_on="2026-08-13",
 )
 
 
@@ -339,5 +393,51 @@ REQUIREMENTS = (
         citation=AETNA_SPINE,
         check={"type": "min_weeks", "weeks": 4},
         alternative_pathway=True,
+    ),
+    # ----------------------------------------------------------------------
+    # Anthem is the primary payer for this metro but previously carried rules
+    # for the knee only, so an Anthem member ordering a lumbar MRI or a head CT
+    # got no requirement check at all. These close that.
+    # ----------------------------------------------------------------------
+    Requirement(
+        key="carelon-lumbar-six-week-conservative",
+        cpt_codes=("72148",),
+        indication="low_back_pain",
+        summary="6 weeks of conservative management must have been tried and "
+        "failed.",
+        quote="Pain or radiculopathy (including chronic neurogenic claudication) "
+        "following at least 6 weeks of conservative management (imaging no more "
+        "than annually)",
+        citation=CARELON_SPINE,
+        check={"type": "min_weeks", "weeks": 6},
+        alternative_pathway=True,
+        note="The guideline's other listed scenario is neurologic exam findings "
+        "suggesting nerve root or cord compression, which does not require the "
+        "6-week trial.",
+    ),
+    Requirement(
+        key="carelon-lumbar-neurologic-findings",
+        cpt_codes=("72148",),
+        indication="low_back_pain_with_radiculopathy",
+        summary="Neurologic exam findings suggesting nerve root or cord "
+        "compression, not previously imaged or new since the last imaging.",
+        quote="Neurologic exam findings suggesting lumbar nerve root or cord "
+        "compression that has not previously been imaged or is new since last "
+        "imaging was performed",
+        citation=CARELON_SPINE,
+        check={"type": "boolean", "field": "radiculopathy_objective_findings"},
+        alternative_pathway=True,
+    ),
+    Requirement(
+        key="carelon-brain-headache-concerning-feature",
+        cpt_codes=("70450",),
+        indication="headache",
+        summary="At least one concerning headache feature must be documented.",
+        quote="Advanced imaging is considered medically necessary to evaluate "
+        "headache not previously imaged by MRI in ANY of the following scenarios",
+        citation=CARELON_BRAIN,
+        check={"type": "boolean", "field": "headache_concerning_feature"},
+        alternative_pathway=True,
+        note="Listed features: " + ", ".join(CARELON_HEADACHE_FEATURES),
     ),
 )

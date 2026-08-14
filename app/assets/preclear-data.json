@@ -2257,7 +2257,12 @@
       "cpt": "70450",
       "label": "Head CT",
       "detail": "CT, head or brain, without contrast",
-      "indications": [],
+      "indications": [
+        {
+          "key": "headache",
+          "label": "Headache"
+        }
+      ],
       "payers": {
         "anthem": [
           {
@@ -3486,6 +3491,69 @@
       "version": "Last Review 2026-04-09",
       "effective_date": "1998-05-06",
       "source_url": "https://www.aetna.com/cpb/medical/data/200_299/0236.html",
+      "alternative_pathway": true
+    },
+    {
+      "key": "carelon-lumbar-six-week-conservative",
+      "payer": "Anthem Blue Cross and Blue Shield",
+      "reviewed_by": "Carelon Medical Benefits Management",
+      "cpt_codes": [
+        "72148"
+      ],
+      "indication": "low_back_pain",
+      "summary": "6 weeks of conservative management must have been tried and failed.",
+      "quote": "Pain or radiculopathy (including chronic neurogenic claudication) following at least 6 weeks of conservative management (imaging no more than annually)",
+      "check": {
+        "type": "min_weeks",
+        "weeks": 6
+      },
+      "document_title": "Clinical Appropriateness Guidelines: Imaging of the Spine",
+      "section_id": "Imaging of the Spine \u2014 Low back pain or lumbar radiculopathy",
+      "version": "2025-11-15",
+      "effective_date": "2025-11-15",
+      "source_url": "https://guidelines.carelonmedicalbenefitsmanagement.com/imaging-of-the-spine-2025-11-15/",
+      "alternative_pathway": true
+    },
+    {
+      "key": "carelon-lumbar-neurologic-findings",
+      "payer": "Anthem Blue Cross and Blue Shield",
+      "reviewed_by": "Carelon Medical Benefits Management",
+      "cpt_codes": [
+        "72148"
+      ],
+      "indication": "low_back_pain_with_radiculopathy",
+      "summary": "Neurologic exam findings suggesting nerve root or cord compression, not previously imaged or new since the last imaging.",
+      "quote": "Neurologic exam findings suggesting lumbar nerve root or cord compression that has not previously been imaged or is new since last imaging was performed",
+      "check": {
+        "type": "boolean",
+        "field": "radiculopathy_objective_findings"
+      },
+      "document_title": "Clinical Appropriateness Guidelines: Imaging of the Spine",
+      "section_id": "Imaging of the Spine \u2014 Low back pain or lumbar radiculopathy",
+      "version": "2025-11-15",
+      "effective_date": "2025-11-15",
+      "source_url": "https://guidelines.carelonmedicalbenefitsmanagement.com/imaging-of-the-spine-2025-11-15/",
+      "alternative_pathway": true
+    },
+    {
+      "key": "carelon-brain-headache-concerning-feature",
+      "payer": "Anthem Blue Cross and Blue Shield",
+      "reviewed_by": "Carelon Medical Benefits Management",
+      "cpt_codes": [
+        "70450"
+      ],
+      "indication": "headache",
+      "summary": "At least one concerning headache feature must be documented.",
+      "quote": "Advanced imaging is considered medically necessary to evaluate headache not previously imaged by MRI in ANY of the following scenarios",
+      "check": {
+        "type": "boolean",
+        "field": "headache_concerning_feature"
+      },
+      "document_title": "Clinical Appropriateness Guidelines: Imaging of the Brain",
+      "section_id": "Imaging of the Brain \u2014 Headache",
+      "version": "2025-11-15, updated 2026-01-01",
+      "effective_date": "2025-11-15",
+      "source_url": "https://guidelines.carelonmedicalbenefitsmanagement.com/imaging-of-the-brain-2025-11-15-updated-2026-01-01/",
       "alternative_pathway": true
     }
   ]

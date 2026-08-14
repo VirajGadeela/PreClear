@@ -52,7 +52,9 @@ PROCEDURES = {
     "70450": {
         "label": "Head CT",
         "detail": "CT, head or brain, without contrast",
-        "indications": [],
+        "indications": [
+            {"key": "headache", "label": "Headache"},
+        ],
     },
 }
 
@@ -154,11 +156,62 @@ def requirement_bundle():
     return entries
 
 
+def refresh_metadata(path):
+    """Rewrite the indication and requirement halves of an existing bundle.
+
+    Requirement rules and indication labels are derived entirely from this
+    module and `pipeline.policies`, with no dependency on the price files. Those
+    files are gigabytes, live outside the repo, and are slow to rebuild, so
+    editing a rule should not force a re-extraction. Facility prices are left
+    exactly as they were.
+
+    This is deliberately not the default: a bundle whose prices are stale is a
+    real hazard, and only the caller knows whether that matters.
+    """
+    with open(path, encoding="utf-8") as handle:
+        payload = json.load(handle)
+
+    known = {procedure["cpt"] for procedure in payload["procedures"]}
+    missing = set(PROCEDURES) - known
+    if missing:
+        raise SystemExit(
+            f"{path} has no price data for CPT {', '.join(sorted(missing))}. "
+            "Run a full export instead — metadata refresh cannot invent prices."
+        )
+
+    for procedure in payload["procedures"]:
+        meta = PROCEDURES.get(procedure["cpt"])
+        if meta:
+            procedure["label"] = meta["label"]
+            procedure["detail"] = meta["detail"]
+            procedure["indications"] = meta["indications"]
+    payload["requirements"] = requirement_bundle()
+
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2)
+        handle.write("\n")
+    return payload
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--prices", nargs="+", default=None)
     parser.add_argument("--out", default=os.path.join("app", "assets", "preclear-data.json"))
+    parser.add_argument(
+        "--metadata-only",
+        action="store_true",
+        help="Refresh indications and requirements in --out, keeping its prices. "
+        "Use after editing rules, when the price files are not to hand.",
+    )
     args = parser.parse_args(argv)
+
+    if args.metadata_only:
+        payload = refresh_metadata(args.out)
+        print(
+            f"refreshed {len(payload['requirements'])} requirements and "
+            f"{len(payload['procedures'])} procedures in {args.out}; prices untouched"
+        )
+        return 0
 
     paths = args.prices or sorted(glob.glob(os.path.join("data", "gate1", "*.csv")))
     paths = [path for path in paths if os.path.getsize(path) > 0]
