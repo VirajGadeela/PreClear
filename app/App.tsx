@@ -25,9 +25,16 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import household from './assets/household-eobs.json';
 import raw from './assets/preclear-data.json';
 import { Money } from './src/Money';
 import { Slider } from './src/Slider';
+import {
+  Eob,
+  HouseholdPlan,
+  review,
+  totalAtStake,
+} from './src/claims';
 import { PlanBenefits, money } from './src/costing';
 import {
   configure as configurePurchases,
@@ -717,13 +724,13 @@ function RoutesStep({
     );
   }
 
-  const visible = isSubscribed ? routes : routes.slice(0, 1);
-  const hidden = routes.length - visible.length;
-
   return (
     <View>
       <Headline routes={routes} />
-      {visible.map((route, index) => (
+      {/* Every route is free. The comparison is the hook, and a scan happens
+          every few years — what recurs is claims, which is what the household
+          plan below watches. */}
+      {routes.map((route, index) => (
         <RouteCard
           key={route.kind}
           route={route}
@@ -734,18 +741,16 @@ function RoutesStep({
         />
       ))}
 
-      {hidden > 0 && (
+      {isSubscribed ? <HouseholdReview /> : (
         <Pressable
           accessibilityRole="button"
           onPress={onUnlock}
           style={styles.lock}
         >
-          <Text style={styles.lockTitle}>
-            {hidden} more {hidden === 1 ? 'option' : 'options'}
-          </Text>
+          <Text style={styles.lockTitle}>Watch the whole household</Text>
           <Text style={styles.lockBody}>
-            The full site-of-service comparison, and the checklist for your
-            doctor’s office where it applies.
+            Every bill and explanation of benefits that arrives, checked against
+            its own numbers all year.
           </Text>
           <Text style={styles.lockCta}>Unlock →</Text>
         </Pressable>
@@ -874,6 +879,90 @@ function RouteCard({
           ))}
         </View>
       )}
+    </View>
+  );
+}
+
+/**
+ * The subscription tier: the household's claims, checked against themselves.
+ *
+ * Findings are discrepancies the documents demonstrate — arithmetic that does
+ * not reconcile, a service billed twice, a denial that carries appeal rights.
+ * None of them predicts what the payer will do, and the total is what is at
+ * stake rather than what will be recovered.
+ *
+ * The claims are synthetic fixtures. Nothing real is read, stored or sent.
+ */
+function HouseholdReview() {
+  const findings = useMemo(
+    () => review(household.eobs as Eob[], household.plan as HouseholdPlan),
+    [],
+  );
+  const atStake = useMemo(() => totalAtStake(findings), [findings]);
+
+  // Grouped by claim, because two checks routinely catch the same claim from
+  // different directions — a balance bill almost always fails the components
+  // check too. Listed separately they read as two separate recoveries, and a
+  // member would add them up. The card shows the amount once, at the largest
+  // finding, which is the same rule totalAtStake uses.
+  const byClaim = useMemo(() => {
+    const groups: { claimId: string; member: string; amount: number | null; reasons: string[]; actions: string[] }[] = [];
+    for (const finding of findings) {
+      const existing = groups.find((group) => group.claimId === finding.claim_id);
+      if (existing) {
+        existing.amount =
+          finding.amount === null
+            ? existing.amount
+            : Math.max(existing.amount ?? 0, finding.amount);
+        existing.reasons.push(finding.summary);
+        if (!existing.actions.includes(finding.action)) {
+          existing.actions.push(finding.action);
+        }
+      } else {
+        groups.push({
+          claimId: finding.claim_id,
+          member: finding.member,
+          amount: finding.amount,
+          reasons: [finding.summary],
+          actions: [finding.action],
+        });
+      }
+    }
+    return groups;
+  }, [findings]);
+
+  return (
+    <View style={styles.household}>
+      <Text style={styles.h2}>Your household this year</Text>
+      <Text style={styles.caption}>
+        {household.eobs.length} claims reviewed · {byClaim.length}{' '}
+        {byClaim.length === 1 ? 'claim to question' : 'claims to question'}
+      </Text>
+      {atStake > 0 && <Money value={atStake} size="large" tone="accent" />}
+
+      {byClaim.map((group) => (
+        <View key={group.claimId} style={styles.finding}>
+          <Text style={styles.findingHead}>
+            {group.member} · {group.claimId}
+            {group.amount !== null ? ` · ${money(group.amount)}` : ''}
+          </Text>
+          {group.reasons.map((reason) => (
+            <Text key={reason} style={styles.detailSummary}>
+              {reason}
+            </Text>
+          ))}
+          {group.actions.map((action) => (
+            <Text key={action} style={styles.citation}>
+              {action}
+            </Text>
+          ))}
+        </View>
+      ))}
+
+      <Text style={styles.caption}>
+        Sample claims, shown so the review can be seen working. Amounts are
+        estimates of what is in dispute, not of what will be refunded.
+      </Text>
     </View>
   );
 }
@@ -1049,6 +1138,16 @@ const styles = StyleSheet.create({
   citation: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
   link: { ...type.caption, fontWeight: '700', color: color.accent, marginTop: space.xs },
   detailHedge: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
+
+  household: { marginTop: space.md, gap: space.sm },
+  finding: {
+    backgroundColor: color.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.line,
+    padding: space.md,
+  },
+  findingHead: { ...type.label, color: color.ink },
 
   lock: {
     backgroundColor: color.surface,

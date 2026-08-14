@@ -538,10 +538,33 @@ liability, and it needs a healthcare attorney before any facility pays a dollar.
   RevenueCat is painful, so it had to survive that shift.
 - **The product is an auto-renewable monthly subscription**, family shareable,
   in the `Preclear Household` group — not the non-consumable it started as.
-- **The paywall is deliberately NOT inverted yet.** Under the final model the
-  comparison is free and monitoring is paid, but monitoring does not exist. On
-  demo day a purchase must unlock something real, so it still gates routes 2–4.
-  Invert it only once monitoring works.
+- **The paywall is inverted, and monitoring is real.** All four routes are
+  free; `pipeline/claims/` reviews a household's EOBs behind the entitlement.
+  The claims are synthetic fixtures in `data/samples/household_eobs.json`, so
+  the tier demonstrates honestly without touching PHI.
+
+### Claims review mechanics (built 2026-08-13)
+
+- **`pipeline/claims/eob.py` is the source of truth, `app/src/claims.ts` mirrors
+  it, and `scripts/check-claims-parity.sh` guards the pair.** That is now three
+  duplicated engines with three parity scripts — costing, requirements, claims.
+  Drift here is the worst of the three: a wrong finding tells a member they are
+  owed money they are not, and sends them to argue with their insurer on a false
+  premise.
+- **Every finding is arithmetic that fails against the EOB's own numbers, or a
+  fact the document states about itself.** Nothing predicts whether an appeal
+  succeeds. The denial finding is deliberately unpriced — attaching a number
+  would imply a predicted recovery.
+- **Two checks routinely catch the same claim.** An in-network balance bill
+  almost always fails the components check too. Both `total_at_stake` and the
+  app's card grouping count a claim **once, at its largest finding**. Summing
+  them told a member they were owed $726.58 where one claim can return $384.09,
+  and overstating that is exactly the dishonesty this product exists to correct.
+  The bug appeared twice — first in the arithmetic, then reintroduced by the
+  layout listing one claim as two cards.
+- `export_app_data.py` copies the EOB fixture into `app/assets/`, so
+  `data/samples/` stays the single source and the app cannot drift from what the
+  parity script tests.
 
 ### Claims data acquisition (verified 2026-08-13)
 
