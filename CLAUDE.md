@@ -509,6 +509,66 @@ For Shipaton, `deductible_remaining` is **user-reported via a slider.** No eligi
 
 Cash prices from freestanding centers (voice-agent phone calls) are **phase 2, not Shipaton.**
 
+## Business model (decided 2026-08-13)
+
+Two consumer tiers now, one B2B layer much later.
+
+**Free — the one-time check.** Procedure in, four ranked routes out, with real
+numbers. This is the hook and the demo, and it is what the app does today.
+
+**Paid, ~$6–10/month, billed per household — ongoing claims monitoring.** The
+app keeps reading the bills and EOBs that arrive for everyone in the household
+all year, flagging billing errors, appealable denials and overcharges. The
+one-time comparison becomes a feature inside it. This is what makes it a
+subscription rather than a one-and-done tool: imaging happens every few years,
+claims arrive constantly.
+
+**B2B, later, explicitly not part of the initial build.** Free listing for
+imaging centres so nobody can pay to rank higher, plus a paid analytics or
+pricing-visibility product they choose to buy. Facilities paying for placement
+would be a referral payment, which is anti-kickback territory — criminal
+liability, and it needs a healthcare attorney before any facility pays a dollar.
+
+### Consequences already in the repo
+
+- **The entitlement is `preclear_household`, not `full_comparison`.** Named for
+  who it covers rather than what it unlocks, because it gates the comparison
+  today and is meant to gate monitoring later once the comparison goes free.
+  Renaming an entitlement after products exist in App Store Connect and
+  RevenueCat is painful, so it had to survive that shift.
+- **The product is an auto-renewable monthly subscription**, family shareable,
+  in the `Preclear Household` group — not the non-consumable it started as.
+- **The paywall is deliberately NOT inverted yet.** Under the final model the
+  comparison is free and monitoring is paid, but monitoring does not exist. On
+  demo day a purchase must unlock something real, so it still gates routes 2–4.
+  Invert it only once monitoring works.
+
+### Claims data acquisition (verified 2026-08-13)
+
+The paid tier does not require scraping payer portals, and this matters — it is
+the same thesis as the rest of the product.
+
+- Under the CMS Interoperability rules, payers must expose **claims and
+  encounter data including EOBs through a FHIR Patient Access API**, which a
+  member authorises a third-party app to read via **SMART on FHIR / OAuth 2.0**.
+  Free, federally mandated, and almost unused by consumer software.
+- The data standard is the **CARIN for Blue Button** implementation guide.
+- **The gate is attestation, not technology.** Payers must run an attestation
+  process for third-party developers before releasing data, so registration is
+  the long pole — weeks, not hours. Start Anthem and UHC early.
+- CMS-9115-F established this; CMS-0057-F expands it, with required APIs
+  operational by 2027-01-01.
+- Medicare-only alternative: CMS Blue Button 2.0.
+
+### The compliance fork this creates
+
+Claims monitoring means holding **real EOBs for real households**, which is a
+categorically different product from what exists now. Everything built so far
+avoids PHI entirely: inputs are user-reported, nothing is stored, no image is
+captured. Hard rule 1 below is scoped to the Shipaton build, but going past it
+means a backend that stores PHI, breach obligations and a BAA posture. Choose it
+deliberately; do not drift into it.
+
 ## Hard rules — never violate
 
 These are compliance red lines. Flag immediately if any code or copy would break one.

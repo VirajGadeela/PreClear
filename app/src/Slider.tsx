@@ -26,7 +26,6 @@ type Props = {
   step: number;
   onChange: (value: number) => void;
   format: (value: number) => string;
-  helpText?: string;
 };
 
 const THUMB = 30;
@@ -39,7 +38,6 @@ export function Slider({
   step,
   onChange,
   format,
-  helpText,
 }: Props) {
   const [width, setWidth] = useState(0);
   // The responder closes over these, so they have to be refs rather than state.
@@ -96,7 +94,6 @@ export function Slider({
         <View style={[styles.fill, { width: thumbLeft + THUMB / 2 }]} />
         <View style={[styles.thumb, { left: thumbLeft }]} />
       </View>
-      {helpText ? <Text style={styles.help}>{helpText}</Text> : null}
     </View>
   );
 }
@@ -149,10 +146,5 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     borderWidth: 3,
     borderColor: color.slate,
-  },
-  help: {
-    color: color.inkMuted,
-    ...typography.caption,
-    marginTop: 2,
   },
 });

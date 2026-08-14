@@ -1,24 +1,10 @@
 {
-  "identifier" : "E72929A7-D62B-481D-BFA3-2589085B332E",
+  "identifier" : "DAE06F49-6214-4118-BA4C-DBB2476CF2B0",
   "nonRenewingSubscriptions" : [
 
   ],
   "products" : [
-    {
-      "displayPrice" : "4.99",
-      "familyShareable" : false,
-      "internalID" : "BE2A1C3F-4176-46C2-8895-023E1CC39E0B",
-      "localizations" : [
-        {
-          "description" : "See every route for this scan, including the cheaper in-network site and the checklist for the ordering office.",
-          "displayName" : "Full comparison",
-          "locale" : "en_US"
-        }
-      ],
-      "productID" : "com.viraj.preclear.full_comparison",
-      "referenceName" : "Full comparison",
-      "type" : "NonConsumable"
-    }
+
   ],
   "settings" : {
     "_applicationInternalID" : "",
@@ -26,7 +12,40 @@
     "_lastSynchronizedDate" : 0
   },
   "subscriptionGroups" : [
+    {
+      "id" : "4C22C113-87C5-4E3B-AA04-3D19ACE3E6EF",
+      "localizations" : [
 
+      ],
+      "name" : "Preclear Household",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "7.99",
+          "familyShareable" : true,
+          "groupNumber" : 1,
+          "internalID" : "FCA9C959-865E-40EF-89F4-437544E0E4F4",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Ongoing review of the bills and explanations of benefits that arrive for your household.",
+              "displayName" : "Preclear Household",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.viraj.preclear.household.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Preclear Household Monthly",
+          "subscriptionGroupID" : "4C22C113-87C5-4E3B-AA04-3D19ACE3E6EF",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
   ],
   "version" : {
     "major" : 3,

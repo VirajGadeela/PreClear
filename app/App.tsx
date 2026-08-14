@@ -65,7 +65,6 @@ type Procedure = {
 };
 type Bundle = {
   metro: string;
-  disclosure: string;
   procedures: Procedure[];
   requirements: Requirement[];
 };
@@ -257,6 +256,12 @@ export default function App() {
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        // Bounce even when content nearly fits. The scan step overflows by only
+        // ~170pt, and without this a short drag springs back with no movement,
+        // which reads as "this screen does not scroll" rather than "you are at
+        // the end of it".
+        alwaysBounceVertical
+        showsVerticalScrollIndicator
       >
         {step === 0 && (
           <ScanStep
@@ -311,8 +316,6 @@ export default function App() {
             payerLabel={PAYER_LABELS[payer] ?? ''}
           />
         )}
-
-        <Text style={styles.disclosure}>{data.disclosure}</Text>
       </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -567,7 +570,6 @@ function CoverageStep({
           step={500}
           onChange={onExpectedOtherSpend}
           format={money}
-          helpText="Zero assumes no further care this year — an assumption, not a neutral default."
         />
         {showTreatment && (
           <Slider
@@ -578,7 +580,6 @@ function CoverageStep({
             step={1}
             onChange={onTreatmentWeeks}
             format={(value) => `${value} ${value === 1 ? 'week' : 'weeks'}`}
-            helpText="Checked against requirements your insurer publishes."
           />
         )}
       </View>
@@ -726,7 +727,6 @@ function RoutesStep({
         <RouteCard
           key={route.kind}
           route={route}
-          rank={index + 1}
           recommended={index === 0}
           expanded={open === route.kind}
           findings={findings}
@@ -785,14 +785,12 @@ function RoutesStep({
 
 function RouteCard({
   route,
-  rank,
   recommended,
   expanded,
   findings,
   onToggle,
 }: {
   route: Route;
-  rank: number;
   recommended: boolean;
   expanded: boolean;
   findings: { requirement: Requirement; status: string }[];
@@ -803,45 +801,25 @@ function RouteCard({
 
   return (
     <View style={[styles.card, recommended && styles.cardRecommended]}>
-      {recommended && <Text style={styles.badge}>RECOMMENDED</Text>}
-
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded }}
         accessibilityLabel={`${route.label} at ${route.facilityName}. Tap for the breakdown.`}
         onPress={onToggle}
       >
-        <View style={styles.cardTop}>
-          <Text style={[styles.rank, recommended && styles.rankRecommended]}>
-            {rank}
-          </Text>
-          <View style={styles.cardHead}>
-            <Text style={styles.routeLabel}>{route.label}</Text>
-            <Text style={styles.facility} numberOfLines={2}>
-              {route.facilityName}
-            </Text>
-          </View>
-        </View>
+        <Text style={styles.routeLabel}>{route.label}</Text>
 
-        <View style={styles.amountRow}>
-          <Money
-            value={route.estimate.totalThisYear}
-            size="large"
-            tone={recommended ? 'accent' : 'ink'}
-          />
-          <Text style={styles.amountCaption}>total this year</Text>
-        </View>
+        <Money
+          value={route.estimate.totalThisYear}
+          size="large"
+          tone={recommended ? 'accent' : 'ink'}
+        />
 
         <View style={styles.whyRow}>
           <Text style={styles.why} numberOfLines={expanded ? undefined : 2}>
             {route.estimate.scan.countsTowardDeductible
               ? 'Counts toward your deductible.'
-              : 'Earns no deductible credit.'}{' '}
-            {route.unmetRequirements.length > 0
-              ? `${route.unmetRequirements.length} requirement${
-                  route.unmetRequirements.length === 1 ? '' : 's'
-                } not documented.`
-              : ''}
+              : 'Earns no deductible credit.'}
           </Text>
           <Text style={styles.chevron}>{expanded ? 'Hide' : 'Details'}</Text>
         </View>
@@ -849,6 +827,7 @@ function RouteCard({
 
       {expanded && (
         <View style={styles.details}>
+          <Row label="Facility" value={<Text style={styles.rowValue}>{route.facilityName}</Text>} />
           <Row label="This scan" value={<Money value={route.estimate.scan.patientPays} />} />
           <Row
             label="Deductible credit"
@@ -858,15 +837,12 @@ function RouteCard({
             label="Other care after this"
             value={<Money value={route.estimate.expectedOtherCareCost} />}
           />
-          {route.facilityAddress ? (
-            <Text style={styles.address}>{route.facilityAddress}</Text>
-          ) : null}
-          {route.alsoAt.length > 0 && (
-            <Text style={styles.address}>
-              Same published price at {route.alsoAt.join(', ')}
-            </Text>
-          )}
-          <Text style={styles.reasoning}>{route.reasoning}</Text>
+          <Row
+            label="Requirements not documented"
+            value={
+              <Text style={styles.rowValue}>{route.unmetRequirements.length}</Text>
+            }
+          />
 
           {route.warnings.map((warning) => (
             <Text key={warning} style={styles.warning}>
@@ -879,8 +855,7 @@ function RouteCard({
               <Text style={styles.requirementStatus}>
                 {statusLabel(statusFor(requirement.key) as any)}
               </Text>
-              <Text style={styles.requirementSummary}>{requirement.summary}</Text>
-              <Text style={styles.requirementQuote}>“{requirement.quote}”</Text>
+              <Text style={styles.detailSummary}>{requirement.summary}</Text>
               <Text style={styles.citation}>
                 {requirement.payer} · {requirement.section_id} · {requirement.version}
               </Text>
@@ -891,7 +866,7 @@ function RouteCard({
                 <Text style={styles.link}>Source document</Text>
               </Pressable>
               {requirement.alternative_pathway && (
-                <Text style={styles.hedge}>
+                <Text style={styles.detailHedge}>
                   One of several alternative criteria; another may apply instead.
                 </Text>
               )}
@@ -1038,32 +1013,7 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   cardRecommended: { borderColor: color.accent, backgroundColor: color.accentSoft },
-  badge: {
-    ...type.caption,
-    fontWeight: '700',
-    letterSpacing: 1,
-    color: color.accent,
-    marginBottom: space.sm,
-  },
-  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
-  rank: {
-    ...type.label,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    textAlign: 'center',
-    lineHeight: 24,
-    color: color.surface,
-    backgroundColor: color.slate,
-    overflow: 'hidden',
-  },
-  rankRecommended: { backgroundColor: color.accent },
-  cardHead: { flex: 1 },
   routeLabel: { ...type.caption, fontWeight: '700', color: color.inkMuted },
-  facility: { ...type.body, fontWeight: '700', color: color.ink, marginTop: 2 },
-
-  amountRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm, marginTop: space.md },
-  amountCaption: { ...type.caption, color: color.inkMuted },
 
   whyRow: {
     flexDirection: 'row',
@@ -1083,8 +1033,7 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   rowLabel: { ...type.caption, color: color.inkMuted },
-  address: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
-  reasoning: { ...type.caption, color: color.inkMuted, marginTop: space.sm },
+  rowValue: { ...type.caption, color: color.ink, fontWeight: '700', flexShrink: 1, textAlign: 'right' },
   warning: {
     ...type.caption,
     color: color.flag,
@@ -1096,11 +1045,10 @@ const styles = StyleSheet.create({
 
   requirement: { borderTopWidth: 1, borderTopColor: color.line, marginTop: space.md, paddingTop: space.md },
   requirementStatus: { ...type.caption, fontWeight: '700', color: color.flag },
-  requirementSummary: { ...type.caption, color: color.ink, marginTop: space.xs },
-  requirementQuote: { ...type.caption, color: color.inkMuted, fontStyle: 'italic', marginTop: space.xs },
+  detailSummary: { ...type.caption, color: color.ink, marginTop: space.xs },
   citation: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
   link: { ...type.caption, fontWeight: '700', color: color.accent, marginTop: space.xs },
-  hedge: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
+  detailHedge: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
 
   lock: {
     backgroundColor: color.surface,
@@ -1135,12 +1083,4 @@ const styles = StyleSheet.create({
   restoreText: { ...type.caption, color: color.inkMuted },
 
   note: { ...type.caption, color: color.flag, marginTop: space.md },
-  disclosure: {
-    ...type.caption,
-    color: color.inkMuted,
-    borderTopWidth: 1,
-    borderTopColor: color.line,
-    marginTop: space.xl,
-    paddingTop: space.md,
-  },
 });

@@ -12,7 +12,8 @@ Xcode, so it has to be you.
 - [`App.tsx`](App.tsx) — reads the entitlement at launch, subscribes to changes,
   gates routes 2–4 behind it, and offers a restore path.
 - [`storekit/Preclear.storekit`](storekit/Preclear.storekit) — a local StoreKit
-  configuration defining one non-consumable, `com.viraj.preclear.full_comparison`.
+  configuration defining one auto-renewable monthly subscription,
+  `com.viraj.preclear.household.monthly`, family shareable.
 - [`.env`](.env) — gitignored, waiting for the key.
 
 Identifiers that must match exactly, everywhere:
@@ -20,8 +21,9 @@ Identifiers that must match exactly, everywhere:
 | Thing | Value |
 |---|---|
 | Bundle ID | `com.viraj.preclear` |
-| Entitlement | `full_comparison` |
-| Product ID | `com.viraj.preclear.full_comparison` |
+| Entitlement | `preclear_household` |
+| Product ID | `com.viraj.preclear.household.monthly` |
+| Subscription group | `Preclear Household` |
 
 The entitlement string is the one that fails silently. If it doesn't match, the
 purchase succeeds, `entitlements.active` stays empty, and the app never unlocks.
@@ -58,11 +60,17 @@ Connect, and a sandbox tester Apple ID.
    must never enter this repo or an `EXPO_PUBLIC_` variable — anything with that
    prefix is readable in plain text in the compiled app.
 4. **Product catalog → Products → + New**. Store: App Store.
-   Product ID: `com.viraj.preclear.full_comparison`. Type: non-consumable.
-5. **Product catalog → Entitlements → + New**. Identifier: `full_comparison`.
+   Product ID: `com.viraj.preclear.household.monthly`. Type: auto-renewable
+   subscription, in a group named `Preclear Household`, billed monthly.
+5. **Product catalog → Entitlements → + New**. Identifier: `preclear_household`.
    Attach the product from step 4.
+
+   The entitlement is named for who it covers rather than what it unlocks. It
+   gates the route comparison today and is meant to gate household claims
+   monitoring later, once the comparison becomes free. Renaming an entitlement
+   after products exist is painful, so it must survive that change.
 6. **Product catalog → Offerings → + New**. Identifier `default`. Add a package,
-   type **Lifetime**, attach the product. Then mark this offering **Current** —
+   type **Monthly**, attach the product. Then mark this offering **Current** —
    `presentPaywall()` loads the current offering and shows nothing without it.
 7. **Offerings → default → Paywall → Create**. Any template is fine. Without a
    paywall attached, `presentPaywall()` returns `ERROR`.
@@ -79,8 +87,10 @@ subscriptions.
    **StoreKit testing framework** → upload the certificate. You should see
    *"Certificate added"*.
 
-The separate *Subscription Offer Key* (.p8) is only for promotional offers on
-subscriptions. Our product is a non-consumable, so skip it.
+The separate *Subscription Offer Key* (.p8) is only needed for **promotional**
+offers — a discounted or free trial price aimed at a specific existing customer.
+A plain monthly subscription with no promotional offer does not need it, so skip
+it until you add one.
 
 ### 3. Xcode
 
@@ -138,7 +148,7 @@ Two failure modes worth knowing:
   certificate was regenerated. Xcode regenerates it whenever the `.storekit`
   file's key is reset — re-upload it.
 - **Everything works but nothing unlocks** means the entitlement identifier
-  doesn't match `full_comparison`, or the product isn't attached to it.
+  doesn't match `preclear_household`, or the product isn't attached to it.
 
 ## After a prebuild
 
