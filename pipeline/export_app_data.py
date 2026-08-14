@@ -156,6 +156,26 @@ def requirement_bundle():
     return entries
 
 
+EOB_SOURCE = os.path.join("data", "samples", "household_eobs.json")
+EOB_DEST = os.path.join("app", "assets", "household-eobs.json")
+
+
+def copy_household_sample(source=EOB_SOURCE, dest=EOB_DEST):
+    """Copy the synthetic EOB fixture into the app bundle.
+
+    Copied rather than duplicated by hand so there is one source of truth. The
+    Python tests and the parity script read `data/samples/`, the app reads its
+    own assets, and two files that drift would let the parity check pass while
+    the app shows different findings than the engine.
+    """
+    with open(source, encoding="utf-8") as handle:
+        payload = json.load(handle)
+    with open(dest, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2)
+        handle.write("\n")
+    return len(payload["eobs"])
+
+
 def refresh_metadata(path):
     """Rewrite the indication and requirement halves of an existing bundle.
 
@@ -207,6 +227,8 @@ def main(argv=None):
 
     if args.metadata_only:
         payload = refresh_metadata(args.out)
+        claims = copy_household_sample()
+        print(f"copied {claims} synthetic EOBs to {EOB_DEST}")
         print(
             f"refreshed {len(payload['requirements'])} requirements and "
             f"{len(payload['procedures'])} procedures in {args.out}; prices untouched"
