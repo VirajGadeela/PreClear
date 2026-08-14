@@ -20,6 +20,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import raw from './assets/preclear-data.json';
@@ -47,6 +48,7 @@ import {
   Route,
   availableProducts,
   buildRoutes,
+  planMatchSummary,
   rankRoutes,
 } from './src/routes';
 import { color, radius, space, type } from './src/theme';
@@ -86,6 +88,14 @@ export default function App() {
   // five different rates for the same knee MRI. Undefined means "not sure",
   // which keeps the full published range rather than guessing one.
   const [product, setProduct] = useState<string | undefined>(undefined);
+  // What is printed on the card. Free text because that is what
+  // matchesMemberPlan was built for, and it pins an exact rate where the
+  // product chips can only narrow to a type. Typed, never photographed, and
+  // never stored — hard rules 1 and 3.
+  const [planText, setPlanText] = useState('');
+
+  // The typed name is more specific than the type, so it wins when present.
+  const memberPlan = planText.trim() || (product ? product.toUpperCase() : undefined);
   const [deductible, setDeductible] = useState(2000);
   const [coinsurance, setCoinsurance] = useState(0.2);
   const [expectedOtherSpend, setExpectedOtherSpend] = useState(0);
@@ -195,16 +205,19 @@ export default function App() {
           facilities,
           benefits,
           expectedOtherAllowedSpend: expectedOtherSpend,
-          // Uppercased because matchesMemberPlan reads the product out of the
-          // string the same way it reads a real plan name off a card.
-          memberPlan: product ? product.toUpperCase() : undefined,
+          memberPlan,
           unmetRequirements: findings.map((finding) => finding.requirement),
           // Surfaced when the deductible is unlikely to be met, which is when
           // the missing credit costs the patient least.
           cashIsAppropriate: expectedOtherSpend < deductible,
         }),
       ),
-    [facilities, benefits, expectedOtherSpend, deductible, findings, product],
+    [facilities, benefits, expectedOtherSpend, deductible, findings, memberPlan],
+  );
+
+  const planMatch = useMemo(
+    () => planMatchSummary(facilities, planText),
+    [facilities, planText],
   );
 
   const unlock = useCallback(async () => {
@@ -234,10 +247,13 @@ export default function App() {
             payer={payer}
             product={product}
             productOptions={productOptions}
+            planText={planText}
+            planMatch={planMatch}
             onCpt={setCpt}
             onIndication={setIndication}
             onPayer={setPayer}
             onProduct={setProduct}
+            onPlanText={setPlanText}
             onNext={() => setStep(1)}
           />
         )}
@@ -341,10 +357,13 @@ function ScanStep({
   payer,
   product,
   productOptions,
+  planText,
+  planMatch,
   onCpt,
   onIndication,
   onPayer,
   onProduct,
+  onPlanText,
   onNext,
 }: {
   procedure: Procedure;
@@ -353,10 +372,13 @@ function ScanStep({
   payer: string;
   product: string | undefined;
   productOptions: string[];
+  planText: string;
+  planMatch: { matched: number; total: number } | null;
   onCpt: (value: string) => void;
   onIndication: (value: string) => void;
   onPayer: (value: string) => void;
   onProduct: (value: string | undefined) => void;
+  onPlanText: (value: string) => void;
   onNext: () => void;
 }) {
   return (
@@ -429,6 +451,34 @@ function ScanStep({
             publishes here, which is a wider range.
           </Text>
         </>
+      )}
+
+      {/* The plan name pins one rate where the type above can only narrow to a
+          group. Typed rather than photographed: reading the card needs a camera
+          and an OCR module, and the image is the one object in this product
+          that hard rule 3 has to govern. Nothing here is stored. */}
+      <Text style={styles.h2}>Plan name on your card</Text>
+      <TextInput
+        value={planText}
+        onChangeText={onPlanText}
+        placeholder="e.g. Blue Access PPO"
+        placeholderTextColor={color.inkMuted}
+        autoCorrect={false}
+        autoCapitalize="words"
+        accessibilityLabel="Plan name as printed on your insurance card, optional"
+        style={styles.input}
+      />
+      {planMatch ? (
+        <Text style={planMatch.matched === 0 ? styles.inputWarn : styles.caption}>
+          {planMatch.matched === 0
+            ? 'No published plan matches that name, so every rate is still being shown. Check the spelling, or leave it blank.'
+            : `Matches published plans at ${planMatch.matched} of ${planMatch.total} facilities.`}
+        </Text>
+      ) : (
+        <Text style={styles.caption}>
+          Optional. More exact than the plan type — it pins the single rate your
+          plan is charged rather than a range.
+        </Text>
       )}
 
       <PrimaryButton label="Next: your coverage" onPress={onNext} />
@@ -914,6 +964,21 @@ const styles = StyleSheet.create({
 
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   featureBlock: { marginTop: space.lg, gap: space.sm },
+
+  input: {
+    ...type.body,
+    color: color.ink,
+    backgroundColor: color.surface,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: color.line,
+    paddingHorizontal: space.md,
+    minHeight: 48,
+    marginBottom: space.sm,
+  },
+  // Brown, matching the data-quality flags. A name that matches nothing is a
+  // limit of the published data, not an error the patient made.
+  inputWarn: { ...type.caption, color: color.flag },
   chip: {
     borderRadius: radius.md,
     borderWidth: 1.5,

@@ -192,6 +192,31 @@ export function availableProducts(facilities: FacilityBundle[]): string[] {
   return PRODUCT_ORDER.filter((product) => found.has(product));
 }
 
+/**
+ * How many facilities a typed plan name confidently matches.
+ *
+ * Needed because a plan that matches nothing is not an error — every facility
+ * keeps its full range, which is the right behaviour but is indistinguishable
+ * on screen from a plan that matched. Without this the app would accept a
+ * typo and quietly ignore it, which is the same silent-answer problem as
+ * offering a product type the payer does not publish.
+ *
+ * Returns null when there is nothing to report on.
+ */
+export function planMatchSummary(
+  facilities: FacilityBundle[],
+  memberPlan?: string,
+): { matched: number; total: number } | null {
+  const query = memberPlan?.trim();
+  if (!query) return null;
+  const withPlans = facilities.filter((facility) => facility.plans.length > 0);
+  if (withPlans.length === 0) return null;
+  const matched = withPlans.filter((facility) =>
+    facility.plans.some((plan) => matchesMemberPlan(query, plan)),
+  ).length;
+  return { matched, total: withPlans.length };
+}
+
 export type BuildOptions = {
   facilities: FacilityBundle[];
   benefits: PlanBenefits;
