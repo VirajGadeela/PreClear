@@ -54,17 +54,20 @@ reports which ones are not documented. It does **not** predict denials, and it
 never suggests a different procedure or imaging modality — outputs are financial
 and administrative only.
 
-**Plan type is asked for because the plan sets the price, not the payer.** One
-Anthem facility publishes five different rates for the same knee MRI; picking
-PPO returns $992.51 where HMO returns $784.08. Answering "not sure" is a real
-answer — it keeps every rate the insurer publishes there rather than guessing
-one.
+**Plan details are asked for because the plan sets the price, not the payer.**
+One Anthem facility publishes five different rates for the same knee MRI. Plan
+type narrows to a group — PPO returns $992.51 where HMO returns $784.08 — and
+typing the plan name printed on the card pins a single rate, so "Franciscan
+Employee" returns $610.44. Both are optional; leaving them blank keeps every
+published rate rather than guessing one, and a name that matches nothing says so
+instead of being quietly ignored.
 
-There is no insurance-card photo capture and nothing asks for a member ID.
-Both are deliberate. A card image adds a native dependency and a data-handling
-risk; a member ID is a direct identifier whose only use is an eligibility
-lookup this app does not perform. Plan type is the one fact on the card that
-changes the answer, and it identifies nobody.
+**The card is read by you, not by a camera.** There is no photo capture and no
+member ID field. A card image would need a camera module plus an OCR module, and
+it is the one object in this product that hard rule 3 has to govern; a member ID
+is a direct identifier whose only use is an eligibility lookup this app does not
+perform. The plan name is the part of the card that changes the answer, and
+typing it stores nothing and identifies nobody.
 
 ## What's actually behind it
 

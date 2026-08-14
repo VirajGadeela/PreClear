@@ -397,6 +397,21 @@ route.
   publishes — offering an absent type is worse than offering none, because
   nothing matches and the app silently ignores the answer it just asked for.
   "Not sure" is a real answer that keeps the full published range.
+- **The plan name is typed, not photographed.** A free-text field feeds
+  `matchesMemberPlan` directly — the same path `--plan` uses — and pins one rate
+  where the type chips only narrow to a group: "Franciscan Employee" returns
+  $610.44 against the $888.30 median. Token overlap tolerates a misspelling
+  ("Blue Acess PPO" still resolves), and `planMatchSummary()` reports how many
+  facilities matched so a name that matches nothing says so rather than being
+  silently ignored.
+- **Card capture needs two native modules, not one.** `expo-camera` produces an
+  image; Expo ships no OCR, so reading it needs ML Kit or Apple Vision as well.
+  The only way to avoid the second module is sending the card image to a cloud
+  OCR service, which would transmit a patient's insurance card off-device — do
+  not do that. Both paths end at the same place, a plan name matched against
+  published strings, so typing reaches the answer directly. Revisit after
+  Shipaton; the cost is a rebuild and a new dev client, and the gain is a
+  first-run moment that must be filmed with a synthetic card anyway.
 
 Gate definitions, for the record:
 
