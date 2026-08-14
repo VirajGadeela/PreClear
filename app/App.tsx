@@ -22,13 +22,17 @@ import {
   Text,
   View,
 } from 'react-native';
-import Purchases from 'react-native-purchases';
-import RevenueCatUI from 'react-native-purchases-ui';
-
 import raw from './assets/preclear-data.json';
 import { Money } from './src/Money';
 import { Slider } from './src/Slider';
 import { PlanBenefits, money } from './src/costing';
+import {
+  configure as configurePurchases,
+  onEntitlementChange,
+  presentPaywall,
+  refreshEntitlement,
+  restore as restorePurchases,
+} from './src/purchases';
 import { OrderFacts, checkOrder, statusLabel, unmetFindings } from './src/requirements';
 import {
   FacilityBundle,
@@ -56,9 +60,6 @@ type Bundle = {
 
 const data = raw as unknown as Bundle;
 
-const revenueCatApiKey = process.env.EXPO_PUBLIC_REVENUECAT_PUBLIC_SDK_KEY;
-const ENTITLEMENT = 'full_comparison';
-
 const PAYER_LABELS: Record<string, string> = {
   anthem: 'Anthem Blue Cross Blue Shield',
   unitedhealthcare: 'UnitedHealthcare',
@@ -81,14 +82,20 @@ export default function App() {
   const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!revenueCatApiKey) {
-      setNote('RevenueCat key is missing from app/.env.');
+    const ready = configurePurchases();
+    if (!ready.ok) {
+      setNote(ready.message);
       return;
     }
-    Purchases.configure({ apiKey: revenueCatApiKey });
-    Purchases.getCustomerInfo()
-      .then((info) => setIsSubscribed(Boolean(info.entitlements.active[ENTITLEMENT])))
+
+    // Read the entitlement once at launch, then keep listening. A renewal, an
+    // expiry, or a restore performed elsewhere arrives through the listener
+    // rather than through any call this screen makes.
+    refreshEntitlement()
+      .then(setIsSubscribed)
       .catch(() => setIsSubscribed(false));
+
+    return onEntitlementChange(setIsSubscribed);
   }, []);
 
   const procedure = useMemo(
@@ -157,13 +164,17 @@ export default function App() {
   );
 
   const unlock = useCallback(async () => {
-    try {
-      await RevenueCatUI.presentPaywall({ displayCloseButton: true });
-      const info = await Purchases.getCustomerInfo();
-      setIsSubscribed(Boolean(info.entitlements.active[ENTITLEMENT]));
-    } catch (error) {
-      setNote(error instanceof Error ? error.message : String(error));
-    }
+    setNote(null);
+    const outcome = await presentPaywall();
+    setIsSubscribed(outcome.entitled);
+    setNote(outcome.message);
+  }, []);
+
+  const restore = useCallback(async () => {
+    setNote(null);
+    const outcome = await restorePurchases();
+    setIsSubscribed(outcome.entitled);
+    setNote(outcome.message);
   }, []);
 
   return (
@@ -210,6 +221,7 @@ export default function App() {
             isSubscribed={isSubscribed}
             note={note}
             onUnlock={unlock}
+            onRestore={restore}
           />
         )}
 
@@ -481,12 +493,14 @@ function RoutesStep({
   isSubscribed,
   note,
   onUnlock,
+  onRestore,
 }: {
   routes: Route[];
   findings: { requirement: Requirement; status: string }[];
   isSubscribed: boolean;
   note: string | null;
   onUnlock: () => void;
+  onRestore: () => void;
 }) {
   const [open, setOpen] = useState<string | null>(null);
 
@@ -534,6 +548,19 @@ function RoutesStep({
             doctor’s office where it applies.
           </Text>
           <Text style={styles.lockCta}>Unlock →</Text>
+        </Pressable>
+      )}
+
+      {/* App Store review requires a restore path, and it is the only way a
+          member who reinstalls gets their entitlement back. */}
+      {!isSubscribed && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Restore a previous purchase"
+          onPress={onRestore}
+          style={styles.restore}
+        >
+          <Text style={styles.restoreText}>Restore purchase</Text>
         </Pressable>
       )}
 
@@ -855,6 +882,16 @@ const styles = StyleSheet.create({
   lockTitle: { ...type.body, fontWeight: '700', color: color.ink },
   lockBody: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
   lockCta: { ...type.label, color: color.accent, marginTop: space.sm },
+
+  // Deliberately quiet. Restore is a recovery path, not an offer, so it must
+  // not compete with the unlock card above it.
+  restore: {
+    alignItems: 'center',
+    marginTop: space.md,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  restoreText: { ...type.caption, color: color.inkMuted },
 
   note: { ...type.caption, color: color.flag, marginTop: space.md },
   disclosure: {
