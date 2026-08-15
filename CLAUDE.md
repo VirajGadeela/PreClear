@@ -340,6 +340,29 @@ route.
 - Verification that works without a simulator: `npx tsc --noEmit` and
   `npx expo export --platform ios`. The export catches import and resolution
   errors the type checker does not.
+- **Nothing on this machine can tap the simulator.** `simctl` has no gesture
+  command, `idb` and `cliclick` are not installed, and `osascript` is refused
+  assistive access. Screens are therefore verified by temporarily changing a
+  `useState` initial value, screenshotting, and reverting — not by driving the
+  UI. Two traps in that method: Fast Refresh *preserves* existing state, so
+  changing an initial value does nothing to a running screen (terminate and
+  relaunch the app), and `contentOffset` on a `ScrollView` only applies on
+  mount, so scrolling a screen to its lower half needs the same relaunch.
+- **The paywall is a demo sheet, not RevenueCat.** No store product exists yet,
+  so `app/src/DemoPaywall.tsx` shows placeholder prices and unlocks the tier
+  locally. `App.tsx` chooses which paywall to present in exactly one place, on
+  whether a RevenueCat key configured successfully; when the store side is
+  finished that condition starts choosing the real sheet and no caller changes.
+  The entitlement is kept as two separate flags — `storeEntitled` and
+  `demoEntitled` — because merging them would make a demo unlock
+  indistinguishable from a purchase, and the unlocked screen says which one it
+  is. Subscription prices live in `app/src/plan.ts` and deliberately do **not**
+  render through `<Money>`: hard rule 5 exists because every dollar figure in
+  this app is a projected medical cost, and a subscription price is the exact
+  amount charged, so labelling it "estimate" would be false.
+- **`__DEV__` gates a visible Free/Household switch** at the bottom of the
+  screen. Both tiers have to be checkable without a store account, and a hidden
+  gesture is how one of them quietly stops being checked.
 - **A `ScrollView` in a flex column needs `flex: 1` on the ScrollView itself**,
   not just on the parent. Without it the ScrollView takes its height from its
   content instead of from the space left over, overflows the screen and never
