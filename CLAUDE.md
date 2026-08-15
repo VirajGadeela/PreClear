@@ -374,6 +374,31 @@ route.
 - **`KeyboardAvoidingView` is core React Native**, so the plan-name field can
   push the primary button clear of the keyboard without a native module. Use
   `behavior="padding"` on iOS only.
+- **The design tokens are measured, not chosen.** A UX audit on 2026-08-14 found
+  four WCAG failures, and the worst of them was on the word hard rule 5 exists
+  to display: `<Money>` set "estimate" at `opacity: 0.72`, which measured
+  **2.77:1** on the recommended route's card against the 4.5:1 that size needs.
+  The most legally load-bearing word in the app was its least legible text.
+  Two tokens were added rather than changing any existing hue — `accentDeep`
+  `#A04A24` for accent text under 18px (5.2:1 on `accentSoft`) and `border`
+  `#8C8779` for control outlines, because `line` measures **1.2:1** and an
+  unselected chip is white on near-white canvas (1.1:1), so its border was the
+  only cue that a control existed and it was invisible. Re-measure before
+  changing a hex; the ratios are in the comments in `app/src/theme.ts`.
+- **`space` is a strict 8px grid** (4/8/16/24/32). The previous scale ran
+  4/8/14/20/28 and the code reached the gaps by writing `space.md + 2` in seven
+  places — that arithmetic appearing anywhere is the signal the scale no longer
+  fits the layout. There is also now exactly **one type scale**; `Money.tsx`
+  used to carry a private second one, and between them they defined ten font
+  sizes with no ratio.
+- **44pt targets cost vertical space, and the scan step pays it.** Raising chips
+  from 36pt to `TAP_TARGET` made every step taller, which pushes that step's
+  primary button further out of reach — the exact failure that already happened
+  once. `h2` dropped from `xl` to `lg` to buy the budget back. Check that button
+  after any change that grows a control.
+- **On a touch device the pressed state is the focus state.** There is no hover
+  and no keyboard ring to fall back on, so every `Pressable` carries a `pressed`
+  style. Six of nine had none.
 - **Palette is deliberately not blue/white and deliberately not red/green.**
   Green-means-cheap would assert the opposite of the product's finding, so
   ranking is carried by position, number size, and one accent (`#B2542A`)

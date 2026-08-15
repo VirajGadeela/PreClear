@@ -62,7 +62,7 @@ import {
   planMatchSummary,
   rankRoutes,
 } from './src/routes';
-import { color, radius, space, type } from './src/theme';
+import { TAP_TARGET, color, radius, space, type } from './src/theme';
 
 type Indication = { key: string; label: string };
 type Procedure = {
@@ -529,7 +529,10 @@ function StepBar({
             }
             disabled={locked}
             onPress={() => onJump(index)}
-            style={styles.stepItem}
+            style={({ pressed }) => [
+              styles.stepItem,
+              pressed && styles.stepItemPressed,
+            ]}
           >
             <View
               style={[
@@ -952,7 +955,7 @@ function RoutesStep({
           accessibilityRole="button"
           accessibilityLabel="Restore a previous purchase"
           onPress={onRestore}
-          style={styles.restore}
+          style={({ pressed }) => [styles.restore, pressed && styles.restorePressed]}
         >
           <Text style={styles.restoreText}>Restore purchase</Text>
         </Pressable>
@@ -986,6 +989,7 @@ function RouteCard({
         accessibilityState={{ expanded }}
         accessibilityLabel={`${route.label} at ${route.facilityName}. Tap for the breakdown.`}
         onPress={onToggle}
+        style={({ pressed }) => (pressed ? styles.cardPressed : undefined)}
       >
         <Text style={styles.routeLabel}>{route.label}</Text>
 
@@ -1098,6 +1102,7 @@ function PlanOffer({
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         onPress={() => setOpen(!open)}
+        style={({ pressed }) => (pressed ? styles.cardPressed : undefined)}
       >
         <Text style={styles.lockTitle}>Watch the whole household</Text>
         <Text style={styles.lockBody}>
@@ -1196,7 +1201,7 @@ function HouseholdStep({
         accessibilityRole="button"
         accessibilityLabel="Restore a previous purchase"
         onPress={onRestore}
-        style={styles.restore}
+        style={({ pressed }) => [styles.restore, pressed && styles.restorePressed]}
       >
         <Text style={styles.restoreText}>Restore purchase</Text>
       </Pressable>
@@ -1313,7 +1318,11 @@ function Chip({
       accessibilityRole="radio"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={[styles.chip, selected && styles.chipSelected]}
+      style={({ pressed }) => [
+        styles.chip,
+        selected && styles.chipSelected,
+        pressed && styles.chipPressed,
+      ]}
     >
       <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
         {label}
@@ -1376,9 +1385,10 @@ const styles = StyleSheet.create({
   devChip: {
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: color.line,
+    borderColor: color.border,
     paddingHorizontal: space.md,
-    paddingVertical: space.xs + 2,
+    minHeight: TAP_TARGET,
+    justifyContent: 'center',
   },
   devChipOn: { backgroundColor: color.slate, borderColor: color.slate },
   devChipText: { ...type.caption, color: color.inkMuted },
@@ -1389,19 +1399,24 @@ const styles = StyleSheet.create({
   stepBar: {
     flexDirection: 'row',
     paddingHorizontal: space.lg,
-    paddingTop: space.sm,
-    paddingBottom: space.md,
+    paddingTop: space.xs,
+    paddingBottom: space.xs,
     // Four steps now, so the generous gap no longer fits across a phone.
-    gap: space.sm + 2,
+    gap: space.sm,
     borderBottomWidth: 1,
     borderBottomColor: color.line,
   },
+  // 44pt tall because these are primary navigation, not decoration. The row
+  // keeps its old height overall — the padding moved from the bar onto the
+  // items, so the target grew without the bar growing.
   stepItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.xs + 2,
+    gap: space.xs,
     flexShrink: 1,
+    minHeight: TAP_TARGET,
   },
+  stepItemPressed: { opacity: 0.6 },
   stepDot: {
     width: 24,
     height: 24,
@@ -1418,8 +1433,11 @@ const styles = StyleSheet.create({
   stepLabelActive: { color: color.ink },
   stepLabelPending: { opacity: 0.45 },
 
-  h1: { ...type.hero, color: color.ink, marginTop: space.lg, marginBottom: space.sm },
-  h2: { ...type.title, color: color.ink, marginTop: space.xl, marginBottom: space.md },
+  h1: { ...type.display, color: color.ink, marginTop: space.lg, marginBottom: space.sm },
+  // lg, not xl. The 44pt tap targets made every step taller, and a 32pt gap
+  // above each heading spent that budget on air — the scan step's primary
+  // button is already the furthest thing from the top of the flow.
+  h2: { ...type.title, color: color.ink, marginTop: space.lg, marginBottom: space.md },
   body: { ...type.body, color: color.inkMuted, marginBottom: space.md },
   caption: { ...type.caption, color: color.inkMuted, marginBottom: space.md },
 
@@ -1432,9 +1450,11 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     borderRadius: radius.md,
     borderWidth: 1.5,
-    borderColor: color.line,
+    // A control outline, not a hairline — WCAG 1.4.11 wants 3:1 and `line`
+    // measures 1.2:1 against the canvas.
+    borderColor: color.border,
     paddingHorizontal: space.md,
-    minHeight: 48,
+    minHeight: TAP_TARGET + space.xs,
     marginBottom: space.sm,
   },
   // Brown, matching the data-quality flags. A name that matches nothing is a
@@ -1443,12 +1463,16 @@ const styles = StyleSheet.create({
   chip: {
     borderRadius: radius.md,
     borderWidth: 1.5,
-    borderColor: color.line,
+    // See `input` above. An unselected chip is white on near-white canvas
+    // (1.1:1), so this border is the only thing that says a control is there.
+    borderColor: color.border,
     backgroundColor: color.surface,
     paddingHorizontal: space.md,
-    paddingVertical: space.sm + 2,
+    minHeight: TAP_TARGET,
+    justifyContent: 'center',
   },
   chipSelected: { borderColor: color.slate, backgroundColor: color.slate },
+  chipPressed: { opacity: 0.7 },
   chipText: { ...type.label, color: color.ink },
   chipTextSelected: { color: color.surface },
 
@@ -1474,10 +1498,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: color.line,
-    padding: space.md + 2,
+    padding: space.md,
     marginBottom: space.md,
   },
   cardRecommended: { borderColor: color.accent, backgroundColor: color.accentSoft },
+  // On a touch device the pressed state is the focus state — there is no
+  // hover and no keyboard ring to fall back on. Every Pressable now answers.
+  cardPressed: { opacity: 0.7 },
   routeLabel: { ...type.caption, fontWeight: '700', color: color.inkMuted },
 
   whyRow: {
@@ -1531,7 +1558,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: color.line,
-    padding: space.md + 2,
+    padding: space.md,
   },
   lockActive: {
     borderStyle: 'solid',
@@ -1569,9 +1596,10 @@ const styles = StyleSheet.create({
   restore: {
     alignItems: 'center',
     marginTop: space.md,
-    minHeight: 44,
+    minHeight: TAP_TARGET,
     justifyContent: 'center',
   },
+  restorePressed: { opacity: 0.6 },
   restoreText: { ...type.caption, color: color.inkMuted },
 
   note: { ...type.caption, color: color.flag, marginTop: space.md },
