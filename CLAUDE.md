@@ -399,6 +399,31 @@ route.
 - **On a touch device the pressed state is the focus state.** There is no hover
   and no keyboard ring to fall back on, so every `Pressable` carries a `pressed`
   style. Six of nine had none.
+- **The coverage sliders were replaced by preset chips (`app/src/Choice.tsx`),
+  and the lag was never the slider.** A slider emits a value on every
+  touch-move, and each one re-ran `buildRoutes` and `rankRoutes` across every
+  facility — roughly sixty full routing passes a second, on a step that does not
+  display a route. A tap emits one value, so the problem is gone by
+  construction. The presets are also more honest: every figure on that screen is
+  a number the patient is recalling, and a slider landing on $2,250 implies a
+  precision nobody has. Each list contains the CLAUDE.md walkthrough's values —
+  $2,000, 20%, $8,000, 2 and 6 weeks — so the ranking flip is reproducible by
+  tapping rather than by landing a drag. `src/Slider.tsx` is deleted; it is in
+  git history if a continuous control is ever needed.
+- **One `ScrollView` renders every step, so it keeps its offset across a step
+  change.** Scroll down on the scan step to reach "Next", tap it, and the
+  coverage step opened halfway down with its heading cut off. A `scrollTo({y:0})`
+  keyed on `step` fixes it. Nothing looks broken when this happens, which is why
+  it survived several passes.
+- **Chip rows fit one line two different ways, and which one depends on whether
+  the words can be shortened.** Payer names can: `PAYER_CHIP_LABELS` shows the
+  brand's short form and `accessibilityLabel` keeps the full name, because a
+  shortened brand cannot be misread. Indications cannot — cutting "Suspected"
+  from "Suspected meniscal tear" turns the reason a scan was ordered into a
+  diagnosis nobody has made — so those use `Chip`'s `fill` variant, equal
+  columns with the text wrapping inside. Watch the column width there: React
+  Native breaks mid-word rather than overflowing, and at `space.md` padding a
+  three-column row rendered "degenerativ / e spine".
 - **Palette is deliberately not blue/white and deliberately not red/green.**
   Green-means-cheap would assert the opposite of the product's finding, so
   ranking is carried by position, number size, and one accent (`#B2542A`)

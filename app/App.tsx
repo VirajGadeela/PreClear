@@ -12,7 +12,7 @@
  */
 
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Linking,
@@ -29,7 +29,7 @@ import household from './assets/household-eobs.json';
 import raw from './assets/preclear-data.json';
 import { DemoPaywall } from './src/DemoPaywall';
 import { Money } from './src/Money';
-import { Slider } from './src/Slider';
+import { Choice, ChoiceOption } from './src/Choice';
 import {
   Eob,
   HouseholdPlan,
@@ -87,6 +87,69 @@ const PAYER_LABELS: Record<string, string> = {
   cigna: 'Cigna',
 };
 
+/**
+ * What the chip says, where the full name will not fit on one line.
+ *
+ * Four full payer names run to roughly 420pt across a 345pt column, so the row
+ * wrapped. These are the brand's own short forms, and the full name still goes
+ * to the screen reader through `accessibilityLabel` — nothing is lost, and a
+ * shortened brand name cannot be misread the way a shortened clinical phrase
+ * could.
+ */
+const PAYER_CHIP_LABELS: Record<string, string> = {
+  anthem: 'Anthem',
+  unitedhealthcare: 'United',
+  aetna: 'Aetna',
+  cigna: 'Cigna',
+};
+
+/**
+ * The coverage presets.
+ *
+ * Buckets rather than a continuous range, because every one of these is a
+ * number the patient is recalling rather than reading — a slider landing on
+ * $2,250 implies a precision nobody has. Each list includes the value the
+ * CLAUDE.md walkthrough uses, so the demo is reproducible by tapping.
+ *
+ * `label` is short enough for six across a phone; `spoken` is what a screen
+ * reader says, because "$2k" is a scale marking and not a sentence.
+ */
+const DEDUCTIBLE_PRESETS: ChoiceOption[] = [
+  { value: 0, label: '$0', spoken: 'nothing left' },
+  { value: 500, label: '$500', spoken: '500 dollars' },
+  { value: 1000, label: '$1k', spoken: '1,000 dollars' },
+  { value: 2000, label: '$2k', spoken: '2,000 dollars' },
+  { value: 3000, label: '$3k', spoken: '3,000 dollars' },
+  { value: 5000, label: '$5k+', spoken: '5,000 dollars or more' },
+];
+
+const COINSURANCE_PRESETS: ChoiceOption[] = [
+  { value: 0, label: '0%', spoken: 'nothing' },
+  { value: 0.1, label: '10%' },
+  { value: 0.2, label: '20%' },
+  { value: 0.3, label: '30%' },
+  { value: 0.4, label: '40%' },
+  { value: 0.5, label: '50%' },
+];
+
+const OTHER_SPEND_PRESETS: ChoiceOption[] = [
+  { value: 0, label: '$0', spoken: 'no other care' },
+  { value: 1000, label: '$1k', spoken: '1,000 dollars' },
+  { value: 2500, label: '$2.5k', spoken: '2,500 dollars' },
+  { value: 5000, label: '$5k', spoken: '5,000 dollars' },
+  { value: 8000, label: '$8k', spoken: '8,000 dollars' },
+  { value: 15000, label: '$15k+', spoken: '15,000 dollars or more' },
+];
+
+const TREATMENT_WEEK_PRESETS: ChoiceOption[] = [
+  { value: 0, label: '0', spoken: 'none' },
+  { value: 2, label: '2', spoken: '2 weeks' },
+  { value: 4, label: '4', spoken: '4 weeks' },
+  { value: 6, label: '6', spoken: '6 weeks' },
+  { value: 8, label: '8', spoken: '8 weeks' },
+  { value: 12, label: '12+', spoken: '12 weeks or more' },
+];
+
 const STEPS = ['Scan', 'Coverage', 'Routes', 'Household'] as const;
 
 /**
@@ -134,6 +197,19 @@ export default function App() {
   const [note, setNote] = useState<string | null>(null);
 
   const isSubscribed = storeEntitled || demoEntitled;
+
+  /**
+   * Send each step back to the top.
+   *
+   * One ScrollView renders every step, so it keeps its offset when the step
+   * changes: scroll down on the scan step to reach "Next", tap it, and the
+   * coverage step opens halfway down with its heading cut off. Nothing looks
+   * broken, which is what makes it easy to miss.
+   */
+  const scrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [step]);
 
   useEffect(() => {
     const ready = configurePurchases();
@@ -319,6 +395,7 @@ export default function App() {
           unreachable. It only looked fine while every step fitted on one
           screen. */}
       <ScrollView
+        ref={scrollRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
@@ -617,6 +694,7 @@ function ScanStep({
                 key={option.key}
                 selected={option.key === indication}
                 label={option.label}
+                fill
                 onPress={() => onIndication(option.key)}
               />
             ))}
@@ -630,7 +708,8 @@ function ScanStep({
           <Chip
             key={key}
             selected={key === payer}
-            label={key === 'anthem' ? 'Anthem BCBS' : PAYER_LABELS[key]}
+            label={PAYER_CHIP_LABELS[key]}
+            spoken={PAYER_LABELS[key]}
             onPress={() => onPayer(key)}
           />
         ))}
@@ -733,42 +812,34 @@ function CoverageStep({
       <Text style={styles.caption}>From your plan documents. Nothing is stored.</Text>
 
       <View style={styles.sliderBlock}>
-        <Slider
+        <Choice
           label="Deductible remaining"
           value={deductible}
-          minimum={0}
-          maximum={10000}
-          step={250}
+          options={DEDUCTIBLE_PRESETS}
           onChange={onDeductible}
-          format={money}
+          readout={money(deductible)}
         />
-        <Slider
+        <Choice
           label="Coinsurance after deductible"
           value={coinsurance}
-          minimum={0}
-          maximum={0.5}
-          step={0.05}
+          options={COINSURANCE_PRESETS}
           onChange={onCoinsurance}
-          format={(value) => `${Math.round(value * 100)}%`}
+          readout={`${Math.round(coinsurance * 100)}%`}
         />
-        <Slider
+        <Choice
           label="Other care you expect this year"
           value={expectedOtherSpend}
-          minimum={0}
-          maximum={20000}
-          step={500}
+          options={OTHER_SPEND_PRESETS}
           onChange={onExpectedOtherSpend}
-          format={money}
+          readout={money(expectedOtherSpend)}
         />
         {showTreatment && (
-          <Slider
+          <Choice
             label="Weeks of treatment so far"
             value={treatmentWeeks}
-            minimum={0}
-            maximum={12}
-            step={1}
+            options={TREATMENT_WEEK_PRESETS}
             onChange={onTreatmentWeeks}
-            format={(value) => `${value} ${value === 1 ? 'week' : 'weeks'}`}
+            readout={`${treatmentWeeks} ${treatmentWeeks === 1 ? 'week' : 'weeks'}`}
           />
         )}
       </View>
@@ -1307,24 +1378,46 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 function Chip({
   selected,
   label,
+  spoken,
+  fill,
   onPress,
 }: {
   selected: boolean;
   label: string;
+  /** Said instead of `label`, where the visible text is a short form. */
+  spoken?: string;
+  /**
+   * Share the row equally with its siblings and wrap the text inside.
+   *
+   * For labels that cannot be shortened without changing what they mean. The
+   * indications are the case: "Suspected meniscal tear" will not fit beside its
+   * sibling, and cutting "Suspected" would turn the reason a scan was ordered
+   * into a diagnosis nobody has made. Equal columns keep the row tidy and the
+   * words intact.
+   */
+  fill?: boolean;
   onPress: () => void;
 }) {
   return (
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ selected }}
+      accessibilityLabel={spoken ?? label}
       onPress={onPress}
       style={({ pressed }) => [
         styles.chip,
+        fill && styles.chipFill,
         selected && styles.chipSelected,
         pressed && styles.chipPressed,
       ]}
     >
-      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+      <Text
+        style={[
+          styles.chipText,
+          fill && styles.chipTextFill,
+          selected && styles.chipTextSelected,
+        ]}
+      >
         {label}
       </Text>
     </Pressable>
@@ -1473,6 +1566,20 @@ const styles = StyleSheet.create({
   },
   chipSelected: { borderColor: color.slate, backgroundColor: color.slate },
   chipPressed: { opacity: 0.7 },
+  // flexBasis 0 so siblings end up the same width regardless of label length —
+  // without it the longest label takes the row and the rest look like offcuts.
+  //
+  // Narrower side padding than a normal chip, because a three-column row leaves
+  // roughly 74pt of text width at `md` and "degenerative" needs 86 — React
+  // Native breaks mid-word rather than overflowing, so the label rendered as
+  // "degenerativ / e spine". `sm` buys the 16pt that fixes it.
+  chipFill: {
+    flexGrow: 1,
+    flexBasis: 0,
+    paddingHorizontal: space.sm,
+    paddingVertical: space.sm,
+  },
+  chipTextFill: { textAlign: 'center' },
   chipText: { ...type.label, color: color.ink },
   chipTextSelected: { color: color.surface },
 
