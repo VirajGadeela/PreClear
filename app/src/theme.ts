@@ -82,7 +82,11 @@ export const radius = {
  * at all and were leaded by whatever the platform chose.
  */
 export const type = {
-  display: { fontSize: 32, lineHeight: 36, fontWeight: '700' as const, letterSpacing: -0.5 },
+  // 40, not 36. A 32px bold face needs more than 1.125 line height — React
+  // Native clips the ascenders of the first line rather than growing the box,
+  // and "Your coverage" rendered with its tops cut off by the step bar. 1.25
+  // matches the ratio the other two headings use.
+  display: { fontSize: 32, lineHeight: 40, fontWeight: '700' as const, letterSpacing: -0.5 },
   amount: { fontSize: 26, lineHeight: 32, fontWeight: '700' as const, letterSpacing: -0.3 },
   title: { fontSize: 22, lineHeight: 28, fontWeight: '700' as const, letterSpacing: -0.2 },
   body: { fontSize: 16, lineHeight: 24 },

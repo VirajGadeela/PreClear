@@ -29,7 +29,7 @@ import household from './assets/household-eobs.json';
 import raw from './assets/preclear-data.json';
 import { DemoPaywall } from './src/DemoPaywall';
 import { Money } from './src/Money';
-import { Choice, ChoiceOption } from './src/Choice';
+import { Slider } from './src/Slider';
 import {
   Eob,
   HouseholdPlan,
@@ -103,52 +103,8 @@ const PAYER_CHIP_LABELS: Record<string, string> = {
   cigna: 'Cigna',
 };
 
-/**
- * The coverage presets.
- *
- * Buckets rather than a continuous range, because every one of these is a
- * number the patient is recalling rather than reading — a slider landing on
- * $2,250 implies a precision nobody has. Each list includes the value the
- * CLAUDE.md walkthrough uses, so the demo is reproducible by tapping.
- *
- * `label` is short enough for six across a phone; `spoken` is what a screen
- * reader says, because "$2k" is a scale marking and not a sentence.
- */
-const DEDUCTIBLE_PRESETS: ChoiceOption[] = [
-  { value: 0, label: '$0', spoken: 'nothing left' },
-  { value: 500, label: '$500', spoken: '500 dollars' },
-  { value: 1000, label: '$1k', spoken: '1,000 dollars' },
-  { value: 2000, label: '$2k', spoken: '2,000 dollars' },
-  { value: 3000, label: '$3k', spoken: '3,000 dollars' },
-  { value: 5000, label: '$5k+', spoken: '5,000 dollars or more' },
-];
-
-const COINSURANCE_PRESETS: ChoiceOption[] = [
-  { value: 0, label: '0%', spoken: 'nothing' },
-  { value: 0.1, label: '10%' },
-  { value: 0.2, label: '20%' },
-  { value: 0.3, label: '30%' },
-  { value: 0.4, label: '40%' },
-  { value: 0.5, label: '50%' },
-];
-
-const OTHER_SPEND_PRESETS: ChoiceOption[] = [
-  { value: 0, label: '$0', spoken: 'no other care' },
-  { value: 1000, label: '$1k', spoken: '1,000 dollars' },
-  { value: 2500, label: '$2.5k', spoken: '2,500 dollars' },
-  { value: 5000, label: '$5k', spoken: '5,000 dollars' },
-  { value: 8000, label: '$8k', spoken: '8,000 dollars' },
-  { value: 15000, label: '$15k+', spoken: '15,000 dollars or more' },
-];
-
-const TREATMENT_WEEK_PRESETS: ChoiceOption[] = [
-  { value: 0, label: '0', spoken: 'none' },
-  { value: 2, label: '2', spoken: '2 weeks' },
-  { value: 4, label: '4', spoken: '4 weeks' },
-  { value: 6, label: '6', spoken: '6 weeks' },
-  { value: 8, label: '8', spoken: '8 weeks' },
-  { value: 12, label: '12+', spoken: '12 weeks or more' },
-];
+/** Stable empty array, so the gated `routes` memo returns the same reference. */
+const EMPTY_ROUTES: Route[] = [];
 
 const STEPS = ['Scan', 'Coverage', 'Routes', 'Household'] as const;
 
@@ -310,22 +266,41 @@ export default function App() {
     [deductible, coinsurance],
   );
 
-  const routes = useMemo(
-    () =>
-      rankRoutes(
-        buildRoutes({
-          facilities,
-          benefits,
-          expectedOtherAllowedSpend: expectedOtherSpend,
-          memberPlan,
-          unmetRequirements: findings.map((finding) => finding.requirement),
-          // Surfaced when the deductible is unlikely to be met, which is when
-          // the missing credit costs the patient least.
-          cashIsAppropriate: expectedOtherSpend < deductible,
-        }),
-      ),
-    [facilities, benefits, expectedOtherSpend, deductible, findings, memberPlan],
-  );
+  /**
+   * Only computed on the step that shows it.
+   *
+   * This is what made the sliders feel slow. A slider reports a value on every
+   * touch-move, and each report re-ran `buildRoutes` and `rankRoutes` across
+   * every facility — a full routing pass per frame, on a step that renders no
+   * route. Gating on the step removes all of it, and the ranking is still ready
+   * the instant the member arrives, because arriving is itself a step change.
+   *
+   * `routes` is read only by `RoutesStep`, so nothing else can observe this.
+   */
+  const showRoutes = step === 2;
+  const routes = useMemo(() => {
+    if (!showRoutes) return EMPTY_ROUTES;
+    return rankRoutes(
+      buildRoutes({
+        facilities,
+        benefits,
+        expectedOtherAllowedSpend: expectedOtherSpend,
+        memberPlan,
+        unmetRequirements: findings.map((finding) => finding.requirement),
+        // Surfaced when the deductible is unlikely to be met, which is when
+        // the missing credit costs the patient least.
+        cashIsAppropriate: expectedOtherSpend < deductible,
+      }),
+    );
+  }, [
+    showRoutes,
+    facilities,
+    benefits,
+    expectedOtherSpend,
+    deductible,
+    findings,
+    memberPlan,
+  ]);
 
   const planMatch = useMemo(
     () => planMatchSummary(facilities, planText),
@@ -694,7 +669,7 @@ function ScanStep({
                 key={option.key}
                 selected={option.key === indication}
                 label={option.label}
-                fill
+                block
                 onPress={() => onIndication(option.key)}
               />
             ))}
@@ -812,34 +787,42 @@ function CoverageStep({
       <Text style={styles.caption}>From your plan documents. Nothing is stored.</Text>
 
       <View style={styles.sliderBlock}>
-        <Choice
+        <Slider
           label="Deductible remaining"
           value={deductible}
-          options={DEDUCTIBLE_PRESETS}
+          minimum={0}
+          maximum={10000}
+          step={250}
           onChange={onDeductible}
-          readout={money(deductible)}
+          format={money}
         />
-        <Choice
+        <Slider
           label="Coinsurance after deductible"
           value={coinsurance}
-          options={COINSURANCE_PRESETS}
+          minimum={0}
+          maximum={0.5}
+          step={0.05}
           onChange={onCoinsurance}
-          readout={`${Math.round(coinsurance * 100)}%`}
+          format={(value) => `${Math.round(value * 100)}%`}
         />
-        <Choice
+        <Slider
           label="Other care you expect this year"
           value={expectedOtherSpend}
-          options={OTHER_SPEND_PRESETS}
+          minimum={0}
+          maximum={20000}
+          step={500}
           onChange={onExpectedOtherSpend}
-          readout={money(expectedOtherSpend)}
+          format={money}
         />
         {showTreatment && (
-          <Choice
+          <Slider
             label="Weeks of treatment so far"
             value={treatmentWeeks}
-            options={TREATMENT_WEEK_PRESETS}
+            minimum={0}
+            maximum={12}
+            step={1}
             onChange={onTreatmentWeeks}
-            readout={`${treatmentWeeks} ${treatmentWeeks === 1 ? 'week' : 'weeks'}`}
+            format={(value) => `${value} ${value === 1 ? 'week' : 'weeks'}`}
           />
         )}
       </View>
@@ -1379,7 +1362,7 @@ function Chip({
   selected,
   label,
   spoken,
-  fill,
+  block,
   onPress,
 }: {
   selected: boolean;
@@ -1387,15 +1370,16 @@ function Chip({
   /** Said instead of `label`, where the visible text is a short form. */
   spoken?: string;
   /**
-   * Share the row equally with its siblings and wrap the text inside.
+   * One option per row, all the same width.
    *
-   * For labels that cannot be shortened without changing what they mean. The
-   * indications are the case: "Suspected meniscal tear" will not fit beside its
-   * sibling, and cutting "Suspected" would turn the reason a scan was ordered
-   * into a diagnosis nobody has made. Equal columns keep the row tidy and the
-   * words intact.
+   * For labels that cannot be shortened without changing what they mean —
+   * cutting "Suspected" from "Suspected meniscal tear" would turn the reason a
+   * scan was ordered into a diagnosis nobody has made. Left to size themselves,
+   * these chips came out at three different widths with ragged right edges;
+   * stacked at full width they read as one list, and every label still fits on
+   * a single line.
    */
-  fill?: boolean;
+  block?: boolean;
   onPress: () => void;
 }) {
   return (
@@ -1406,7 +1390,7 @@ function Chip({
       onPress={onPress}
       style={({ pressed }) => [
         styles.chip,
-        fill && styles.chipFill,
+        block && styles.chipBlock,
         selected && styles.chipSelected,
         pressed && styles.chipPressed,
       ]}
@@ -1414,7 +1398,7 @@ function Chip({
       <Text
         style={[
           styles.chipText,
-          fill && styles.chipTextFill,
+          block && styles.chipTextBlock,
           selected && styles.chipTextSelected,
         ]}
       >
@@ -1566,20 +1550,12 @@ const styles = StyleSheet.create({
   },
   chipSelected: { borderColor: color.slate, backgroundColor: color.slate },
   chipPressed: { opacity: 0.7 },
-  // flexBasis 0 so siblings end up the same width regardless of label length —
-  // without it the longest label takes the row and the rest look like offcuts.
-  //
-  // Narrower side padding than a normal chip, because a three-column row leaves
-  // roughly 74pt of text width at `md` and "degenerative" needs 86 — React
-  // Native breaks mid-word rather than overflowing, so the label rendered as
-  // "degenerativ / e spine". `sm` buys the 16pt that fixes it.
-  chipFill: {
-    flexGrow: 1,
-    flexBasis: 0,
-    paddingHorizontal: space.sm,
-    paddingVertical: space.sm,
-  },
-  chipTextFill: { textAlign: 'center' },
+  // Full width, so a group of these reads as one list rather than as chips of
+  // three different lengths. Also removes any chance of the mid-word break a
+  // narrow column produced — React Native breaks inside a word rather than
+  // overflowing, and a three-across row rendered "degenerativ / e spine".
+  chipBlock: { width: '100%', alignItems: 'flex-start' },
+  chipTextBlock: { textAlign: 'left' },
   chipText: { ...type.label, color: color.ink },
   chipTextSelected: { color: color.surface },
 

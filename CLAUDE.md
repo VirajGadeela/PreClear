@@ -399,17 +399,14 @@ route.
 - **On a touch device the pressed state is the focus state.** There is no hover
   and no keyboard ring to fall back on, so every `Pressable` carries a `pressed`
   style. Six of nine had none.
-- **The coverage sliders were replaced by preset chips (`app/src/Choice.tsx`),
-  and the lag was never the slider.** A slider emits a value on every
-  touch-move, and each one re-ran `buildRoutes` and `rankRoutes` across every
-  facility — roughly sixty full routing passes a second, on a step that does not
-  display a route. A tap emits one value, so the problem is gone by
-  construction. The presets are also more honest: every figure on that screen is
-  a number the patient is recalling, and a slider landing on $2,250 implies a
-  precision nobody has. Each list contains the CLAUDE.md walkthrough's values —
-  $2,000, 20%, $8,000, 2 and 6 weeks — so the ranking flip is reproducible by
-  tapping rather than by landing a drag. `src/Slider.tsx` is deleted; it is in
-  git history if a continuous control is ever needed.
+- **The sliders stayed; the lag was never the slider.** A slider reports a
+  value on every touch-move, and each report re-ran `buildRoutes` and
+  `rankRoutes` across every facility — a full routing pass per frame, on a step
+  that renders no route. Two fixes, both cheap: `routes` is now gated on
+  `step === 2`, and `Slider` drops a report whose stepped value has not changed
+  (a full-width drag fires ~300 move events across 41 distinct values). Presets
+  were tried as a replacement and rejected on preference; that version is in git
+  history if the drag ever needs to go away entirely.
 - **One `ScrollView` renders every step, so it keeps its offset across a step
   change.** Scroll down on the scan step to reach "Next", tap it, and the
   coverage step opened halfway down with its heading cut off. A `scrollTo({y:0})`
@@ -421,9 +418,15 @@ route.
   shortened brand cannot be misread. Indications cannot — cutting "Suspected"
   from "Suspected meniscal tear" turns the reason a scan was ordered into a
   diagnosis nobody has made — so those use `Chip`'s `fill` variant, equal
-  columns with the text wrapping inside. Watch the column width there: React
-  Native breaks mid-word rather than overflowing, and at `space.md` padding a
-  three-column row rendered "degenerativ / e spine".
+  full-width rows — one option per line, all the same width, which reads as a
+  list instead of as chips of three ragged lengths. Equal *columns* were tried
+  first and are a trap: React Native breaks mid-word rather than overflowing, so
+  a three-across row rendered "degenerativ / e spine".
+- **A 32px bold heading needs more than a 1.125 line height.** `display` shipped
+  at 32/36 and React Native clipped the ascenders of the first line rather than
+  growing the box — "Your coverage" rendered with its tops cut off by the step
+  bar. 40 fixes it and matches the 1.25 ratio the other headings use. The bug
+  hides on multi-line headings, so check a one-line one.
 - **Palette is deliberately not blue/white and deliberately not red/green.**
   Green-means-cheap would assert the opposite of the product's finding, so
   ranking is carried by position, number size, and one accent (`#B2542A`)
