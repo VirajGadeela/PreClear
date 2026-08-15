@@ -25,6 +25,13 @@ Identifiers that must match exactly, everywhere:
 | Product ID | `com.viraj.preclear.household.monthly` |
 | Subscription group | `Preclear Household` |
 
+Only the **monthly** product exists in the StoreKit file. The demo paywall in
+`src/DemoPaywall.tsx` advertises a yearly option too, but that sheet disappears
+the moment a real key is configured, so the two never appear together. If you
+want yearly for real, it needs a second subscription in `Preclear.storekit`, a
+second RevenueCat product, and a second package on the offering — decide that
+before creating the offering, since adding one later means editing it again.
+
 The entitlement string is the one that fails silently. If it doesn't match, the
 purchase succeeds, `entitlements.active` stays empty, and the app never unlocks.
 
@@ -92,15 +99,29 @@ offers — a discounted or free trial price aimed at a specific existing custome
 A plain monthly subscription with no promotional offer does not need it, so skip
 it until you add one.
 
-### 3. Xcode
+### 3. Xcode project wiring — already done, but verify
 
-The StoreKit file has to be part of the project before the scheme can see it.
+Both edits are plain text, so they were made directly rather than through the
+GUI:
 
-1. `open ios/Preclear.xcworkspace`
-2. Drag `app/storekit/Preclear.storekit` into the Project Navigator. Check
-   **Copy items if needed** and tick the **Preclear** target.
-3. **Product → Scheme → Edit Scheme → Run → Options**.
-4. Set **StoreKit Configuration** to `Preclear.storekit`. Close.
+- `ios/Preclear.xcodeproj/project.pbxproj` carries a file reference to
+  `../storekit/Preclear.storekit`, in the root group. Deliberately **not** added
+  to a build phase — the scheme is what reads it, and putting it in Resources
+  would ship the file inside the app.
+- `ios/Preclear.xcodeproj/xcshareddata/xcschemes/Preclear.xcscheme` carries
+  `<StoreKitConfigurationFileReference identifier = "../../storekit/Preclear.storekit">`
+  in its `LaunchAction`. The path is relative to the `.xcodeproj` bundle, not to
+  `ios/`.
+
+Confirm it took: **Product → Scheme → Edit Scheme → Run → Options**, and check
+**StoreKit Configuration** reads `Preclear.storekit` rather than *None*. If it
+says the file is missing, re-pick it from that menu — a wrong relative path is
+the only thing that can go wrong here, and the picker fixes it in one click.
+
+> **`ios/` is gitignored**, so this wiring lives only on this machine and is not
+> in the repo. `npx expo prebuild --clean` regenerates the directory and wipes
+> both edits. If that happens, redo them — or promote them to an Expo config
+> plugin, which would be tracked and would re-apply on every prebuild.
 
 ### 4. Run it — from Xcode, not the terminal
 
@@ -120,15 +141,29 @@ Then press **▶︎ Run** in Xcode (⌘R) with the iPhone 17 Pro simulator selec
 
 ### 5. Verify
 
-1. Walk to step 3 (**Routes**). Only the top route is visible.
-2. Tap **Unlock →**. The paywall appears.
-3. Buy. The simulator shows a StoreKit sheet with no real payment.
-4. All four routes appear, and the restore link disappears.
-5. RevenueCat dashboard → **Customer History** shows the transaction. This is
+The paywall no longer gates the route comparison — all four routes are free, and
+the entitlement gates the household claims review instead. So:
+
+1. Tap **See household plan** in the top bar, or step **4 · Household**.
+2. Tap **See plans and pricing**.
+3. The **RevenueCat** paywall appears — not the demo sheet. That swap is the
+   first proof the key is live: `App.tsx` picks the real sheet the moment
+   `configure()` succeeds. If you still see "Demo pricing", the key did not load,
+   and the usual cause is that `EXPO_PUBLIC_` values are inlined at build time —
+   reload the app fully (Cmd+R), don't just restart Metro.
+4. Buy. The simulator shows a StoreKit sheet with no real payment.
+5. Step 4 becomes the claims review, the top-bar pill fills in, and the
+   "Unlocked in demo mode" banner is **absent** — that banner only appears for a
+   demo unlock, so its absence is what distinguishes a real purchase.
+6. RevenueCat dashboard → **Customer History** shows the transaction. This is
    the screen worth filming for the demo, since it proves the SDK is live.
 
-Then check restore works: delete the app from the simulator, run again, go to
-step 3, tap **Restore purchase**. It should unlock without paying.
+Then check restore works: delete the app from the simulator, run again, open the
+Household step, tap **Restore purchase**. It should unlock without paying.
+
+The `__DEV__` Free/Household switch at the bottom of the screen forces
+`demoEntitled` and is independent of the real entitlement, so leave it on
+**Free** while testing a purchase or you cannot tell which one unlocked the tier.
 
 ## When it fails
 
@@ -156,3 +191,13 @@ Two failure modes worth knowing:
 reference and the scheme setting. The `.storekit` file itself survives because it
 lives in `app/storekit/`, outside the generated directory — but **step 3 has to
 be redone**. Nothing else in this document does.
+
+## What is still outstanding
+
+Everything above that needs an account login. As of 2026-08-14, none of it is
+done: `.env` holds an empty key, no RevenueCat project exists, and no StoreKit
+certificate has been uploaded. Step 3 is the only one that is finished.
+
+Until the key lands, the app is not broken — it presents the demo paywall
+instead, which unlocks the tier locally and says on screen that it charges
+nothing.
