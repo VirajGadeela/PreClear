@@ -6,11 +6,20 @@
  * than a formatting helper means there is one place to enforce it and no path
  * where a caller renders a bare number by accident — the suffix is typographic,
  * never optional.
+ *
+ * That word used to be set at `opacity: 0.72`, which measured **2.77:1** on the
+ * recommended route's card and 2.84:1 in the headline, against the 4.5:1 WCAG
+ * asks of text that size. The single word this product is required to show was
+ * the least legible text in the app. It now renders at full opacity, in
+ * `accentDeep` when the figure is accent-toned, which measures 5.2:1.
+ *
+ * Sizes come from the shared scale in `theme.ts`. This file used to carry a
+ * private one.
  */
 
 import { StyleSheet, Text, TextStyle } from 'react-native';
 
-import { color } from './theme';
+import { color, type as typography } from './theme';
 
 type Props = {
   value: number;
@@ -19,22 +28,28 @@ type Props = {
 };
 
 const SIZES: Record<NonNullable<Props['size']>, TextStyle> = {
-  hero: { fontSize: 34, fontWeight: '700', letterSpacing: -0.6 },
-  large: { fontSize: 24, fontWeight: '700', letterSpacing: -0.3 },
-  body: { fontSize: 15, fontWeight: '600' },
-  small: { fontSize: 13, fontWeight: '600' },
-};
-
-const SUFFIX: Record<NonNullable<Props['size']>, TextStyle> = {
-  hero: { fontSize: 14, fontWeight: '600' },
-  large: { fontSize: 12, fontWeight: '600' },
-  body: { fontSize: 12, fontWeight: '500' },
-  small: { fontSize: 11, fontWeight: '500' },
+  hero: typography.display,
+  large: typography.amount,
+  body: { ...typography.body, fontWeight: '600' },
+  small: typography.label,
 };
 
 const TONES: Record<NonNullable<Props['tone']>, string> = {
   ink: color.ink,
   accent: color.accent,
+  inverse: color.accentInk,
+};
+
+/**
+ * The suffix's colour, which is not always the figure's colour.
+ *
+ * `accent` is bright enough for a 26px figure (4.3:1 clears the 3:1 large-text
+ * bar) and not for the 13px word beside it. Ink and inverse are already far
+ * clear of 4.5:1 at any size, so they are used as-is.
+ */
+const SUFFIX_TONES: Record<NonNullable<Props['tone']>, string> = {
+  ink: color.ink,
+  accent: color.accentDeep,
   inverse: color.accentInk,
 };
 
@@ -57,7 +72,7 @@ export function Money({ value, size = 'body', tone = 'ink' }: Props) {
       style={[SIZES[size], { color: TONES[tone] }]}
     >
       {amount}
-      <Text style={[SUFFIX[size], styles.suffix, { color: TONES[tone] }]}>
+      <Text style={[styles.suffix, { color: SUFFIX_TONES[tone] }]}>
         {'  estimate'}
       </Text>
     </Text>
@@ -65,5 +80,10 @@ export function Money({ value, size = 'body', tone = 'ink' }: Props) {
 }
 
 const styles = StyleSheet.create({
-  suffix: { opacity: 0.72 },
+  // No lineHeight: a nested Text inherits the parent's line box, and setting
+  // one here would fight the figure's leading rather than the suffix's.
+  suffix: {
+    fontSize: typography.label.fontSize,
+    fontWeight: typography.label.fontWeight,
+  },
 });

@@ -29,7 +29,7 @@ import {
 } from 'react-native';
 
 import { DEMO_PLANS, PLAN_INCLUDES, PLAN_NAME } from './plan';
-import { color, radius, space, type } from './theme';
+import { TAP_TARGET, color, radius, space, type } from './theme';
 
 export function DemoPaywall({
   visible,
@@ -90,7 +90,11 @@ export function DemoPaywall({
                 accessibilityState={{ selected: active }}
                 accessibilityLabel={`${option.term}, ${option.price} ${option.cadence}`}
                 onPress={() => setSelected(option.id)}
-                style={[styles.option, active && styles.optionActive]}
+                style={({ pressed }) => [
+                  styles.option,
+                  active && styles.optionActive,
+                  pressed && styles.optionPressed,
+                ]}
               >
                 <View style={styles.optionMain}>
                   <View style={styles.optionHead}>
@@ -136,7 +140,7 @@ export function DemoPaywall({
             accessibilityRole="button"
             accessibilityLabel="Restore a previous purchase"
             onPress={onRestore}
-            style={styles.restore}
+            style={({ pressed }) => [styles.restore, pressed && styles.restorePressed]}
           >
             <Text style={styles.restoreText}>Restore purchase</Text>
           </Pressable>
@@ -176,19 +180,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingTop: space.sm,
   },
-  close: { minHeight: 44, justifyContent: 'center' },
+  close: { minHeight: TAP_TARGET, justifyContent: 'center' },
   closeText: { ...type.label, color: color.inkMuted },
 
   scrollView: { flex: 1 },
   scroll: { paddingHorizontal: space.lg, paddingBottom: space.xl * 2 },
 
   eyebrow: { ...type.label, color: color.accent, marginBottom: space.xs },
-  title: { ...type.hero, color: color.ink, marginBottom: space.sm },
+  title: { ...type.display, color: color.ink, marginBottom: space.sm },
   lede: { ...type.body, color: color.inkMuted },
 
   includes: { gap: space.sm },
   includeRow: { flexDirection: 'row', gap: space.sm, alignItems: 'flex-start' },
-  tick: { ...type.label, color: color.accent, width: 14 },
+  // Stays `accent`, not `accentDeep` — it measures 4.5:1 on canvas, so it
+  // passes as-is and there is no reason to darken a colour that works.
+  tick: { ...type.label, color: color.accent, width: space.md },
   includeLine: { ...type.body, color: color.ink, flex: 1 },
 
   sectionLabel: {
@@ -208,10 +214,13 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     borderRadius: radius.lg,
     borderWidth: 1.5,
-    borderColor: color.line,
-    padding: space.md + 2,
+    // A control boundary, not a hairline. See `border` in theme.ts.
+    borderColor: color.border,
+    padding: space.md,
     marginBottom: space.sm,
+    minHeight: TAP_TARGET,
   },
+  optionPressed: { opacity: 0.7 },
   // Selection is carried by the accent border and the price colour, the same
   // accent the recommended route uses. Nothing here uses hue to mean cheap.
   optionActive: { borderColor: color.accent, backgroundColor: color.accentSoft },
@@ -269,9 +278,10 @@ const styles = StyleSheet.create({
   restore: {
     alignItems: 'center',
     marginTop: space.md,
-    minHeight: 44,
+    minHeight: TAP_TARGET,
     justifyContent: 'center',
   },
+  restorePressed: { opacity: 0.6 },
   restoreText: { ...type.caption, color: color.inkMuted },
 
   legal: { ...type.caption, color: color.inkMuted, marginTop: space.sm },

@@ -5,6 +5,10 @@
  * both ship native code, which would mean a prebuild and a fresh native build
  * before the app would run again. This works with the dev client already
  * installed.
+ *
+ * The thumb is 30pt because that is the size it should look; the *target* is
+ * 44pt, because that is the size a finger needs. Those are different numbers
+ * and this file used to conflate them.
  */
 
 import { useCallback, useRef, useState } from 'react';
@@ -16,7 +20,7 @@ import {
   View,
 } from 'react-native';
 
-import { color, radius, space, type as typography } from './theme';
+import { TAP_TARGET, color, space, type as typography } from './theme';
 
 type Props = {
   label: string;
@@ -29,6 +33,7 @@ type Props = {
 };
 
 const THUMB = 30;
+const TRACK = 6;
 
 export function Slider({
   label,
@@ -100,42 +105,45 @@ export function Slider({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 22,
+    marginBottom: space.lg,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    marginBottom: 10,
+    marginBottom: space.sm,
   },
   label: {
-    color: color.ink,
     ...typography.label,
-    fontSize: 14,
+    color: color.ink,
     flexShrink: 1,
-    paddingRight: 12,
+    paddingRight: space.md,
   },
   value: {
+    ...typography.label,
     color: color.ink,
-    fontSize: 14,
     fontWeight: '700',
   },
+  // 44pt of touchable height around a 30pt thumb. The visual weight is
+  // unchanged; only the area that accepts a finger grew.
   track: {
-    height: THUMB,
+    height: TAP_TARGET,
     justifyContent: 'center',
   },
   unfilled: {
     position: 'absolute',
     left: 0,
     right: 0,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: color.line,
+    height: TRACK,
+    borderRadius: TRACK / 2,
+    // `line` measures 1.2:1 against the canvas — the track was effectively
+    // invisible until it was filled.
+    backgroundColor: color.border,
   },
   fill: {
     position: 'absolute',
-    height: 6,
-    borderRadius: 3,
+    height: TRACK,
+    borderRadius: TRACK / 2,
     backgroundColor: color.slate,
   },
   thumb: {
