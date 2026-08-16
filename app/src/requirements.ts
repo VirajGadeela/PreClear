@@ -154,6 +154,13 @@ export function unmetFindings(findings: Finding[]): Finding[] {
   );
 }
 
+/**
+ * Names who acts on this, not just what state it's in. A patient reading
+ * "documented as not met" has no way to act on that; a patient reading
+ * "your doctor's office" knows exactly who the next call is to.
+ */
 export function statusLabel(status: Status): string {
-  return status === 'unmet' ? 'Documented as not met' : 'Not documented in the order';
+  return status === 'unmet'
+    ? "Your doctor's office documented this as not met"
+    : "Your doctor's office hasn't documented this yet";
 }

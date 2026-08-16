@@ -86,6 +86,11 @@ export const type = {
   // Native clips the ascenders of the first line rather than growing the box,
   // and "Your coverage" rendered with its tops cut off by the step bar. 1.25
   // matches the ratio the other two headings use.
+  //
+  // Both branches independently moved this to 32px. The rest of the scale keeps
+  // the measured line heights, and `body`/`caption` keep the larger of the two
+  // sizes — 16/24 and 13/20 rather than 15/21 and 12/17 — because a 12px caption
+  // is below what this app should ask anyone to read.
   display: { fontSize: 32, lineHeight: 40, fontWeight: '700' as const, letterSpacing: -0.5 },
   amount: { fontSize: 26, lineHeight: 32, fontWeight: '700' as const, letterSpacing: -0.3 },
   title: { fontSize: 22, lineHeight: 28, fontWeight: '700' as const, letterSpacing: -0.2 },

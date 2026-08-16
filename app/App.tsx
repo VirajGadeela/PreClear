@@ -795,6 +795,13 @@ function CoverageStep({
           step={250}
           onChange={onDeductible}
           format={money}
+          // Carried over from the Aug 13 branch. Most people do not know this
+          // figure exactly, and a quick jump beats hunting for it with a drag.
+          presets={[
+            { label: 'Met it', value: 0 },
+            { label: 'About half', value: 1500 },
+            { label: 'Barely touched', value: 5000 },
+          ]}
         />
         <Slider
           label="Coinsurance after deductible"
@@ -813,6 +820,11 @@ function CoverageStep({
           step={500}
           onChange={onExpectedOtherSpend}
           format={money}
+          presets={[
+            { label: 'None planned', value: 0 },
+            { label: 'A few visits', value: 1500 },
+            { label: 'Ongoing care', value: 6000 },
+          ]}
         />
         {showTreatment && (
           <Slider
