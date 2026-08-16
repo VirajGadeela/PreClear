@@ -66,7 +66,6 @@ export type Route = {
   facilityAddress: string;
   allowedAmount: number;
   estimate: YearEstimate;
-  reasoning: string;
   unmetRequirements: Requirement[];
   warnings: string[];
 };
@@ -215,9 +214,6 @@ export function buildRoutes(options: BuildOptions): Route[] {
       facilityAddress: baseline.facility.facility_address,
       allowedAmount: baseline.rate.rate,
       estimate: year(baseline.rate.rate, true),
-      reasoning: `In-network at the facility as ordered, at the ${money(
-        baseline.rate.rate,
-      )} rate published for ${baseline.rate.plan_name}.`,
       unmetRequirements: [],
       warnings: warningsFor(baseline.rate.rate, baseline.facility.gross_charge),
     });
@@ -234,9 +230,6 @@ export function buildRoutes(options: BuildOptions): Route[] {
         facilityAddress: cheapest.facility.facility_address,
         allowedAmount: cheapest.rate.rate,
         estimate: year(cheapest.rate.rate, true),
-        reasoning: `Same coverage and the same deductible credit at a different in-network facility, ${money(
-          saving,
-        )} below the facility as ordered.`,
         unmetRequirements: [],
         warnings: warningsFor(cheapest.rate.rate, cheapest.facility.gross_charge),
       });
@@ -251,8 +244,6 @@ export function buildRoutes(options: BuildOptions): Route[] {
         facilityAddress: baseline.facility.facility_address,
         allowedAmount: baseline.rate.rate,
         estimate: year(baseline.rate.rate, true),
-        reasoning:
-          'Same facility and the same estimated cost, but the order does not document requirements this payer publishes. The checklist below is for the ordering physician.',
         unmetRequirements,
         warnings: warningsFor(baseline.rate.rate, baseline.facility.gross_charge),
       });
@@ -273,8 +264,6 @@ export function buildRoutes(options: BuildOptions): Route[] {
         facilityAddress: cheapestCash.facility_address,
         allowedAmount: cheapestCash.cash_price as number,
         estimate: year(cheapestCash.cash_price as number, false),
-        reasoning:
-          'Discounted cash price paid directly to the facility. This payment earns no deductible credit, so it does not reduce what later care costs this year.',
         unmetRequirements: [],
         warnings: [],
       });

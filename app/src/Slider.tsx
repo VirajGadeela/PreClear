@@ -5,21 +5,22 @@
  * both ship native code, which would mean a prebuild and a fresh native build
  * before the app would run again. This works with the dev client already
  * installed.
+ *
+ * A slider is its question, its value, its control. Nothing else. If the
+ * value needs a sentence next to it to be understandable, the label is wrong
+ * — fix the label, don't add the sentence back.
  */
 
 import { useCallback, useRef, useState } from 'react';
 import {
   LayoutChangeEvent,
   PanResponder,
-  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
-import { color, radius, space, type as typography } from './theme';
-
-export type Preset = { label: string; value: number };
+import { color, space } from './theme';
 
 type Props = {
   label: string;
@@ -29,17 +30,6 @@ type Props = {
   step: number;
   onChange: (value: number) => void;
   format: (value: number) => string;
-  helpText?: string;
-  // Shown once at each end of the track. This is how a slider communicates
-  // its range without a sentence of prose next to it — two or three
-  // characters do the same job as a caption.
-  rangeLabels?: [string, string];
-  // Quick-jump chips for a value nobody can be expected to know exactly —
-  // most people don't have their deductible or their expected medical
-  // spend memorized. Tapping one moves the slider; it doesn't stay "selected,"
-  // because the underlying value is continuous and dragging afterward would
-  // desync it from any one preset.
-  presets?: Preset[];
 };
 
 const THUMB = 30;
@@ -52,9 +42,6 @@ export function Slider({
   step,
   onChange,
   format,
-  helpText,
-  rangeLabels,
-  presets,
 }: Props) {
   const [width, setWidth] = useState(0);
   // The responder closes over these, so they have to be refs rather than state.
@@ -98,21 +85,6 @@ export function Slider({
         <Text style={styles.label}>{label}</Text>
         <Text style={styles.value}>{format(value)}</Text>
       </View>
-      {presets && presets.length > 0 && (
-        <View style={styles.presetRow}>
-          {presets.map((preset) => (
-            <Pressable
-              key={preset.label}
-              accessibilityRole="button"
-              accessibilityLabel={`Set ${label} to ${preset.label}`}
-              onPress={() => onChangeRef.current(preset.value)}
-              style={styles.preset}
-            >
-              <Text style={styles.presetText}>{preset.label}</Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
       <View
         accessible
         accessibilityRole="adjustable"
@@ -126,20 +98,13 @@ export function Slider({
         <View style={[styles.fill, { width: thumbLeft + THUMB / 2 }]} />
         <View style={[styles.thumb, { left: thumbLeft }]} />
       </View>
-      {rangeLabels && (
-        <View style={styles.rangeRow}>
-          <Text style={styles.rangeText}>{rangeLabels[0]}</Text>
-          <Text style={styles.rangeText}>{rangeLabels[1]}</Text>
-        </View>
-      )}
-      {helpText ? <Text style={styles.help}>{helpText}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 22,
+    marginBottom: space.xl,
   },
   headerRow: {
     flexDirection: 'row',
@@ -149,8 +114,8 @@ const styles = StyleSheet.create({
   },
   label: {
     color: color.ink,
-    ...typography.label,
     fontSize: 14,
+    fontWeight: '600',
     flexShrink: 1,
     paddingRight: 12,
   },
@@ -158,26 +123,6 @@ const styles = StyleSheet.create({
     color: color.ink,
     fontSize: 14,
     fontWeight: '700',
-  },
-  presetRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.xs,
-    marginBottom: space.sm,
-  },
-  preset: {
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: color.line,
-    paddingHorizontal: space.sm,
-    paddingVertical: 5,
-  },
-  // Matches the Chip component's unselected-state text (type.label, ink) —
-  // this is a small button label, the same idiom used for the Step 1 chips,
-  // not an explanatory caption.
-  presetText: {
-    ...typography.label,
-    color: color.ink,
   },
   track: {
     height: THUMB,
@@ -205,26 +150,5 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     borderWidth: 3,
     borderColor: color.slate,
-  },
-  rangeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 4,
-  },
-  // Kept small — this is an axis endpoint, not a sentence someone reads and
-  // decides from — but not muted: a faint "$10,000+" is exactly the kind of
-  // thing this pass is trying to stop people skimming past.
-  rangeText: {
-    ...typography.caption,
-    color: color.ink,
-  },
-  // Promoted to the slider's own body size and full ink, not caption-muted:
-  // this is the one sentence that changes what value someone enters, so it
-  // reads as part of the control, not an annotation trailing under it.
-  help: {
-    color: color.ink,
-    fontSize: 14,
-    lineHeight: 19,
-    marginTop: 6,
   },
 });
