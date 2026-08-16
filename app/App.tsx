@@ -230,8 +230,6 @@ export default function App() {
             onUnlock={unlock}
           />
         )}
-
-        <Text style={styles.disclosure}>{data.disclosure}</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -390,13 +388,6 @@ function CoverageStep({
           step={250}
           onChange={onDeductible}
           format={money}
-          rangeLabels={['$0', '$10,000+']}
-          presets={[
-            { label: '$500', value: 500 },
-            { label: '$1,500', value: 1500 },
-            { label: '$3,000', value: 3000 },
-            { label: '$6,000', value: 6000 },
-          ]}
         />
         <Slider
           label="Coinsurance after deductible"
@@ -406,38 +397,26 @@ function CoverageStep({
           step={0.05}
           onChange={onCoinsurance}
           format={(value) => `${Math.round(value * 100)}%`}
-          rangeLabels={['0%', '50%']}
         />
         <Slider
-          label="Other care you expect this year"
+          label="Other care you expect this year (0 = none planned)"
           value={expectedOtherSpend}
           minimum={0}
           maximum={20000}
           step={500}
           onChange={onExpectedOtherSpend}
           format={money}
-          rangeLabels={['$0', '$20,000+']}
-          presets={[
-            { label: 'None planned', value: 0 },
-            { label: 'A few visits', value: 1500 },
-            { label: 'Ongoing care', value: 6000 },
-          ]}
-          helpText="Zero assumes no further care this year — an assumption, not a neutral default."
         />
         {showTreatment && (
-          <>
-            <Text style={styles.eyebrow}>Requirement check</Text>
-            <Slider
-              label="Treatment tried before this scan"
-              value={treatmentWeeks}
-              minimum={0}
-              maximum={12}
-              step={1}
-              onChange={onTreatmentWeeks}
-              format={(value) => `${value} ${value === 1 ? 'week' : 'weeks'}`}
-              rangeLabels={['0 weeks', '12 weeks']}
-            />
-          </>
+          <Slider
+            label="Treatment tried before this scan"
+            value={treatmentWeeks}
+            minimum={0}
+            maximum={12}
+            step={1}
+            onChange={onTreatmentWeeks}
+            format={(value) => `${value} ${value === 1 ? 'week' : 'weeks'}`}
+          />
         )}
       </View>
 
@@ -619,13 +598,8 @@ function RouteCard({
   const statusFor = (key: string) =>
     findings.find((finding) => finding.requirement.key === key)?.status ?? 'unmet';
 
-  const requirementsCount = route.unmetRequirements.length;
-  const showScanSplit = route.estimate.expectedOtherCareCost > 0.01;
-
   return (
     <View style={[styles.card, recommended && styles.cardRecommended]}>
-      {recommended && <Text style={styles.badge}>RECOMMENDED</Text>}
-
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded }}
@@ -645,20 +619,12 @@ function RouteCard({
         </View>
 
         <View style={styles.amountRow}>
-          <View>
-            <Money
-              value={route.estimate.totalThisYear}
-              size="large"
-              tone={recommended ? 'accent' : 'ink'}
-            />
-            <Text style={styles.amountLabel}>total this year</Text>
-          </View>
-          {showScanSplit && (
-            <View>
-              <Money value={route.estimate.scan.patientPays} size="small" tone="ink" />
-              <Text style={styles.amountLabel}>for this scan</Text>
-            </View>
-          )}
+          <Money
+            value={route.estimate.totalThisYear}
+            size="large"
+            tone={recommended ? 'accent' : 'ink'}
+          />
+          <Text style={styles.amountLabel}>total this year</Text>
         </View>
 
         <Text style={styles.reasoningPrimary}>
@@ -668,13 +634,6 @@ function RouteCard({
               ? 'Counts toward your deductible.'
               : 'Earns no deductible credit.'}
         </Text>
-
-        {requirementsCount > 0 && (
-          <Text style={styles.requirementsNotice}>
-            {requirementsCount} requirement{requirementsCount === 1 ? '' : 's'}{' '}
-            your doctor's office hasn't documented yet.
-          </Text>
-        )}
 
         <Text style={styles.chevron}>{expanded ? 'Hide details' : 'Show details'}</Text>
       </Pressable>
@@ -690,15 +649,6 @@ function RouteCard({
             label="Other care after this"
             value={<Money value={route.estimate.expectedOtherCareCost} />}
           />
-          {route.facilityAddress ? (
-            <Text style={styles.address}>{route.facilityAddress}</Text>
-          ) : null}
-          {route.alsoAt.length > 0 && (
-            <Text style={styles.address}>
-              Same published price at {route.alsoAt.join(', ')}
-            </Text>
-          )}
-          <Text style={styles.reasoning}>{route.reasoning}</Text>
 
           {route.warnings.map((warning) => (
             <Text key={warning} style={styles.warning}>
@@ -712,7 +662,6 @@ function RouteCard({
                 {statusLabel(statusFor(requirement.key) as any)}
               </Text>
               <Text style={styles.requirementSummary}>{requirement.summary}</Text>
-              <Text style={styles.requirementQuote}>“{requirement.quote}”</Text>
               <Text style={styles.citation}>
                 {requirement.payer} · {requirement.section_id} · {requirement.version}
               </Text>
@@ -831,17 +780,6 @@ const styles = StyleSheet.create({
   chipTextSelected: { color: color.surface },
 
   sliderBlock: { marginTop: space.lg },
-  // Ink, not accent and not muted — accent is reserved for the recommended
-  // route, and this is a section heading (small-caps kicker), not an
-  // annotation trailing under something else.
-  eyebrow: {
-    ...type.caption,
-    fontWeight: '700',
-    letterSpacing: 1,
-    color: color.ink,
-    marginTop: space.sm,
-    marginBottom: space.sm,
-  },
 
   button: {
     alignItems: 'center',
@@ -870,13 +808,6 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   cardRecommended: { borderColor: color.accent, backgroundColor: color.accentSoft },
-  badge: {
-    ...type.caption,
-    fontWeight: '700',
-    letterSpacing: 1,
-    color: color.accent,
-    marginBottom: space.sm,
-  },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
   rank: {
     ...type.label,
@@ -901,18 +832,12 @@ const styles = StyleSheet.create({
   },
   facility: { ...type.body, fontWeight: '700', color: color.ink, marginTop: 2 },
 
-  amountRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.lg, marginTop: space.md },
-  // Same tone as the figure it labels, not a separate muted colour — this is
-  // what tells you whether you're looking at the scan price or the year
-  // total, so it has to survive being skimmed.
-  amountLabel: { ...type.caption, fontWeight: '600', color: color.ink, marginTop: 2 },
+  amountRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, marginTop: space.md },
+  amountLabel: { ...type.caption, fontWeight: '600', color: color.ink, marginBottom: 4 },
 
-  // The card's single most important sentence: on the recommended card, the
-  // comparison against the alternative it beat; everywhere else, the
-  // deductible fact. Full ink, body-level weight — this is exactly the line
-  // that used to be styled as a caption and get skimmed past.
+  // The card's one sentence: on the recommended card, the comparison against
+  // the alternative it beat; everywhere else, the deductible fact.
   reasoningPrimary: { ...type.body, color: color.ink, marginTop: space.md },
-  requirementsNotice: { ...type.body, color: color.flag, marginTop: space.sm },
   chevron: { ...type.label, color: color.slate, marginTop: space.md },
 
   details: { borderTopWidth: 1, borderTopColor: color.line, marginTop: space.md, paddingTop: space.md },
@@ -923,8 +848,6 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   rowLabel: { ...type.caption, fontWeight: '600', color: color.ink },
-  address: { ...type.caption, color: color.ink, marginTop: space.xs },
-  reasoning: { ...type.caption, color: color.ink, marginTop: space.sm },
   warning: {
     ...type.caption,
     color: color.flag,
@@ -934,12 +857,11 @@ const styles = StyleSheet.create({
     marginTop: space.sm,
   },
 
+  // Rebuilt fresh — these three are the only ones from the caption cull
+  // allowed back, and only inside this expanded state.
   requirement: { borderTopWidth: 1, borderTopColor: color.line, marginTop: space.md, paddingTop: space.md },
-  requirementStatus: { ...type.caption, fontWeight: '700', color: color.flag },
+  requirementStatus: { ...type.body, fontWeight: '700', color: color.flag },
   requirementSummary: { ...type.body, color: color.ink, marginTop: space.xs },
-  requirementQuote: { ...type.body, color: color.ink, fontStyle: 'italic', marginTop: space.xs },
-  // The demo's credibility rests on this line naming a real document, section
-  // and version — bold and full ink, not a trailing footnote.
   citation: { ...type.caption, fontWeight: '700', color: color.ink, marginTop: space.sm },
   // Slate, not accent: accent is reserved for the recommended route, and a
   // source link can appear on any card.
@@ -958,16 +880,4 @@ const styles = StyleSheet.create({
   lockBody: { ...type.caption, color: color.ink, marginTop: space.xs },
   // Slate, not accent — see `link` above.
   lockCta: { ...type.label, color: color.slate, marginTop: space.sm },
-
-  // Full body weight and ink: this line is what keeps the app from being
-  // read as denial prediction and keeps every dollar figure labelled as an
-  // estimate. That is not a footnote.
-  disclosure: {
-    ...type.body,
-    color: color.ink,
-    borderTopWidth: 1,
-    borderTopColor: color.line,
-    marginTop: space.xl,
-    paddingTop: space.md,
-  },
 });
