@@ -46,11 +46,16 @@ export type Requirement = {
   alternative_pathway: boolean;
 };
 
+// Named for what the patient gets, not for our internal route taxonomy —
+// "In-network, order corrected first" describes our data model, not an
+// outcome. The cash label is deliberately not parallel to the other three:
+// it's the one route where the tradeoff (no deductible credit) belongs in the
+// label itself, not just in the reasoning underneath it.
 export const ROUTE_LABELS: Record<string, string> = {
-  in_network_as_written: 'In-network, as ordered',
-  in_network_cheaper_site: 'In-network, different facility',
-  in_network_order_corrected: 'In-network, order corrected first',
-  cash_non_contracted: 'Cash, paid directly to the facility',
+  in_network_as_written: 'Same order, same facility',
+  in_network_cheaper_site: 'Same coverage, cheaper facility',
+  in_network_order_corrected: 'Same price, requires provider action',
+  cash_non_contracted: 'Cash pay — no deductible credit',
 };
 
 export type Route = {
@@ -349,6 +354,60 @@ export function rankRoutes(routes: Route[]): Route[] {
     if (creditDelta !== 0) return creditDelta;
     return a.facilityName.localeCompare(b.facilityName);
   });
+}
+
+/**
+ * The one sentence the recommended card needs: why THIS route, against the
+ * specific alternative it beat.
+ *
+ * This exists because the headline used to make a claim ("cash saves $X
+ * today, costs $Y more this year") that the card underneath never let a
+ * reader verify — the card showed a total with no visible connection back to
+ * either headline number. This ties the two together on the card itself, and
+ * it renders for every visitor, not just entitled ones: it's the concrete
+ * evidence that makes the paywall worth trusting, not something to gate.
+ *
+ * Only ever describes routes[0] against one counterpart — a cash route if the
+ * recommendation is insured (or vice versa), falling back to the runner-up
+ * when there's no cash data to compare against at all.
+ */
+export function describeRecommendation(routes: Route[]): string | null {
+  if (routes.length < 2) return null;
+  const recommended = routes[0];
+  const recommendedIsCash = !recommended.estimate.scan.countsTowardDeductible;
+
+  const cash = routes.find(
+    (route) => route.kind === 'cash_non_contracted' && route !== recommended,
+  );
+  const bestInsured = routes.find(
+    (route) => route.estimate.scan.countsTowardDeductible && route !== recommended,
+  );
+  const other = recommendedIsCash ? bestInsured : cash;
+
+  if (!other) {
+    // No cash/insured pair exists to tell the deductible story, so this falls
+    // back to a plain same-coverage comparison against the runner-up.
+    const runnerUp = routes[1];
+    const yearDelta = runnerUp.estimate.totalThisYear - recommended.estimate.totalThisYear;
+    if (yearDelta <= 0.01) return null;
+    return `${money(yearDelta)} less than ${runnerUp.facilityName} this year, for the same coverage.`;
+  }
+
+  const todayDelta = recommended.estimate.scan.patientPays - other.estimate.scan.patientPays;
+  const yearDelta = other.estimate.totalThisYear - recommended.estimate.totalThisYear;
+  if (Math.abs(todayDelta) <= 0.01 && yearDelta <= 0.01) return null;
+
+  if (!recommendedIsCash) {
+    if (todayDelta > 0.01) {
+      return `${money(todayDelta)} more than paying cash today — but it earns your deductible credit, which is what saves ${money(yearDelta)} by the end of the year.`;
+    }
+    return `Also cheaper than cash today, and it earns your deductible credit — ${money(yearDelta)} less than cash by the end of the year.`;
+  }
+
+  if (todayDelta < -0.01) {
+    return `${money(-todayDelta)} less than billing insurance today, and still ${money(yearDelta)} ahead this year — you are not expected to reach your deductible, so the missing credit costs little.`;
+  }
+  return `${money(yearDelta)} less than billing insurance this year, even without a deductible credit.`;
 }
 
 export function explainRanking(routes: Route[]): string {
