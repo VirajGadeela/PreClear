@@ -172,9 +172,23 @@ Indianapolis hospitals is ten small files. They also carry cash/gross prices,
 which route 4 needs anyway. This is likely the better primary source for the
 facility component rather than a fallback.
 
-**Gate 2: passed.** 8 requirements across 3 payers in `pipeline/policies/`, each
+**Gate 2: passed.** 11 requirements across 3 payers in `pipeline/policies/`, each
 carrying document title, section ID, version, effective date and source URL.
-14 tests green. The bar was 5 rules across 3 payers.
+The bar was 5 rules across 3 payers.
+
+**Requirement coverage, corrected 2026-08-13.** Rule count was never the real
+measure — coverage across (payer × CPT) was, and it was far thinner than the
+headline number suggested. Anthem, the primary payer for this metro, carried
+knee rules only, so an Anthem member ordering a lumbar MRI or a head CT reached
+route 3 and found nothing. CPT 70450 had no indications at all in the app, so
+route 3 could not fire for head CT under any payer. Anthem now covers all three
+target codes via Carelon's spine and brain guidelines.
+
+**UnitedHealthcare still has zero requirements** while carrying facility prices
+in the app — the exact silent failure this file warns about under "How expansion
+actually works". The app now says so on the results screen rather than omitting
+route 3 without explanation, but the honest fix is a UHC Indiana document, which
+is still not located.
 
 ### Payer requirement mechanics (verified 2026-08-11)
 
@@ -198,13 +212,34 @@ carrying document title, section ID, version, effective date and source URL.
 - Red flag indications (eviCore `SP.GG.0001.2.A`) **waive the waiting period**,
   they do not add a requirement.
 
+### Carelon document mechanics (verified 2026-08-13)
+
+- **Carelon splits imaging by body region across separate documents**, and the
+  split is not where you would guess. Headache criteria are in *Imaging of the
+  Brain*, not *Imaging of the Head and Neck* — the head-and-neck document covers
+  sinusitis, trauma, hearing loss and similar and has no headache section at
+  all. Looking in the obviously-named document returns nothing and reads like
+  the criteria do not exist.
+- **Version dates are the URL.** Carelon publishes each revision at its own
+  path, e.g. `/imaging-of-the-spine-2025-11-15/`, and keeps archived and
+  future-dated revisions live at the same time. On 2026-08-13 the spine
+  guideline had a `2026-09-19` revision already published but not yet effective.
+  Cite the one in force on the date of use, not the newest one on the site.
+- Brain and spine both sit on the same `2025-11-15` cycle as extremities, so
+  one review date covers all three Anthem documents. Brain additionally carries
+  an `updated 2026-01-01`.
+- **Carelon's lumbar threshold agrees with eviCore's**: both require 6 weeks of
+  conservative management for uncomplicated low back pain. Independent
+  corroboration across two delegates, not a copy — worth knowing before assuming
+  a discrepancy is a extraction bug.
+
 The demo's citable failing requirement is real: a lumbar MRI order with 2 weeks
 of treatment documented fails eviCore `SP.LB.0005.1.A`, which requires "Failure
 of a 6-week trial of provider-directed treatment", v1.0.2026, effective
 2026-02-03.
 
 **Routing engine: working end to end on real data** (Sep 1 milestone, early).
-`pipeline/costing/` does the math, `pipeline/route.py` is the CLI. 44 tests green.
+`pipeline/costing/` does the math, `pipeline/route.py` is the CLI. 76 tests green.
 
 The thesis is demonstrated on real published Indianapolis prices. Anthem member,
 CPT 73721, Franciscan Health Carmel, $2,000 deductible remaining:
@@ -280,8 +315,14 @@ route.
 ### App mechanics (verified 2026-08-12)
 
 - **Expo SDK 57 needs Node 22.13+.** Node 18 fails `create-expo-app` with
-  `ReferenceError: File is not defined`. `/opt/homebrew/opt/node@26/bin` is the
-  working toolchain on this machine; nvm's default 18 is not.
+  `ReferenceError: File is not defined`. The working toolchain is Homebrew's
+  keg-only `node@22` (22.23.2), at `/opt/homebrew/opt/node@22/bin` — keg-only
+  means it is not symlinked into PATH, so `~/.zprofile` must prepend it, and a
+  terminal opened before that edit still has the wrong node. An earlier note
+  here recorded
+  `node@26`; **corrected 2026-08-13, that path has never existed on this
+  machine.** The default `node` is 18.16.1 from the nodejs.org pkg installer at
+  `/usr/local/bin`, and it is the one that fails.
 - **Read `app/AGENTS.md` before touching app code** — it points at the exact
   versioned docs, and SDK 57 moved a lot.
 - **Adding a native module costs a rebuild.** `@react-native-community/slider`
@@ -299,6 +340,93 @@ route.
 - Verification that works without a simulator: `npx tsc --noEmit` and
   `npx expo export --platform ios`. The export catches import and resolution
   errors the type checker does not.
+- **Nothing on this machine can tap the simulator.** `simctl` has no gesture
+  command, `idb` and `cliclick` are not installed, and `osascript` is refused
+  assistive access. Screens are therefore verified by temporarily changing a
+  `useState` initial value, screenshotting, and reverting — not by driving the
+  UI. Two traps in that method: Fast Refresh *preserves* existing state, so
+  changing an initial value does nothing to a running screen (terminate and
+  relaunch the app), and `contentOffset` on a `ScrollView` only applies on
+  mount, so scrolling a screen to its lower half needs the same relaunch.
+- **The paywall is a demo sheet, not RevenueCat.** No store product exists yet,
+  so `app/src/DemoPaywall.tsx` shows placeholder prices and unlocks the tier
+  locally. `App.tsx` chooses which paywall to present in exactly one place, on
+  whether a RevenueCat key configured successfully; when the store side is
+  finished that condition starts choosing the real sheet and no caller changes.
+  The entitlement is kept as two separate flags — `storeEntitled` and
+  `demoEntitled` — because merging them would make a demo unlock
+  indistinguishable from a purchase, and the unlocked screen says which one it
+  is. Subscription prices live in `app/src/plan.ts` and deliberately do **not**
+  render through `<Money>`: hard rule 5 exists because every dollar figure in
+  this app is a projected medical cost, and a subscription price is the exact
+  amount charged, so labelling it "estimate" would be false.
+- **`__DEV__` gates a visible Free/Household switch** at the bottom of the
+  screen. Both tiers have to be checkable without a store account, and a hidden
+  gesture is how one of them quietly stops being checked.
+- **A `ScrollView` in a flex column needs `flex: 1` on the ScrollView itself**,
+  not just on the parent. Without it the ScrollView takes its height from its
+  content instead of from the space left over, overflows the screen and never
+  scrolls — so the primary button at the bottom of a step becomes unreachable
+  and the flow dead-ends. This was latent from the start and invisible while
+  every step happened to fit on one screen; adding two plan controls to the scan
+  step exposed it. Symptom reads as "the button disappeared", cause is layout,
+  not rendering.
+- **`KeyboardAvoidingView` is core React Native**, so the plan-name field can
+  push the primary button clear of the keyboard without a native module. Use
+  `behavior="padding"` on iOS only.
+- **The design tokens are measured, not chosen.** A UX audit on 2026-08-14 found
+  four WCAG failures, and the worst of them was on the word hard rule 5 exists
+  to display: `<Money>` set "estimate" at `opacity: 0.72`, which measured
+  **2.77:1** on the recommended route's card against the 4.5:1 that size needs.
+  The most legally load-bearing word in the app was its least legible text.
+  Two tokens were added rather than changing any existing hue — `accentDeep`
+  `#A04A24` for accent text under 18px (5.2:1 on `accentSoft`) and `border`
+  `#8C8779` for control outlines, because `line` measures **1.2:1** and an
+  unselected chip is white on near-white canvas (1.1:1), so its border was the
+  only cue that a control existed and it was invisible. Re-measure before
+  changing a hex; the ratios are in the comments in `app/src/theme.ts`.
+- **`space` is a strict 8px grid** (4/8/16/24/32). The previous scale ran
+  4/8/14/20/28 and the code reached the gaps by writing `space.md + 2` in seven
+  places — that arithmetic appearing anywhere is the signal the scale no longer
+  fits the layout. There is also now exactly **one type scale**; `Money.tsx`
+  used to carry a private second one, and between them they defined ten font
+  sizes with no ratio.
+- **44pt targets cost vertical space, and the scan step pays it.** Raising chips
+  from 36pt to `TAP_TARGET` made every step taller, which pushes that step's
+  primary button further out of reach — the exact failure that already happened
+  once. `h2` dropped from `xl` to `lg` to buy the budget back. Check that button
+  after any change that grows a control.
+- **On a touch device the pressed state is the focus state.** There is no hover
+  and no keyboard ring to fall back on, so every `Pressable` carries a `pressed`
+  style. Six of nine had none.
+- **The sliders stayed; the lag was never the slider.** A slider reports a
+  value on every touch-move, and each report re-ran `buildRoutes` and
+  `rankRoutes` across every facility — a full routing pass per frame, on a step
+  that renders no route. Two fixes, both cheap: `routes` is now gated on
+  `step === 2`, and `Slider` drops a report whose stepped value has not changed
+  (a full-width drag fires ~300 move events across 41 distinct values). Presets
+  were tried as a replacement and rejected on preference; that version is in git
+  history if the drag ever needs to go away entirely.
+- **One `ScrollView` renders every step, so it keeps its offset across a step
+  change.** Scroll down on the scan step to reach "Next", tap it, and the
+  coverage step opened halfway down with its heading cut off. A `scrollTo({y:0})`
+  keyed on `step` fixes it. Nothing looks broken when this happens, which is why
+  it survived several passes.
+- **Chip rows fit one line two different ways, and which one depends on whether
+  the words can be shortened.** Payer names can: `PAYER_CHIP_LABELS` shows the
+  brand's short form and `accessibilityLabel` keeps the full name, because a
+  shortened brand cannot be misread. Indications cannot — cutting "Suspected"
+  from "Suspected meniscal tear" turns the reason a scan was ordered into a
+  diagnosis nobody has made — so those use `Chip`'s `fill` variant, equal
+  full-width rows — one option per line, all the same width, which reads as a
+  list instead of as chips of three ragged lengths. Equal *columns* were tried
+  first and are a trap: React Native breaks mid-word rather than overflowing, so
+  a three-across row rendered "degenerativ / e spine".
+- **A 32px bold heading needs more than a 1.125 line height.** `display` shipped
+  at 32/36 and React Native clipped the ascenders of the first line rather than
+  growing the box — "Your coverage" rendered with its tops cut off by the step
+  bar. 40 fixes it and matches the 1.25 ratio the other headings use. The bug
+  hides on multi-line headings, so check a one-line one.
 - **Palette is deliberately not blue/white and deliberately not red/green.**
   Green-means-cheap would assert the opposite of the product's finding, so
   ranking is carried by position, number size, and one accent (`#B2542A`)
@@ -313,10 +441,64 @@ route.
   one implementation; `app/src/requirements.ts` mirrors it case for case. The
   first mobile version scraped week counts out of the quote text with a regex
   and got both the threshold and the met/not-documented distinction wrong.
+- **That mirror is guarded by `scripts/check-requirements-parity.sh`**, which
+  evaluates every requirement against every fact case in both languages. It was
+  added 2026-08-13; before that only the costing port had a parity check. This
+  drift is quieter than a wrong number: an unmapped field and an unknown check
+  type *both* fall through to `not_documented`, so a rule the app cannot
+  evaluate looks identical to one the order does not satisfy, and the app shows
+  a citable checklist item the engine never asserted. Run it after touching
+  either side. A new check type needs a new fact case or it passes vacuously.
+- **Ask for a fact only when a check reads it.** The coverage screen derives its
+  inputs from the applicable checks (`usesTreatmentWeeks`, `readsField`) rather
+  than from "any requirement matches". Before that, a head CT for headache
+  showed a weeks-of-treatment slider no headache criterion consumes, while the
+  fact that actually decides the rule had no control at all.
+- **Zero unmet findings is ambiguous and the app must say which kind.** "Every
+  recorded requirement is met" and "no requirement is recorded for this payer
+  and scan" both hide route 3. `pipeline/policies/check.py` distinguished them
+  from the start; the app did not, so a UHC member saw a comparison with no
+  order check and no indication that one was missing.
+- **`export_app_data.py --metadata-only`** rewrites indications and requirements
+  in an existing bundle and leaves prices alone. Rule edits otherwise require
+  the gigabyte price files to be present, which they usually are not.
 - **Card capture is deliberately not built.** It needs `expo-camera` (a native
   rebuild) and creates the one compliance risk with no upside for the demo —
-  hard rule 3 requires discarding the image immediately. Plan is chosen from a
-  list instead.
+  hard rule 3 requires discarding the image immediately. Plan type is chosen
+  from a list instead.
+- **Member ID is deliberately not collected either, for the same reason.** Its
+  only use is an eligibility lookup, and CLAUDE.md defers eligibility to beta —
+  so the field would be a direct identifier, collected and unused, against hard
+  rule 1. The fact on the card that actually changes the answer is the plan, and
+  it identifies nobody.
+- **Ask for plan *type*, not plan name.** `buildRoutes` and `representativeRate`
+  accepted `memberPlan` from the start but the app never passed it, so every
+  member saw the median across all of that payer's plans — $888.30 at Franciscan
+  Carmel where a PPO member owes $992.51 and an HMO member $784.08. The fix is
+  not a plan-name picker: Anthem files 21 distinct strings for one CPT, they
+  differ by campus and contract suffix, and cleaning them collapses 21 to 19
+  with an empty label. Product type (PPO/HMO/POS/EPO) is the one plan fact a
+  member can read off a card and answer correctly, `matchesMemberPlan` already
+  gates on it, and passing the bare string `"PPO"` matches by both product and
+  token overlap. `availableProducts()` offers only types that payer actually
+  publishes — offering an absent type is worse than offering none, because
+  nothing matches and the app silently ignores the answer it just asked for.
+  "Not sure" is a real answer that keeps the full published range.
+- **The plan name is typed, not photographed.** A free-text field feeds
+  `matchesMemberPlan` directly — the same path `--plan` uses — and pins one rate
+  where the type chips only narrow to a group: "Franciscan Employee" returns
+  $610.44 against the $888.30 median. Token overlap tolerates a misspelling
+  ("Blue Acess PPO" still resolves), and `planMatchSummary()` reports how many
+  facilities matched so a name that matches nothing says so rather than being
+  silently ignored.
+- **Card capture needs two native modules, not one.** `expo-camera` produces an
+  image; Expo ships no OCR, so reading it needs ML Kit or Apple Vision as well.
+  The only way to avoid the second module is sending the card image to a cloud
+  OCR service, which would transmit a patient's insurance card off-device — do
+  not do that. Both paths end at the same place, a plan name matched against
+  published strings, so typing reaches the answer directly. Revisit after
+  Shipaton; the cost is a rebuild and a new dev client, and the gain is a
+  first-run moment that must be filmed with a synthetic card anyway.
 
 Gate definitions, for the record:
 
@@ -361,12 +543,16 @@ Partial payer coverage in a metro means the product silently fails for anyone ho
 
 ## How it works
 
-User photographs insurance card + enters procedure → app returns four ranked routes, each with reasoning shown:
+User enters procedure, indication and plan → app returns four ranked routes,
+each with reasoning shown:
 
 1. **In-network, order as written** (baseline)
 2. **In-network, cheaper site of service** — same coverage, same deductible credit, lower cost because negotiated rates vary by facility
 3. **In-network, order corrected first** — the order fails a specific published payer requirement; output is a checklist for the ordering physician
 4. **Cash at a non-contracted facility** — surfaced only when the patient is uninsured, on a high-deductible plan unlikely to be met, or the study is non-covered
+
+Card capture was considered and dropped — see App mechanics. Anything in this
+file describing a card photo is stale; the plan is chosen from a list.
 
 **Critical:** this does NOT predict denial probability. It checks orders against payers' own published, deterministic criteria and reports which are unmet. Never describe it as denial prediction in code comments, docs, or UI.
 
@@ -398,6 +584,89 @@ For Shipaton, `deductible_remaining` is **user-reported via a slider.** No eligi
 | Facility network participation | Derived from presence in a payer's own rate file | Free byproduct |
 
 Cash prices from freestanding centers (voice-agent phone calls) are **phase 2, not Shipaton.**
+
+## Business model (decided 2026-08-13)
+
+Two consumer tiers now, one B2B layer much later.
+
+**Free — the one-time check.** Procedure in, four ranked routes out, with real
+numbers. This is the hook and the demo, and it is what the app does today.
+
+**Paid, ~$6–10/month, billed per household — ongoing claims monitoring.** The
+app keeps reading the bills and EOBs that arrive for everyone in the household
+all year, flagging billing errors, appealable denials and overcharges. The
+one-time comparison becomes a feature inside it. This is what makes it a
+subscription rather than a one-and-done tool: imaging happens every few years,
+claims arrive constantly.
+
+**B2B, later, explicitly not part of the initial build.** Free listing for
+imaging centres so nobody can pay to rank higher, plus a paid analytics or
+pricing-visibility product they choose to buy. Facilities paying for placement
+would be a referral payment, which is anti-kickback territory — criminal
+liability, and it needs a healthcare attorney before any facility pays a dollar.
+
+### Consequences already in the repo
+
+- **The entitlement is `preclear_household`, not `full_comparison`.** Named for
+  who it covers rather than what it unlocks, because it gates the comparison
+  today and is meant to gate monitoring later once the comparison goes free.
+  Renaming an entitlement after products exist in App Store Connect and
+  RevenueCat is painful, so it had to survive that shift.
+- **The product is an auto-renewable monthly subscription**, family shareable,
+  in the `Preclear Household` group — not the non-consumable it started as.
+- **The paywall is inverted, and monitoring is real.** All four routes are
+  free; `pipeline/claims/` reviews a household's EOBs behind the entitlement.
+  The claims are synthetic fixtures in `data/samples/household_eobs.json`, so
+  the tier demonstrates honestly without touching PHI.
+
+### Claims review mechanics (built 2026-08-13)
+
+- **`pipeline/claims/eob.py` is the source of truth, `app/src/claims.ts` mirrors
+  it, and `scripts/check-claims-parity.sh` guards the pair.** That is now three
+  duplicated engines with three parity scripts — costing, requirements, claims.
+  Drift here is the worst of the three: a wrong finding tells a member they are
+  owed money they are not, and sends them to argue with their insurer on a false
+  premise.
+- **Every finding is arithmetic that fails against the EOB's own numbers, or a
+  fact the document states about itself.** Nothing predicts whether an appeal
+  succeeds. The denial finding is deliberately unpriced — attaching a number
+  would imply a predicted recovery.
+- **Two checks routinely catch the same claim.** An in-network balance bill
+  almost always fails the components check too. Both `total_at_stake` and the
+  app's card grouping count a claim **once, at its largest finding**. Summing
+  them told a member they were owed $726.58 where one claim can return $384.09,
+  and overstating that is exactly the dishonesty this product exists to correct.
+  The bug appeared twice — first in the arithmetic, then reintroduced by the
+  layout listing one claim as two cards.
+- `export_app_data.py` copies the EOB fixture into `app/assets/`, so
+  `data/samples/` stays the single source and the app cannot drift from what the
+  parity script tests.
+
+### Claims data acquisition (verified 2026-08-13)
+
+The paid tier does not require scraping payer portals, and this matters — it is
+the same thesis as the rest of the product.
+
+- Under the CMS Interoperability rules, payers must expose **claims and
+  encounter data including EOBs through a FHIR Patient Access API**, which a
+  member authorises a third-party app to read via **SMART on FHIR / OAuth 2.0**.
+  Free, federally mandated, and almost unused by consumer software.
+- The data standard is the **CARIN for Blue Button** implementation guide.
+- **The gate is attestation, not technology.** Payers must run an attestation
+  process for third-party developers before releasing data, so registration is
+  the long pole — weeks, not hours. Start Anthem and UHC early.
+- CMS-9115-F established this; CMS-0057-F expands it, with required APIs
+  operational by 2027-01-01.
+- Medicare-only alternative: CMS Blue Button 2.0.
+
+### The compliance fork this creates
+
+Claims monitoring means holding **real EOBs for real households**, which is a
+categorically different product from what exists now. Everything built so far
+avoids PHI entirely: inputs are user-reported, nothing is stored, no image is
+captured. Hard rule 1 below is scoped to the Shipaton build, but going past it
+means a backend that stores PHI, breach obligations and a BAA posture. Choose it
+deliberately; do not drift into it.
 
 ## Hard rules — never violate
 

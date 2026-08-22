@@ -6,21 +6,24 @@
  * before the app would run again. This works with the dev client already
  * installed.
  *
- * A slider is its question, its value, its control. Nothing else. If the
- * value needs a sentence next to it to be understandable, the label is wrong
- * — fix the label, don't add the sentence back.
+ * The thumb is 30pt because that is the size it should look; the *target* is
+ * 44pt, because that is the size a finger needs. Those are different numbers
+ * and this file used to conflate them.
  */
 
 import { useCallback, useRef, useState } from 'react';
 import {
   LayoutChangeEvent,
   PanResponder,
+  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
-import { color, space } from './theme';
+import { TAP_TARGET, color, radius, space, type as typography } from './theme';
+
+export type Preset = { label: string; value: number };
 
 type Props = {
   label: string;
@@ -30,9 +33,21 @@ type Props = {
   step: number;
   onChange: (value: number) => void;
   format: (value: number) => string;
+  helpText?: string;
+  // Shown once at each end of the track. This is how a slider communicates
+  // its range without a sentence of prose next to it — two or three
+  // characters do the same job as a caption.
+  rangeLabels?: [string, string];
+  // Quick-jump chips for a value nobody can be expected to know exactly —
+  // most people don't have their deductible or their expected medical
+  // spend memorized. Tapping one moves the slider; it doesn't stay "selected,"
+  // because the underlying value is continuous and dragging afterward would
+  // desync it from any one preset.
+  presets?: Preset[];
 };
 
 const THUMB = 30;
+const TRACK = 6;
 
 export function Slider({
   label,
@@ -42,12 +57,21 @@ export function Slider({
   step,
   onChange,
   format,
+  helpText,
+  rangeLabels,
+  presets,
 }: Props) {
   const [width, setWidth] = useState(0);
   // The responder closes over these, so they have to be refs rather than state.
   const widthRef = useRef(0);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+
+  // The last value actually reported, so a drag that stays inside one step does
+  // not report it again. A full-width drag produces ~300 move events across 41
+  // distinct values; without this, every one of them re-rendered the screen.
+  const lastRef = useRef(value);
+  lastRef.current = value;
 
   const onLayout = useCallback((event: LayoutChangeEvent) => {
     const measured = event.nativeEvent.layout.width;
@@ -62,7 +86,10 @@ export function Slider({
       const ratio = Math.min(Math.max((x - THUMB / 2) / track, 0), 1);
       const raw = minimum + ratio * (maximum - minimum);
       const stepped = Math.round(raw / step) * step;
-      onChangeRef.current(Math.min(Math.max(stepped, minimum), maximum));
+      const next = Math.min(Math.max(stepped, minimum), maximum);
+      if (next === lastRef.current) return;
+      lastRef.current = next;
+      onChangeRef.current(next);
     },
     [maximum, minimum, step],
   );
@@ -85,6 +112,21 @@ export function Slider({
         <Text style={styles.label}>{label}</Text>
         <Text style={styles.value}>{format(value)}</Text>
       </View>
+      {presets && presets.length > 0 && (
+        <View style={styles.presetRow}>
+          {presets.map((preset) => (
+            <Pressable
+              key={preset.label}
+              accessibilityRole="button"
+              accessibilityLabel={`Set ${label} to ${preset.label}`}
+              onPress={() => onChangeRef.current(preset.value)}
+              style={({ pressed }) => [styles.preset, pressed && styles.presetPressed]}
+            >
+              <Text style={styles.presetText}>{preset.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
       <View
         accessible
         accessibilityRole="adjustable"
@@ -98,48 +140,80 @@ export function Slider({
         <View style={[styles.fill, { width: thumbLeft + THUMB / 2 }]} />
         <View style={[styles.thumb, { left: thumbLeft }]} />
       </View>
+      {rangeLabels && (
+        <View style={styles.rangeRow}>
+          <Text style={styles.rangeText}>{rangeLabels[0]}</Text>
+          <Text style={styles.rangeText}>{rangeLabels[1]}</Text>
+        </View>
+      )}
+      {helpText ? <Text style={styles.help}>{helpText}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: space.xl,
+    marginBottom: space.lg,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    marginBottom: 10,
+    marginBottom: space.sm,
   },
   label: {
+    ...typography.label,
     color: color.ink,
-    fontSize: 14,
-    fontWeight: '600',
     flexShrink: 1,
-    paddingRight: 12,
+    paddingRight: space.md,
   },
   value: {
+    ...typography.label,
     color: color.ink,
-    fontSize: 14,
     fontWeight: '700',
   },
+  presetRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.xs,
+    marginBottom: space.sm,
+  },
+  preset: {
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: color.border,
+    paddingHorizontal: space.sm,
+    minHeight: TAP_TARGET,
+    justifyContent: 'center',
+  },
+  // Matches the Chip component's unselected-state text (type.label, ink) —
+  // this is a small button label, the same idiom used for the Step 1 chips,
+  // not an explanatory caption.
+  presetPressed: { opacity: 0.7 },
+  presetText: {
+    ...typography.label,
+    color: color.ink,
+  },
+  // 44pt of touchable height around a 30pt thumb. The visual weight is
+  // unchanged; only the area that accepts a finger grew.
   track: {
-    height: THUMB,
+    height: TAP_TARGET,
     justifyContent: 'center',
   },
   unfilled: {
     position: 'absolute',
     left: 0,
     right: 0,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: color.line,
+    height: TRACK,
+    borderRadius: TRACK / 2,
+    // `line` measures 1.2:1 against the canvas — the track was effectively
+    // invisible until it was filled.
+    backgroundColor: color.border,
   },
   fill: {
     position: 'absolute',
-    height: 6,
-    borderRadius: 3,
+    height: TRACK,
+    borderRadius: TRACK / 2,
     backgroundColor: color.slate,
   },
   thumb: {
@@ -150,5 +224,25 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     borderWidth: 3,
     borderColor: color.slate,
+  },
+  rangeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: space.xs,
+  },
+  // Kept small — this is an axis endpoint, not a sentence someone reads and
+  // decides from — but not muted: a faint "$10,000+" is exactly the kind of
+  // thing this pass is trying to stop people skimming past.
+  rangeText: {
+    ...typography.caption,
+    color: color.ink,
+  },
+  // Promoted to the slider's own body size and full ink, not caption-muted:
+  // this is the one sentence that changes what value someone enters, so it
+  // reads as part of the control, not an annotation trailing under it.
+  help: {
+    ...typography.body,
+    color: color.ink,
+    marginTop: space.xs,
   },
 });

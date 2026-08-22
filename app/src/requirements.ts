@@ -31,12 +31,14 @@ export type OrderFacts = {
   positiveLigamentStressTests?: string[];
   radiculopathyObjectiveFindings?: boolean;
   redFlags?: string[];
+  headacheConcerningFeature?: boolean;
 };
 
 const FIELDS: Record<string, keyof OrderFacts> = {
   in_person_evaluation_this_episode: 'inPersonEvaluationThisEpisode',
   reevaluation_after_treatment: 'reevaluationAfterTreatment',
   radiculopathy_objective_findings: 'radiculopathyObjectiveFindings',
+  headache_concerning_feature: 'headacheConcerningFeature',
 };
 
 function flag(value: boolean | undefined): Status {
@@ -92,6 +94,28 @@ export function evaluateCheck(check: any, facts: OrderFacts): Status {
       // requirement is failed on the strength of a rule we cannot evaluate.
       return 'not_documented';
   }
+}
+
+/**
+ * Check types whose outcome depends on the number of treatment weeks.
+ *
+ * The coverage screen asks for a fact only when a requirement actually reads
+ * it. Asking for weeks of treatment ahead of a head CT for headache would be
+ * noise: no headache criterion consumes it.
+ */
+const WEEK_CHECKS = new Set([
+  'min_weeks',
+  'meniscal_pathway',
+  'ligament_pathway',
+  'objective_findings_then_weeks',
+]);
+
+export function usesTreatmentWeeks(check: any): boolean {
+  return WEEK_CHECKS.has(check?.type);
+}
+
+export function readsField(check: any, field: string): boolean {
+  return check?.type === 'boolean' && check?.field === field;
 }
 
 export type Finding = { requirement: Requirement; status: Status };

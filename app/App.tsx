@@ -12,34 +12,57 @@
  */
 
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  KeyboardAvoidingView,
   Linking,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
-import Purchases from 'react-native-purchases';
-import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
-
+import household from './assets/household-eobs.json';
 import raw from './assets/preclear-data.json';
+import { DemoPaywall } from './src/DemoPaywall';
 import { Money } from './src/Money';
-import { AccessStatus, ENTITLEMENT_ID } from './src/purchases';
 import { Slider } from './src/Slider';
+import {
+  Eob,
+  HouseholdPlan,
+  review,
+  totalAtStake,
+} from './src/claims';
 import { PlanBenefits, money } from './src/costing';
-import { OrderFacts, checkOrder, statusLabel, unmetFindings } from './src/requirements';
+import { PLAN_INCLUDES, PLAN_NAME } from './src/plan';
+import {
+  configure as configurePurchases,
+  onEntitlementChange,
+  presentPaywall,
+  refreshEntitlement,
+  restore as restorePurchases,
+} from './src/purchases';
+import {
+  OrderFacts,
+  checkOrder,
+  readsField,
+  statusLabel,
+  unmetFindings,
+  usesTreatmentWeeks,
+} from './src/requirements';
 import {
   FacilityBundle,
   Requirement,
   Route,
+  availableProducts,
   buildRoutes,
-  describeRecommendation,
+  planMatchSummary,
   rankRoutes,
 } from './src/routes';
-import { color, radius, space, type } from './src/theme';
+import { TAP_TARGET, color, radius, space, type } from './src/theme';
 
 type Indication = { key: string; label: string };
 type Procedure = {
@@ -51,14 +74,11 @@ type Procedure = {
 };
 type Bundle = {
   metro: string;
-  disclosure: string;
   procedures: Procedure[];
   requirements: Requirement[];
 };
 
 const data = raw as unknown as Bundle;
-
-const revenueCatApiKey = process.env.EXPO_PUBLIC_REVENUECAT_PUBLIC_SDK_KEY;
 
 const PAYER_LABELS: Record<string, string> = {
   anthem: 'Anthem Blue Cross Blue Shield',
@@ -67,38 +87,106 @@ const PAYER_LABELS: Record<string, string> = {
   cigna: 'Cigna',
 };
 
-const STEPS = ['Scan', 'Coverage', 'Routes'] as const;
+/**
+ * What the chip says, where the full name will not fit on one line.
+ *
+ * Four full payer names run to roughly 420pt across a 345pt column, so the row
+ * wrapped. These are the brand's own short forms, and the full name still goes
+ * to the screen reader through `accessibilityLabel` — nothing is lost, and a
+ * shortened brand name cannot be misread the way a shortened clinical phrase
+ * could.
+ */
+const PAYER_CHIP_LABELS: Record<string, string> = {
+  anthem: 'Anthem',
+  unitedhealthcare: 'United',
+  aetna: 'Aetna',
+  cigna: 'Cigna',
+};
+
+/** Stable empty array, so the gated `routes` memo returns the same reference. */
+const EMPTY_ROUTES: Route[] = [];
+
+const STEPS = ['Scan', 'Coverage', 'Routes', 'Household'] as const;
+
+/**
+ * The paid step. Always reachable, whether or not it is unlocked — a member has
+ * to be able to see what the plan is before being asked to pay for it, and a
+ * subscriber has to be able to get back to their claims without walking the
+ * whole scan flow again.
+ */
+const HOUSEHOLD_STEP = STEPS.length - 1;
 
 export default function App() {
   const [step, setStep] = useState(0);
   const [cpt, setCpt] = useState('73721');
   const [indication, setIndication] = useState('meniscal_tear');
   const [payer, setPayer] = useState('anthem');
+  // The plan, not the payer, sets the price — one Anthem facility publishes
+  // five different rates for the same knee MRI. Undefined means "not sure",
+  // which keeps the full published range rather than guessing one.
+  const [product, setProduct] = useState<string | undefined>(undefined);
+  // What is printed on the card. Free text because that is what
+  // matchesMemberPlan was built for, and it pins an exact rate where the
+  // product chips can only narrow to a type. Typed, never photographed, and
+  // never stored — hard rules 1 and 3.
+  const [planText, setPlanText] = useState('');
+
+  // The typed name is more specific than the type, so it wins when present.
+  const memberPlan = planText.trim() || (product ? product.toUpperCase() : undefined);
   const [deductible, setDeductible] = useState(2000);
   const [coinsurance, setCoinsurance] = useState(0.2);
   const [expectedOtherSpend, setExpectedOtherSpend] = useState(0);
-  const [treatmentWeeks, setTreatmentWeeks] = useState(0);
-  const [access, setAccess] = useState<AccessStatus>('checking');
+  const [treatmentWeeks, setTreatmentWeeks] = useState(2);
 
-  // Re-checks the entitlement without re-configuring the SDK, so this is safe
-  // to call again as a retry from the "unavailable" state.
-  const refreshAccess = useCallback(async () => {
-    try {
-      const info = await Purchases.getCustomerInfo();
-      setAccess(info.entitlements.active[ENTITLEMENT_ID] ? 'entitled' : 'locked');
-    } catch {
-      setAccess('unavailable');
-    }
-  }, []);
+  // Two independent sources of "unlocked", kept apart on purpose.
+  //
+  // `storeEntitled` is the real one: RevenueCat's answer, and the only one that
+  // will exist once a store product does. `demoEntitled` is this build's stand-in
+  // — no product exists yet, so the paid tier is unlocked by a demo sheet that
+  // says so on screen. Merging them into one flag would make it impossible to
+  // tell a genuine entitlement from the demo, which is exactly the distinction
+  // that has to stay visible while the store side is unfinished.
+  const [storeEntitled, setStoreEntitled] = useState(false);
+  const [demoEntitled, setDemoEntitled] = useState(false);
+  const [storeReady, setStoreReady] = useState(false);
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  const isSubscribed = storeEntitled || demoEntitled;
+
+  /**
+   * Send each step back to the top.
+   *
+   * One ScrollView renders every step, so it keeps its offset when the step
+   * changes: scroll down on the scan step to reach "Next", tap it, and the
+   * coverage step opens halfway down with its heading cut off. Nothing looks
+   * broken, which is what makes it easy to miss.
+   */
+  const scrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [step]);
 
   useEffect(() => {
-    if (!revenueCatApiKey) {
-      setAccess('unavailable');
+    const ready = configurePurchases();
+    if (!ready.ok) {
+      // Not an error worth showing a patient. Without a key the demo paywall is
+      // the paywall, and it explains itself; the console note is for whoever is
+      // building, and `note` stays clear for purchase outcomes.
+      setStoreReady(false);
       return;
     }
-    Purchases.configure({ apiKey: revenueCatApiKey });
-    refreshAccess();
-  }, [refreshAccess]);
+    setStoreReady(true);
+
+    // Read the entitlement once at launch, then keep listening. A renewal, an
+    // expiry, or a restore performed elsewhere arrives through the listener
+    // rather than through any call this screen makes.
+    refreshEntitlement()
+      .then(setStoreEntitled)
+      .catch(() => setStoreEntitled(false));
+
+    return onEntitlementChange(setStoreEntitled);
+  }, []);
 
   const procedure = useMemo(
     () => data.procedures.find((item) => item.cpt === cpt) ?? data.procedures[0],
@@ -120,23 +208,52 @@ export default function App() {
     [procedure, payer],
   );
 
+  const productOptions = useMemo(
+    () => availableProducts(facilities),
+    [facilities],
+  );
+
+  // Clear a product this payer does not publish here, so a stale selection from
+  // a previous payer cannot silently stop matching anything.
+  useEffect(() => {
+    if (product && !productOptions.includes(product)) {
+      setProduct(undefined);
+    }
+  }, [product, productOptions]);
+
+  // Left undefined until the patient says otherwise, so an unanswered question
+  // reports as "not documented" rather than as a failed criterion.
+  const [headacheFeature, setHeadacheFeature] = useState<boolean | undefined>(
+    undefined,
+  );
+
   const facts: OrderFacts = useMemo(
-    () => ({ conservativeTherapyWeeks: treatmentWeeks }),
-    [treatmentWeeks],
+    () => ({
+      conservativeTherapyWeeks: treatmentWeeks,
+      headacheConcerningFeature: headacheFeature,
+    }),
+    [treatmentWeeks, headacheFeature],
+  );
+
+  // Kept separate from the unmet subset below, because "every recorded
+  // requirement is met" and "no requirement is recorded for this payer and
+  // scan" both produce zero unmet findings and mean entirely different things.
+  // Route 3 is absent either way, so without this the app cannot say which.
+  const applicableFindings = useMemo(
+    () =>
+      checkOrder(
+        data.requirements,
+        PAYER_LABELS[payer] ?? '',
+        cpt,
+        indication,
+        facts,
+      ),
+    [payer, cpt, indication, facts],
   );
 
   const findings = useMemo(
-    () =>
-      unmetFindings(
-        checkOrder(
-          data.requirements,
-          PAYER_LABELS[payer] ?? '',
-          cpt,
-          indication,
-          facts,
-        ),
-      ),
-    [payer, cpt, indication, facts],
+    () => unmetFindings(applicableFindings),
+    [applicableFindings],
   );
 
   const benefits: PlanBenefits = useMemo(
@@ -149,56 +266,137 @@ export default function App() {
     [deductible, coinsurance],
   );
 
-  const routes = useMemo(
-    () =>
-      rankRoutes(
-        buildRoutes({
-          facilities,
-          benefits,
-          expectedOtherAllowedSpend: expectedOtherSpend,
-          unmetRequirements: findings.map((finding) => finding.requirement),
-          // Surfaced when the deductible is unlikely to be met, which is when
-          // the missing credit costs the patient least.
-          cashIsAppropriate: expectedOtherSpend < deductible,
-        }),
-      ),
-    [facilities, benefits, expectedOtherSpend, deductible, findings],
+  /**
+   * Only computed on the step that shows it.
+   *
+   * This is what made the sliders feel slow. A slider reports a value on every
+   * touch-move, and each report re-ran `buildRoutes` and `rankRoutes` across
+   * every facility — a full routing pass per frame, on a step that renders no
+   * route. Gating on the step removes all of it, and the ranking is still ready
+   * the instant the member arrives, because arriving is itself a step change.
+   *
+   * `routes` is read only by `RoutesStep`, so nothing else can observe this.
+   */
+  const showRoutes = step === 2;
+  const routes = useMemo(() => {
+    if (!showRoutes) return EMPTY_ROUTES;
+    return rankRoutes(
+      buildRoutes({
+        facilities,
+        benefits,
+        expectedOtherAllowedSpend: expectedOtherSpend,
+        memberPlan,
+        unmetRequirements: findings.map((finding) => finding.requirement),
+        // Surfaced when the deductible is unlikely to be met, which is when
+        // the missing credit costs the patient least.
+        cashIsAppropriate: expectedOtherSpend < deductible,
+      }),
+    );
+  }, [
+    showRoutes,
+    facilities,
+    benefits,
+    expectedOtherSpend,
+    deductible,
+    findings,
+    memberPlan,
+  ]);
+
+  const planMatch = useMemo(
+    () => planMatchSummary(facilities, planText),
+    [facilities, planText],
   );
 
+  /**
+   * One entry point for "show me the plan", wherever it is tapped from.
+   *
+   * Which paywall appears is decided here and nowhere else: the real
+   * RevenueCat sheet when a key is configured, the demo sheet otherwise. When
+   * the store side is finished, this condition starts choosing the other branch
+   * on its own and no caller changes.
+   */
   const unlock = useCallback(async () => {
-    try {
-      // No explicit offering: this loads whichever offering is marked
-      // "Current" in the RevenueCat dashboard.
-      const result = await RevenueCatUI.presentPaywall({ displayCloseButton: true });
-      // Any resolved result means the paywall was reachable, so this also
-      // recovers out of 'unavailable' on a successful retry. Cancelling or an
-      // in-paywall purchase error both leave the entitlement unchanged.
-      setAccess(
-        result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED
-          ? 'entitled'
-          : 'locked',
-      );
-    } catch {
-      // The paywall itself could not be presented — offline, or nothing
-      // configured in the dashboard yet. Distinct from "declined to buy."
-      setAccess('unavailable');
+    setNote(null);
+    if (!storeReady) {
+      setPaywallOpen(true);
+      return;
     }
+    const outcome = await presentPaywall();
+    setStoreEntitled(outcome.entitled);
+    setNote(outcome.message);
+    if (outcome.entitled) setStep(HOUSEHOLD_STEP);
+  }, [storeReady]);
+
+  /** The demo sheet's button. Unlocks nothing outside this device. */
+  const startDemo = useCallback(() => {
+    setDemoEntitled(true);
+    setPaywallOpen(false);
+    setNote(null);
+    setStep(HOUSEHOLD_STEP);
   }, []);
+
+  const restore = useCallback(async () => {
+    setNote(null);
+    if (!storeReady) {
+      setPaywallOpen(false);
+      setNote(
+        'Restore needs a live store account. This build has none, so there is nothing to restore.',
+      );
+      return;
+    }
+    const outcome = await restorePurchases();
+    setStoreEntitled(outcome.entitled);
+    setNote(outcome.message);
+  }, [storeReady]);
 
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
+      <TopBar
+        subscribed={isSubscribed}
+        onPress={() => (isSubscribed ? setStep(HOUSEHOLD_STEP) : unlock())}
+      />
       <StepBar current={step} onJump={setStep} />
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      {/* The plan-name field sits above the primary button, so without this the
+          keyboard covers the way forward. Core React Native, no native module —
+          see App mechanics in CLAUDE.md. */}
+      <KeyboardAvoidingView
+        style={styles.scrollView}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+      {/* flex: 1 is load-bearing. Without it the ScrollView sizes to its
+          content rather than to the space left by the step bar, so it overflows
+          the screen and never scrolls — the primary button simply becomes
+          unreachable. It only looked fine while every step fitted on one
+          screen. */}
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        // Bounce even when content nearly fits. The scan step overflows by only
+        // ~170pt, and without this a short drag springs back with no movement,
+        // which reads as "this screen does not scroll" rather than "you are at
+        // the end of it".
+        alwaysBounceVertical
+        showsVerticalScrollIndicator
+      >
         {step === 0 && (
           <ScanStep
             procedure={procedure}
             cpt={cpt}
             indication={indication}
             payer={payer}
+            product={product}
+            productOptions={productOptions}
+            planText={planText}
+            planMatch={planMatch}
             onCpt={setCpt}
             onIndication={setIndication}
             onPayer={setPayer}
+            onProduct={setProduct}
+            onPlanText={setPlanText}
             onNext={() => setStep(1)}
           />
         )}
@@ -209,15 +407,18 @@ export default function App() {
             coinsurance={coinsurance}
             expectedOtherSpend={expectedOtherSpend}
             treatmentWeeks={treatmentWeeks}
-            showTreatment={data.requirements.some(
-              (requirement) =>
-                requirement.cpt_codes.includes(cpt) &&
-                requirement.indication === indication,
+            showTreatment={applicableFindings.some((finding) =>
+              usesTreatmentWeeks(finding.requirement.check),
+            )}
+            headacheFeature={headacheFeature}
+            showHeadacheFeature={applicableFindings.some((finding) =>
+              readsField(finding.requirement.check, 'headache_concerning_feature'),
             )}
             onDeductible={setDeductible}
             onCoinsurance={setCoinsurance}
             onExpectedOtherSpend={setExpectedOtherSpend}
             onTreatmentWeeks={setTreatmentWeeks}
+            onHeadacheFeature={setHeadacheFeature}
             onNext={() => setStep(2)}
           />
         )}
@@ -226,12 +427,130 @@ export default function App() {
           <RoutesStep
             routes={routes}
             findings={findings}
-            access={access}
+            isSubscribed={isSubscribed}
+            note={note}
             onUnlock={unlock}
+            onRestore={restore}
+            onOpenHousehold={() => setStep(HOUSEHOLD_STEP)}
+            requirementsChecked={applicableFindings.length}
+            payerLabel={PAYER_LABELS[payer] ?? ''}
+          />
+        )}
+
+        {step === HOUSEHOLD_STEP && (
+          <HouseholdStep
+            isSubscribed={isSubscribed}
+            demo={demoEntitled}
+            note={note}
+            onUnlock={unlock}
+            onRestore={restore}
           />
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Development only. Two flows have to be verifiable without a store
+          account, and hunting for a hidden gesture to switch between them is how
+          one of them stops being checked. Stripped from a release build by the
+          same constant that strips the SDK's debug logging. */}
+      {__DEV__ && (
+        <DevTierSwitch
+          subscribed={isSubscribed}
+          onFree={() => {
+            setDemoEntitled(false);
+            setNote(null);
+          }}
+          onPro={() => {
+            setDemoEntitled(true);
+            setNote(null);
+          }}
+        />
+      )}
+
+      <DemoPaywall
+        visible={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
+        onStart={startDemo}
+        onRestore={restore}
+      />
     </SafeAreaView>
+  );
+}
+
+/**
+ * Always-visible plan status.
+ *
+ * The household plan used to be reachable only by scrolling to the bottom of
+ * the results, which meant it did not exist until the member had already
+ * finished the free thing. This sits above every step: it names the tier, and
+ * tapping it either opens the plan or jumps a subscriber to their claims.
+ */
+function TopBar({
+  subscribed,
+  onPress,
+}: {
+  subscribed: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <View style={styles.topBar}>
+      <Text style={styles.brand}>Preclear</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          subscribed
+            ? `${PLAN_NAME} active. Open your household claims.`
+            : `See ${PLAN_NAME}, the paid plan.`
+        }
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.tierPill,
+          subscribed && styles.tierPillActive,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={[styles.tierText, subscribed && styles.tierTextActive]}>
+          {subscribed ? 'Household plan' : 'See household plan'}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+/** Free/Pro switch for testing. `__DEV__` only — see the call site. */
+function DevTierSwitch({
+  subscribed,
+  onFree,
+  onPro,
+}: {
+  subscribed: boolean;
+  onFree: () => void;
+  onPro: () => void;
+}) {
+  return (
+    <View style={styles.devBar}>
+      <Text style={styles.devLabel}>Testing</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected: !subscribed }}
+        onPress={onFree}
+        style={[styles.devChip, !subscribed && styles.devChipOn]}
+      >
+        <Text style={[styles.devChipText, !subscribed && styles.devChipTextOn]}>
+          Free
+        </Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected: subscribed }}
+        onPress={onPro}
+        style={[styles.devChip, subscribed && styles.devChipOn]}
+      >
+        <Text style={[styles.devChipText, subscribed && styles.devChipTextOn]}>
+          Household
+        </Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -247,17 +566,25 @@ function StepBar({
       {STEPS.map((label, index) => {
         const done = index < current;
         const active = index === current;
+        // The scan flow stays sequential — a route ranking before the coverage
+        // questions would be answering with defaults the member never saw. The
+        // household step is exempt: it is not a later part of this flow, it is a
+        // different part of the app.
+        const locked = index > current && index !== HOUSEHOLD_STEP;
         return (
           <Pressable
             key={label}
             accessibilityRole="button"
-            accessibilityState={{ selected: active, disabled: index > current }}
+            accessibilityState={{ selected: active, disabled: locked }}
             accessibilityLabel={
               done ? `${label}, completed, tap to change` : label
             }
-            disabled={index > current}
+            disabled={locked}
             onPress={() => onJump(index)}
-            style={styles.stepItem}
+            style={({ pressed }) => [
+              styles.stepItem,
+              pressed && styles.stepItemPressed,
+            ]}
           >
             <View
               style={[
@@ -271,10 +598,11 @@ function StepBar({
               </Text>
             </View>
             <Text
+              numberOfLines={1}
               style={[
                 styles.stepLabel,
                 active && styles.stepLabelActive,
-                index > current && styles.stepLabelPending,
+                locked && styles.stepLabelPending,
               ]}
             >
               {label}
@@ -291,18 +619,30 @@ function ScanStep({
   cpt,
   indication,
   payer,
+  product,
+  productOptions,
+  planText,
+  planMatch,
   onCpt,
   onIndication,
   onPayer,
+  onProduct,
+  onPlanText,
   onNext,
 }: {
   procedure: Procedure;
   cpt: string;
   indication: string;
   payer: string;
+  product: string | undefined;
+  productOptions: string[];
+  planText: string;
+  planMatch: { matched: number; total: number } | null;
   onCpt: (value: string) => void;
   onIndication: (value: string) => void;
   onPayer: (value: string) => void;
+  onProduct: (value: string | undefined) => void;
+  onPlanText: (value: string) => void;
   onNext: () => void;
 }) {
   return (
@@ -318,6 +658,7 @@ function ScanStep({
           />
         ))}
       </View>
+      <Text style={styles.caption}>{procedure.detail} · CPT {procedure.cpt}</Text>
 
       {procedure.indications.length > 0 && (
         <>
@@ -328,6 +669,7 @@ function ScanStep({
                 key={option.key}
                 selected={option.key === indication}
                 label={option.label}
+                block
                 onPress={() => onIndication(option.key)}
               />
             ))}
@@ -341,11 +683,69 @@ function ScanStep({
           <Chip
             key={key}
             selected={key === payer}
-            label={key === 'anthem' ? 'Anthem BCBS' : PAYER_LABELS[key]}
+            label={PAYER_CHIP_LABELS[key]}
+            spoken={PAYER_LABELS[key]}
             onPress={() => onPayer(key)}
           />
         ))}
       </View>
+
+      {/* The plan sets the price, not the payer. Product type is asked for
+          because it is the one plan fact a member can read off their card and
+          answer correctly — the published plan strings differ by campus and
+          contract suffix and match nothing a patient would recognise. */}
+      {productOptions.length > 1 && (
+        <>
+          <Text style={styles.h2}>Your plan type</Text>
+          <View style={styles.chipWrap}>
+            {productOptions.map((option) => (
+              <Chip
+                key={option}
+                selected={option === product}
+                label={option.toUpperCase()}
+                onPress={() => onProduct(option === product ? undefined : option)}
+              />
+            ))}
+            <Chip
+              label="Not sure"
+              selected={product === undefined}
+              onPress={() => onProduct(undefined)}
+            />
+          </View>
+          <Text style={styles.caption}>
+            It is on your insurance card. Not sure keeps every rate your insurer
+            publishes here, which is a wider range.
+          </Text>
+        </>
+      )}
+
+      {/* The plan name pins one rate where the type above can only narrow to a
+          group. Typed rather than photographed: reading the card needs a camera
+          and an OCR module, and the image is the one object in this product
+          that hard rule 3 has to govern. Nothing here is stored. */}
+      <Text style={styles.h2}>Plan name on your card</Text>
+      <TextInput
+        value={planText}
+        onChangeText={onPlanText}
+        placeholder="e.g. Blue Access PPO"
+        placeholderTextColor={color.inkMuted}
+        autoCorrect={false}
+        autoCapitalize="words"
+        accessibilityLabel="Plan name as printed on your insurance card, optional"
+        style={styles.input}
+      />
+      {planMatch ? (
+        <Text style={planMatch.matched === 0 ? styles.inputWarn : styles.caption}>
+          {planMatch.matched === 0
+            ? 'No published plan matches that name, so every rate is still being shown. Check the spelling, or leave it blank.'
+            : `Matches published plans at ${planMatch.matched} of ${planMatch.total} facilities.`}
+        </Text>
+      ) : (
+        <Text style={styles.caption}>
+          Optional. More exact than the plan type — it pins the single rate your
+          plan is charged rather than a range.
+        </Text>
+      )}
 
       <PrimaryButton label="Next: your coverage" onPress={onNext} />
     </View>
@@ -358,10 +758,13 @@ function CoverageStep({
   expectedOtherSpend,
   treatmentWeeks,
   showTreatment,
+  headacheFeature,
+  showHeadacheFeature,
   onDeductible,
   onCoinsurance,
   onExpectedOtherSpend,
   onTreatmentWeeks,
+  onHeadacheFeature,
   onNext,
 }: {
   deductible: number;
@@ -369,15 +772,19 @@ function CoverageStep({
   expectedOtherSpend: number;
   treatmentWeeks: number;
   showTreatment: boolean;
+  headacheFeature: boolean | undefined;
+  showHeadacheFeature: boolean;
   onDeductible: (value: number) => void;
   onCoinsurance: (value: number) => void;
   onExpectedOtherSpend: (value: number) => void;
   onTreatmentWeeks: (value: number) => void;
+  onHeadacheFeature: (value: boolean | undefined) => void;
   onNext: () => void;
 }) {
   return (
     <View>
       <Text style={styles.h1}>Your coverage</Text>
+      <Text style={styles.caption}>From your plan documents. Nothing is stored.</Text>
 
       <View style={styles.sliderBlock}>
         <Slider
@@ -388,6 +795,13 @@ function CoverageStep({
           step={250}
           onChange={onDeductible}
           format={money}
+          // Carried over from the Aug 13 branch. Most people do not know this
+          // figure exactly, and a quick jump beats hunting for it with a drag.
+          presets={[
+            { label: 'Met it', value: 0 },
+            { label: 'About half', value: 1500 },
+            { label: 'Barely touched', value: 5000 },
+          ]}
         />
         <Slider
           label="Coinsurance after deductible"
@@ -399,17 +813,22 @@ function CoverageStep({
           format={(value) => `${Math.round(value * 100)}%`}
         />
         <Slider
-          label="Other care you expect this year (0 = none planned)"
+          label="Other care you expect this year"
           value={expectedOtherSpend}
           minimum={0}
           maximum={20000}
           step={500}
           onChange={onExpectedOtherSpend}
           format={money}
+          presets={[
+            { label: 'None planned', value: 0 },
+            { label: 'A few visits', value: 1500 },
+            { label: 'Ongoing care', value: 6000 },
+          ]}
         />
         {showTreatment && (
           <Slider
-            label="Treatment tried before this scan"
+            label="Weeks of treatment so far"
             value={treatmentWeeks}
             minimum={0}
             maximum={12}
@@ -419,6 +838,39 @@ function CoverageStep({
           />
         )}
       </View>
+
+      {/* Three states, not two. Neither chip selected means the order does not
+          record this, which is the common case and reads as "not documented"
+          rather than as a criterion the order failed. Tapping a selected chip
+          clears it back to unanswered. */}
+      {showHeadacheFeature && (
+        <View style={styles.featureBlock}>
+          <Text style={styles.rowLabel}>
+            Does the order document a concerning headache feature?
+          </Text>
+          <Text style={styles.caption}>
+            For example sudden severe onset, a change in pattern, a new headache
+            after age 50, or an abnormal neurological exam. Your insurer
+            publishes the full list.
+          </Text>
+          <View style={styles.chipWrap}>
+            <Chip
+              label="Yes"
+              selected={headacheFeature === true}
+              onPress={() =>
+                onHeadacheFeature(headacheFeature === true ? undefined : true)
+              }
+            />
+            <Chip
+              label="No"
+              selected={headacheFeature === false}
+              onPress={() =>
+                onHeadacheFeature(headacheFeature === false ? undefined : false)
+              }
+            />
+          </View>
+        </View>
+      )}
 
       <PrimaryButton label="See my routes" onPress={onNext} />
     </View>
@@ -490,13 +942,23 @@ function Headline({ routes }: { routes: Route[] }) {
 function RoutesStep({
   routes,
   findings,
-  access,
+  isSubscribed,
+  note,
   onUnlock,
+  onRestore,
+  onOpenHousehold,
+  requirementsChecked,
+  payerLabel,
 }: {
   routes: Route[];
   findings: { requirement: Requirement; status: string }[];
-  access: AccessStatus;
+  isSubscribed: boolean;
+  note: string | null;
   onUnlock: () => void;
+  onRestore: () => void;
+  onOpenHousehold: () => void;
+  requirementsChecked: number;
+  payerLabel: string;
 }) {
   const [open, setOpen] = useState<string | null>(null);
 
@@ -512,85 +974,73 @@ function RoutesStep({
     );
   }
 
-  // 'checking' renders exactly like 'locked' so there is no loading flash.
-  const visible = access === 'entitled' ? routes : routes.slice(0, 1);
-  const hidden = routes.length - visible.length;
-  // Computed against the full route list, not just what's visible, so this
-  // never depends on entitlement — it ships to free-tier readers on purpose.
-  const recommendationNote = describeRecommendation(routes);
-
   return (
     <View>
       <Headline routes={routes} />
-      {visible.map((route, index) => (
+      {/* Every route is free. The comparison is the hook, and a scan happens
+          every few years — what recurs is claims, which is what the household
+          plan below watches. */}
+      {routes.map((route, index) => (
         <RouteCard
           key={route.kind}
           route={route}
-          rank={index + 1}
           recommended={index === 0}
-          note={index === 0 ? recommendationNote : null}
           expanded={open === route.kind}
           findings={findings}
           onToggle={() => setOpen(open === route.kind ? null : route.kind)}
         />
       ))}
 
-      {hidden > 0 && <AccessCard status={access} hidden={hidden} onPress={onUnlock} />}
-    </View>
-  );
-}
+      {/* The results screen advertises the plan; it does not contain it. The
+          review itself lives on its own step, so a subscriber is not made to
+          re-answer the scan questions to reach the thing they pay for. */}
+      <PlanOffer
+        subscribed={isSubscribed}
+        onUnlock={onUnlock}
+        onOpenHousehold={onOpenHousehold}
+      />
 
-/**
- * The upsell touchpoint, in its three possible readings.
- *
- * 'locked' and 'unavailable' share one visual — same card, same position — on
- * purpose. A stressed reader in a waiting room should never see something
- * that looks broken; a configuration or network failure gets calm, honest
- * copy and a retry, not an error screen.
- */
-function AccessCard({
-  status,
-  hidden,
-  onPress,
-}: {
-  status: AccessStatus;
-  hidden: number;
-  onPress: () => void;
-}) {
-  const unavailable = status === 'unavailable';
-  return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.lock}>
-      <Text style={styles.lockTitle}>
-        {unavailable
-          ? 'Full comparison unavailable right now'
-          : `${hidden} more ${hidden === 1 ? 'option' : 'options'}`}
-      </Text>
-      <Text style={styles.lockBody}>
-        {unavailable
-          ? 'Your top route is still shown above.'
-          : 'The full site-of-service comparison, and the checklist for your doctor’s office where it applies.'}
-      </Text>
-      <Text style={styles.lockCta}>{unavailable ? 'Try again →' : 'Unlock →'}</Text>
-    </Pressable>
+      {/* Route 3 is missing whenever nothing is unmet, but "nothing is unmet"
+          and "nothing is recorded" are different answers and the patient cannot
+          tell them apart. Saying so is the honest output — CLAUDE.md treats a
+          silent gap as worse than an admitted one. */}
+      {requirementsChecked === 0 && (
+        <View style={styles.coverageGap}>
+          <Text style={styles.coverageGapText}>
+            No published requirements are recorded for {payerLabel} for this
+            scan, so no order check was run. That is a gap in this app's rule
+            set, not a sign that the order has none.
+          </Text>
+        </View>
+      )}
+
+      {/* App Store review requires a restore path, and it is the only way a
+          member who reinstalls gets their entitlement back. */}
+      {!isSubscribed && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Restore a previous purchase"
+          onPress={onRestore}
+          style={({ pressed }) => [styles.restore, pressed && styles.restorePressed]}
+        >
+          <Text style={styles.restoreText}>Restore purchase</Text>
+        </Pressable>
+      )}
+
+      {note ? <Text style={styles.note}>{note}</Text> : null}
+    </View>
   );
 }
 
 function RouteCard({
   route,
-  rank,
   recommended,
-  note,
   expanded,
   findings,
   onToggle,
 }: {
   route: Route;
-  rank: number;
   recommended: boolean;
-  // Only ever set on the recommended card — the one-sentence comparison
-  // against the specific alternative it beat. Everything else uses the
-  // shorter, plainer per-route fact below.
-  note: string | null;
   expanded: boolean;
   findings: { requirement: Requirement; status: string }[];
   onToggle: () => void;
@@ -605,41 +1055,29 @@ function RouteCard({
         accessibilityState={{ expanded }}
         accessibilityLabel={`${route.label} at ${route.facilityName}. Tap for the breakdown.`}
         onPress={onToggle}
+        style={({ pressed }) => (pressed ? styles.cardPressed : undefined)}
       >
-        <View style={styles.cardTop}>
-          <Text style={[styles.rank, recommended && styles.rankRecommended]}>
-            {rank}
-          </Text>
-          <View style={styles.cardHead}>
-            <Text style={styles.routeLabel}>{route.label}</Text>
-            <Text style={styles.facility} numberOfLines={2}>
-              {route.facilityName}
-            </Text>
-          </View>
-        </View>
+        <Text style={styles.routeLabel}>{route.label}</Text>
 
-        <View style={styles.amountRow}>
-          <Money
-            value={route.estimate.totalThisYear}
-            size="large"
-            tone={recommended ? 'accent' : 'ink'}
-          />
-          <Text style={styles.amountLabel}>total this year</Text>
-        </View>
+        <Money
+          value={route.estimate.totalThisYear}
+          size="large"
+          tone={recommended ? 'accent' : 'ink'}
+        />
 
-        <Text style={styles.reasoningPrimary}>
-          {recommended && note
-            ? note
-            : route.estimate.scan.countsTowardDeductible
+        <View style={styles.whyRow}>
+          <Text style={styles.why} numberOfLines={expanded ? undefined : 2}>
+            {route.estimate.scan.countsTowardDeductible
               ? 'Counts toward your deductible.'
               : 'Earns no deductible credit.'}
-        </Text>
-
-        <Text style={styles.chevron}>{expanded ? 'Hide details' : 'Show details'}</Text>
+          </Text>
+          <Text style={styles.chevron}>{expanded ? 'Hide' : 'Details'}</Text>
+        </View>
       </Pressable>
 
       {expanded && (
         <View style={styles.details}>
+          <Row label="Facility" value={<Text style={styles.rowValue}>{route.facilityName}</Text>} />
           <Row label="This scan" value={<Money value={route.estimate.scan.patientPays} />} />
           <Row
             label="Deductible credit"
@@ -648,6 +1086,12 @@ function RouteCard({
           <Row
             label="Other care after this"
             value={<Money value={route.estimate.expectedOtherCareCost} />}
+          />
+          <Row
+            label="Requirements not documented"
+            value={
+              <Text style={styles.rowValue}>{route.unmetRequirements.length}</Text>
+            }
           />
 
           {route.warnings.map((warning) => (
@@ -661,7 +1105,7 @@ function RouteCard({
               <Text style={styles.requirementStatus}>
                 {statusLabel(statusFor(requirement.key) as any)}
               </Text>
-              <Text style={styles.requirementSummary}>{requirement.summary}</Text>
+              <Text style={styles.detailSummary}>{requirement.summary}</Text>
               <Text style={styles.citation}>
                 {requirement.payer} · {requirement.section_id} · {requirement.version}
               </Text>
@@ -672,7 +1116,7 @@ function RouteCard({
                 <Text style={styles.link}>Source document</Text>
               </Pressable>
               {requirement.alternative_pathway && (
-                <Text style={styles.hedge}>
+                <Text style={styles.detailHedge}>
                   One of several alternative criteria; another may apply instead.
                 </Text>
               )}
@@ -680,6 +1124,239 @@ function RouteCard({
           ))}
         </View>
       )}
+    </View>
+  );
+}
+
+/**
+ * What the household plan actually does, before anyone is asked to buy it.
+ *
+ * Tapping straight through to the purchase sheet asked for money before saying
+ * what it was for, so this expands in place first. The lines come from
+ * `src/plan.ts`, and each one names a check that exists in `src/claims.ts` — if
+ * a claim is made here, the engine performs it.
+ *
+ * No price appears on this card. Pricing belongs on the paywall, where the term
+ * being bought is on screen next to it.
+ */
+function PlanOffer({
+  subscribed,
+  onUnlock,
+  onOpenHousehold,
+}: {
+  subscribed: boolean;
+  onUnlock: () => void;
+  onOpenHousehold: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  if (subscribed) {
+    return (
+      <View style={[styles.lock, styles.lockActive]}>
+        <Text style={styles.lockTitle}>{PLAN_NAME} is active</Text>
+        <Text style={styles.lockBody}>
+          Your household's claims are being checked against their own numbers.
+        </Text>
+        <PrimaryButton label="Open household review" onPress={onOpenHousehold} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.lock}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen(!open)}
+        style={({ pressed }) => (pressed ? styles.cardPressed : undefined)}
+      >
+        <Text style={styles.lockTitle}>Watch the whole household</Text>
+        <Text style={styles.lockBody}>
+          Every bill and explanation of benefits that arrives, checked against
+          its own numbers all year.
+        </Text>
+        <Text style={styles.lockCta}>{open ? 'Hide' : "What's included"}</Text>
+      </Pressable>
+
+      {open && (
+        <View style={styles.planDetail}>
+          {PLAN_INCLUDES.map((line) => (
+            <View key={line} style={styles.planRow}>
+              <Text style={styles.planBullet}>·</Text>
+              <Text style={styles.planLine}>{line}</Text>
+            </View>
+          ))}
+          <Text style={styles.planCaveat}>
+            Findings are discrepancies these documents show against themselves.
+            They are not predictions about what your insurer will decide.
+          </Text>
+          <PrimaryButton label="See plans and pricing" onPress={onUnlock} />
+        </View>
+      )}
+    </View>
+  );
+}
+
+/**
+ * The paid step, in both states.
+ *
+ * Unlocked, it is the household review. Locked, it is the same page with the
+ * plan described in full and a way to buy it — not an empty screen and not a
+ * teaser. Someone deciding whether to pay should be able to read everything the
+ * plan does without paying first.
+ */
+function HouseholdStep({
+  isSubscribed,
+  demo,
+  note,
+  onUnlock,
+  onRestore,
+}: {
+  isSubscribed: boolean;
+  demo: boolean;
+  note: string | null;
+  onUnlock: () => void;
+  onRestore: () => void;
+}) {
+  if (isSubscribed) {
+    return (
+      <View>
+        <Text style={styles.h1}>Your household</Text>
+        {/* A demo unlock must never be mistaken for a purchase. */}
+        {demo && (
+          <View style={styles.coverageGap}>
+            <Text style={styles.coverageGapText}>
+              Unlocked in demo mode. No purchase was made and nothing was
+              charged.
+            </Text>
+          </View>
+        )}
+        <HouseholdReview />
+        {note ? <Text style={styles.note}>{note}</Text> : null}
+      </View>
+    );
+  }
+
+  return (
+    <View>
+      <Text style={styles.h1}>{PLAN_NAME}</Text>
+      <Text style={styles.body}>
+        A scan happens every few years. Bills arrive all year, for everyone on
+        the plan. This is the part that keeps working after the comparison is
+        done.
+      </Text>
+
+      <View style={styles.planDetailPlain}>
+        {PLAN_INCLUDES.map((line) => (
+          <View key={line} style={styles.planRow}>
+            <Text style={styles.planBullet}>·</Text>
+            <Text style={styles.planLine}>{line}</Text>
+          </View>
+        ))}
+      </View>
+
+      <Text style={styles.planCaveat}>
+        Findings are discrepancies these documents show against themselves. They
+        are not predictions about what your insurer will decide, and the amounts
+        are what is in dispute rather than what will be refunded.
+      </Text>
+
+      <PrimaryButton label="See plans and pricing" onPress={onUnlock} />
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Restore a previous purchase"
+        onPress={onRestore}
+        style={({ pressed }) => [styles.restore, pressed && styles.restorePressed]}
+      >
+        <Text style={styles.restoreText}>Restore purchase</Text>
+      </Pressable>
+
+      {note ? <Text style={styles.note}>{note}</Text> : null}
+    </View>
+  );
+}
+
+/**
+ * The subscription tier: the household's claims, checked against themselves.
+ *
+ * Findings are discrepancies the documents demonstrate — arithmetic that does
+ * not reconcile, a service billed twice, a denial that carries appeal rights.
+ * None of them predicts what the payer will do, and the total is what is at
+ * stake rather than what will be recovered.
+ *
+ * The claims are synthetic fixtures. Nothing real is read, stored or sent.
+ */
+function HouseholdReview() {
+  const findings = useMemo(
+    () => review(household.eobs as Eob[], household.plan as HouseholdPlan),
+    [],
+  );
+  const atStake = useMemo(() => totalAtStake(findings), [findings]);
+
+  // Grouped by claim, because two checks routinely catch the same claim from
+  // different directions — a balance bill almost always fails the components
+  // check too. Listed separately they read as two separate recoveries, and a
+  // member would add them up. The card shows the amount once, at the largest
+  // finding, which is the same rule totalAtStake uses.
+  const byClaim = useMemo(() => {
+    const groups: { claimId: string; member: string; amount: number | null; reasons: string[]; actions: string[] }[] = [];
+    for (const finding of findings) {
+      const existing = groups.find((group) => group.claimId === finding.claim_id);
+      if (existing) {
+        existing.amount =
+          finding.amount === null
+            ? existing.amount
+            : Math.max(existing.amount ?? 0, finding.amount);
+        existing.reasons.push(finding.summary);
+        if (!existing.actions.includes(finding.action)) {
+          existing.actions.push(finding.action);
+        }
+      } else {
+        groups.push({
+          claimId: finding.claim_id,
+          member: finding.member,
+          amount: finding.amount,
+          reasons: [finding.summary],
+          actions: [finding.action],
+        });
+      }
+    }
+    return groups;
+  }, [findings]);
+
+  return (
+    <View style={styles.household}>
+      {/* No heading of its own — the step it sits on already carries one. */}
+      <Text style={styles.caption}>
+        {household.eobs.length} claims reviewed · {byClaim.length}{' '}
+        {byClaim.length === 1 ? 'claim to question' : 'claims to question'}
+      </Text>
+      {atStake > 0 && <Money value={atStake} size="large" tone="accent" />}
+
+      {byClaim.map((group) => (
+        <View key={group.claimId} style={styles.finding}>
+          <Text style={styles.findingHead}>
+            {group.member} · {group.claimId}
+            {group.amount !== null ? ` · ${money(group.amount)}` : ''}
+          </Text>
+          {group.reasons.map((reason) => (
+            <Text key={reason} style={styles.detailSummary}>
+              {reason}
+            </Text>
+          ))}
+          {group.actions.map((action) => (
+            <Text key={action} style={styles.citation}>
+              {action}
+            </Text>
+          ))}
+        </View>
+      ))}
+
+      <Text style={styles.caption}>
+        Sample claims, shown so the review can be seen working. Amounts are
+        estimates of what is in dispute, not of what will be refunded.
+      </Text>
     </View>
   );
 }
@@ -696,20 +1373,47 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 function Chip({
   selected,
   label,
+  spoken,
+  block,
   onPress,
 }: {
   selected: boolean;
   label: string;
+  /** Said instead of `label`, where the visible text is a short form. */
+  spoken?: string;
+  /**
+   * One option per row, all the same width.
+   *
+   * For labels that cannot be shortened without changing what they mean —
+   * cutting "Suspected" from "Suspected meniscal tear" would turn the reason a
+   * scan was ordered into a diagnosis nobody has made. Left to size themselves,
+   * these chips came out at three different widths with ragged right edges;
+   * stacked at full width they read as one list, and every label still fits on
+   * a single line.
+   */
+  block?: boolean;
   onPress: () => void;
 }) {
   return (
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ selected }}
+      accessibilityLabel={spoken ?? label}
       onPress={onPress}
-      style={[styles.chip, selected && styles.chipSelected]}
+      style={({ pressed }) => [
+        styles.chip,
+        block && styles.chipBlock,
+        selected && styles.chipSelected,
+        pressed && styles.chipPressed,
+      ]}
     >
-      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+      <Text
+        style={[
+          styles.chipText,
+          block && styles.chipTextBlock,
+          selected && styles.chipTextSelected,
+        ]}
+      >
         {label}
       </Text>
     </Pressable>
@@ -730,18 +1434,78 @@ function PrimaryButton({ label, onPress }: { label: string; onPress: () => void 
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: color.canvas },
+  scrollView: { flex: 1 },
+
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: space.lg,
+    paddingTop: space.sm,
+    paddingBottom: space.sm,
+    gap: space.md,
+  },
+  brand: { ...type.title, color: color.ink },
+  tierPill: {
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: color.accent,
+    paddingHorizontal: space.md,
+    minHeight: 36,
+    justifyContent: 'center',
+  },
+  tierPillActive: { backgroundColor: color.accent },
+  tierText: { ...type.label, color: color.accent },
+  tierTextActive: { color: color.accentInk },
+
+  // Sits outside the ScrollView, so it is reachable from every step without
+  // scrolling. Development builds only.
+  devBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.sm,
+    borderTopWidth: 1,
+    borderTopColor: color.line,
+    backgroundColor: color.surface,
+  },
+  devLabel: { ...type.caption, color: color.inkMuted, marginRight: space.xs },
+  devChip: {
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: color.border,
+    paddingHorizontal: space.md,
+    minHeight: TAP_TARGET,
+    justifyContent: 'center',
+  },
+  devChipOn: { backgroundColor: color.slate, borderColor: color.slate },
+  devChipText: { ...type.caption, color: color.inkMuted },
+  devChipTextOn: { color: color.surface, fontWeight: '700' },
+
   scroll: { paddingHorizontal: space.lg, paddingBottom: space.xl * 2 },
 
   stepBar: {
     flexDirection: 'row',
     paddingHorizontal: space.lg,
-    paddingTop: space.sm,
-    paddingBottom: space.md,
-    gap: space.lg,
+    paddingTop: space.xs,
+    paddingBottom: space.xs,
+    // Four steps now, so the generous gap no longer fits across a phone.
+    gap: space.sm,
     borderBottomWidth: 1,
     borderBottomColor: color.line,
   },
-  stepItem: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  // 44pt tall because these are primary navigation, not decoration. The row
+  // keeps its old height overall — the padding moved from the bar onto the
+  // items, so the target grew without the bar growing.
+  stepItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+    flexShrink: 1,
+    minHeight: TAP_TARGET,
+  },
+  stepItemPressed: { opacity: 0.6 },
   stepDot: {
     width: 24,
     height: 24,
@@ -752,30 +1516,58 @@ const styles = StyleSheet.create({
   },
   stepDotActive: { backgroundColor: color.accent },
   stepDotDone: { backgroundColor: color.slate },
-  // Same token as the route-card rank digit, for the same reason: a number
-  // inside a solid badge. The colour isn't the "grey subtext" pattern — the
-  // whole dot is a deliberately de-emphasised wayfinding element while a step
-  // is still ahead, not a secondary annotation on top of primary content.
-  stepNumber: { ...type.label, fontWeight: '700', color: color.inkMuted },
+  stepNumber: { ...type.caption, fontWeight: '700', color: color.inkMuted },
   stepNumberActive: { color: color.accentInk },
   stepLabel: { ...type.label, color: color.inkMuted },
   stepLabelActive: { color: color.ink },
   stepLabelPending: { opacity: 0.45 },
 
-  h1: { ...type.hero, color: color.ink, marginTop: space.lg, marginBottom: space.md },
-  h2: { ...type.title, color: color.ink, marginTop: space.xl, marginBottom: space.md },
-  body: { ...type.body, color: color.ink, marginBottom: space.md },
+  h1: { ...type.display, color: color.ink, marginTop: space.lg, marginBottom: space.sm },
+  // lg, not xl. The 44pt tap targets made every step taller, and a 32pt gap
+  // above each heading spent that budget on air — the scan step's primary
+  // button is already the furthest thing from the top of the flow.
+  h2: { ...type.title, color: color.ink, marginTop: space.lg, marginBottom: space.md },
+  body: { ...type.body, color: color.inkMuted, marginBottom: space.md },
+  caption: { ...type.caption, color: color.inkMuted, marginBottom: space.md },
 
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  featureBlock: { marginTop: space.lg, gap: space.sm },
+
+  input: {
+    ...type.body,
+    color: color.ink,
+    backgroundColor: color.surface,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    // A control outline, not a hairline — WCAG 1.4.11 wants 3:1 and `line`
+    // measures 1.2:1 against the canvas.
+    borderColor: color.border,
+    paddingHorizontal: space.md,
+    minHeight: TAP_TARGET + space.xs,
+    marginBottom: space.sm,
+  },
+  // Brown, matching the data-quality flags. A name that matches nothing is a
+  // limit of the published data, not an error the patient made.
+  inputWarn: { ...type.caption, color: color.flag },
   chip: {
     borderRadius: radius.md,
     borderWidth: 1.5,
-    borderColor: color.line,
+    // See `input` above. An unselected chip is white on near-white canvas
+    // (1.1:1), so this border is the only thing that says a control is there.
+    borderColor: color.border,
     backgroundColor: color.surface,
     paddingHorizontal: space.md,
-    paddingVertical: space.sm + 2,
+    minHeight: TAP_TARGET,
+    justifyContent: 'center',
   },
   chipSelected: { borderColor: color.slate, backgroundColor: color.slate },
+  chipPressed: { opacity: 0.7 },
+  // Full width, so a group of these reads as one list rather than as chips of
+  // three different lengths. Also removes any chance of the mid-word break a
+  // narrow column produced — React Native breaks inside a word rather than
+  // overflowing, and a three-across row rendered "degenerativ / e spine".
+  chipBlock: { width: '100%', alignItems: 'flex-start' },
+  chipTextBlock: { textAlign: 'left' },
   chipText: { ...type.label, color: color.ink },
   chipTextSelected: { color: color.surface },
 
@@ -794,51 +1586,31 @@ const styles = StyleSheet.create({
 
   hero: { marginTop: space.lg, marginBottom: space.lg },
   heroLead: { ...type.title, color: color.ink, marginVertical: 2 },
-  // Ink, not muted: this sentence explains why cash loses despite costing
-  // less today — arguably the single most important line on the screen, and
-  // exactly the kind of thing a muted color quietly teaches people to skip.
-  heroWhy: { ...type.body, color: color.ink, marginTop: space.md },
+  heroWhy: { ...type.body, color: color.inkMuted, marginTop: space.md },
 
   card: {
     backgroundColor: color.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: color.line,
-    padding: space.md + 2,
+    padding: space.md,
     marginBottom: space.md,
   },
   cardRecommended: { borderColor: color.accent, backgroundColor: color.accentSoft },
-  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
-  rank: {
-    ...type.label,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    textAlign: 'center',
-    lineHeight: 24,
-    color: color.surface,
-    backgroundColor: color.slate,
-    overflow: 'hidden',
-  },
-  rankRecommended: { backgroundColor: color.accent },
-  cardHead: { flex: 1 },
-  // Ink and letter-spaced, like a kicker over a headline — a category tag
-  // read alongside the facility name below it, not a muted afterthought.
-  routeLabel: {
-    ...type.caption,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-    color: color.ink,
-  },
-  facility: { ...type.body, fontWeight: '700', color: color.ink, marginTop: 2 },
+  // On a touch device the pressed state is the focus state — there is no
+  // hover and no keyboard ring to fall back on. Every Pressable now answers.
+  cardPressed: { opacity: 0.7 },
+  routeLabel: { ...type.caption, fontWeight: '700', color: color.inkMuted },
 
-  amountRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, marginTop: space.md },
-  amountLabel: { ...type.caption, fontWeight: '600', color: color.ink, marginBottom: 4 },
-
-  // The card's one sentence: on the recommended card, the comparison against
-  // the alternative it beat; everywhere else, the deductible fact.
-  reasoningPrimary: { ...type.body, color: color.ink, marginTop: space.md },
-  chevron: { ...type.label, color: color.slate, marginTop: space.md },
+  whyRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: space.md,
+    marginTop: space.sm,
+  },
+  why: { ...type.caption, color: color.inkMuted, flex: 1 },
+  chevron: { ...type.label, color: color.slate },
 
   details: { borderTopWidth: 1, borderTopColor: color.line, marginTop: space.md, paddingTop: space.md },
   row: {
@@ -847,7 +1619,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: space.sm,
   },
-  rowLabel: { ...type.caption, fontWeight: '600', color: color.ink },
+  rowLabel: { ...type.caption, color: color.inkMuted },
+  rowValue: { ...type.caption, color: color.ink, fontWeight: '700', flexShrink: 1, textAlign: 'right' },
   warning: {
     ...type.caption,
     color: color.flag,
@@ -857,16 +1630,22 @@ const styles = StyleSheet.create({
     marginTop: space.sm,
   },
 
-  // Rebuilt fresh — these three are the only ones from the caption cull
-  // allowed back, and only inside this expanded state.
   requirement: { borderTopWidth: 1, borderTopColor: color.line, marginTop: space.md, paddingTop: space.md },
-  requirementStatus: { ...type.body, fontWeight: '700', color: color.flag },
-  requirementSummary: { ...type.body, color: color.ink, marginTop: space.xs },
-  citation: { ...type.caption, fontWeight: '700', color: color.ink, marginTop: space.sm },
-  // Slate, not accent: accent is reserved for the recommended route, and a
-  // source link can appear on any card.
-  link: { ...type.caption, fontWeight: '700', color: color.slate, marginTop: space.xs },
-  hedge: { ...type.caption, color: color.ink, marginTop: space.xs },
+  requirementStatus: { ...type.caption, fontWeight: '700', color: color.flag },
+  detailSummary: { ...type.caption, color: color.ink, marginTop: space.xs },
+  citation: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
+  link: { ...type.caption, fontWeight: '700', color: color.accent, marginTop: space.xs },
+  detailHedge: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
+
+  household: { marginTop: space.md, gap: space.sm },
+  finding: {
+    backgroundColor: color.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.line,
+    padding: space.md,
+  },
+  findingHead: { ...type.label, color: color.ink },
 
   lock: {
     backgroundColor: color.surface,
@@ -874,10 +1653,49 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: color.line,
-    padding: space.md + 2,
+    padding: space.md,
+  },
+  lockActive: {
+    borderStyle: 'solid',
+    borderColor: color.accent,
+    backgroundColor: color.accentSoft,
   },
   lockTitle: { ...type.body, fontWeight: '700', color: color.ink },
-  lockBody: { ...type.caption, color: color.ink, marginTop: space.xs },
-  // Slate, not accent — see `link` above.
-  lockCta: { ...type.label, color: color.slate, marginTop: space.sm },
+  lockBody: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
+  lockCta: { ...type.label, color: color.accent, marginTop: space.sm },
+  planDetail: {
+    borderTopWidth: 1,
+    borderTopColor: color.line,
+    marginTop: space.md,
+    paddingTop: space.md,
+    gap: space.sm,
+  },
+  planDetailPlain: { marginTop: space.md, gap: space.sm },
+  planRow: { flexDirection: 'row', gap: space.sm },
+  planBullet: { ...type.caption, color: color.accent, fontWeight: '700' },
+  planLine: { ...type.caption, color: color.ink, flex: 1 },
+  planCaveat: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
+
+  // Uses the data-quality flag colour, not an alarm colour. A missing rule is
+  // a limit of the data, the same class of thing as a suspect rate.
+  coverageGap: {
+    backgroundColor: color.flagBg,
+    borderRadius: radius.md,
+    padding: space.md,
+    marginTop: space.md,
+  },
+  coverageGapText: { ...type.caption, color: color.flag },
+
+  // Deliberately quiet. Restore is a recovery path, not an offer, so it must
+  // not compete with the unlock card above it.
+  restore: {
+    alignItems: 'center',
+    marginTop: space.md,
+    minHeight: TAP_TARGET,
+    justifyContent: 'center',
+  },
+  restorePressed: { opacity: 0.6 },
+  restoreText: { ...type.caption, color: color.inkMuted },
+
+  note: { ...type.caption, color: color.flag, marginTop: space.md },
 });

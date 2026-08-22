@@ -132,11 +132,98 @@ class TestKneeMri(unittest.TestCase):
         self.assertIn("alternative criteria", text)
 
 
+class TestAnthemCoverage(unittest.TestCase):
+    """Carelon spine and brain, CPT 72148 and 70450.
+
+    Anthem is this metro's primary payer but carried knee rules only, so an
+    Anthem member ordering a lumbar MRI or head CT reached route 3 and found
+    nothing. These cover the two codes that were dark.
+    """
+
+    def test_lumbar_six_week_trial_is_unmet_below_threshold(self):
+        order = ImagingOrder(
+            cpt="72148",
+            payer="Anthem",
+            indication="low_back_pain",
+            conservative_therapy_weeks=2,
+        )
+        statuses = {f.requirement.key: f.status for f in check_order(order)}
+        self.assertIs(
+            statuses["carelon-lumbar-six-week-conservative"], Status.UNMET
+        )
+
+    def test_lumbar_six_week_trial_is_met_at_threshold(self):
+        order = ImagingOrder(
+            cpt="72148",
+            payer="Anthem",
+            indication="low_back_pain",
+            conservative_therapy_weeks=6,
+        )
+        statuses = {f.requirement.key: f.status for f in check_order(order)}
+        self.assertIs(statuses["carelon-lumbar-six-week-conservative"], Status.MET)
+
+    def test_lumbar_weeks_absent_is_not_documented_not_unmet(self):
+        """The distinction the ordering office acts on differently."""
+        order = ImagingOrder(cpt="72148", payer="Anthem", indication="low_back_pain")
+        statuses = {f.requirement.key: f.status for f in check_order(order)}
+        self.assertIs(
+            statuses["carelon-lumbar-six-week-conservative"], Status.NOT_DOCUMENTED
+        )
+
+    def test_head_ct_headache_feature_drives_the_finding(self):
+        absent = ImagingOrder(cpt="70450", payer="Anthem", indication="headache")
+        documented = ImagingOrder(
+            cpt="70450",
+            payer="Anthem",
+            indication="headache",
+            headache_concerning_feature=True,
+        )
+        self.assertIs(
+            check_order(absent)[0].status, Status.NOT_DOCUMENTED
+        )
+        self.assertIs(check_order(documented)[0].status, Status.MET)
+
+    def test_head_ct_checklist_is_citable_and_hedged(self):
+        text = checklist(
+            ImagingOrder(cpt="70450", payer="Anthem", indication="headache")
+        )
+        self.assertIn("Imaging of the Brain", text)
+        # Carelon lists the features as alternatives, so the output must not
+        # read as though the study fails to qualify.
+        self.assertIn("alternative criteria", text)
+
+    def test_anthem_now_covers_all_three_target_codes(self):
+        covered = {
+            code
+            for requirement in REQUIREMENTS
+            if requirement.citation.payer.startswith("Anthem")
+            for code in requirement.cpt_codes
+        }
+        self.assertEqual(covered, {"73721", "72148", "70450"})
+
+
 class TestPayerScoping(unittest.TestCase):
     def test_requirements_do_not_leak_across_payers(self):
-        """A Cigna rule must not be applied to an Anthem order."""
+        """A Cigna rule must not be applied to an Anthem order.
+
+        This used to assert the Anthem result was empty, which passed only
+        because Anthem had no lumbar rule to find. That made it a test of a
+        coverage gap rather than of payer scoping, and it broke the moment the
+        gap was closed. Assert the actual property instead: whatever comes back
+        is Anthem's, and none of it is Cigna's.
+        """
         anthem = ImagingOrder(cpt="72148", payer="Anthem", indication="low_back_pain")
-        self.assertEqual(requirements_for(anthem), [])
+        found = requirements_for(anthem)
+        self.assertTrue(found, "Anthem should now have a lumbar requirement")
+        for requirement in found:
+            self.assertEqual(
+                requirement.citation.payer, "Anthem Blue Cross and Blue Shield"
+            )
+        cigna = ImagingOrder(cpt="72148", payer="Cigna", indication="low_back_pain")
+        self.assertTrue(found)
+        self.assertFalse(
+            {r.key for r in found} & {r.key for r in requirements_for(cigna)}
+        )
 
     def test_uncovered_combination_says_so_plainly(self):
         order = ImagingOrder(cpt="70450", payer="Aetna", indication="head_trauma")
