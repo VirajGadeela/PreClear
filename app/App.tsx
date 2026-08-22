@@ -117,7 +117,7 @@ const STEPS = ['Scan', 'Coverage', 'Routes', 'Household'] as const;
 const HOUSEHOLD_STEP = STEPS.length - 1;
 
 export default function App() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(-1);
   const [cpt, setCpt] = useState('73721');
   const [indication, setIndication] = useState('meniscal_tear');
   const [payer, setPayer] = useState('anthem');
@@ -352,11 +352,13 @@ export default function App() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
-      <TopBar
-        subscribed={isSubscribed}
-        onPress={() => (isSubscribed ? setStep(HOUSEHOLD_STEP) : unlock())}
-      />
-      <StepBar current={step} onJump={setStep} />
+      {step >= 0 && (
+        <TopBar
+          subscribed={isSubscribed}
+          onPress={() => (isSubscribed ? setStep(HOUSEHOLD_STEP) : unlock())}
+        />
+      )}
+      {step >= 0 && <StepBar current={step} onJump={setStep} />}
       {/* The plan-name field sits above the primary button, so without this the
           keyboard covers the way forward. Core React Native, no native module —
           see App mechanics in CLAUDE.md. */}
@@ -382,6 +384,8 @@ export default function App() {
         alwaysBounceVertical
         showsVerticalScrollIndicator
       >
+        {step === -1 && <LandingStep onNext={() => setStep(0)} />}
+
         {step === 0 && (
           <ScanStep
             procedure={procedure}
@@ -610,6 +614,17 @@ function StepBar({
           </Pressable>
         );
       })}
+    </View>
+  );
+}
+
+function LandingStep({ onNext }: { onNext: () => void }) {
+  return (
+    <View style={styles.landing}>
+      <Text style={styles.landingHeadline}>
+        Cash can look cheaper today but cost more by year's end.
+      </Text>
+      <PrimaryButton label="Compare my options" onPress={onNext} tone="accent" />
     </View>
   );
 }
@@ -1420,14 +1435,28 @@ function Chip({
   );
 }
 
-function PrimaryButton({ label, onPress }: { label: string; onPress: () => void }) {
+function PrimaryButton({
+  label,
+  onPress,
+  tone = 'slate',
+}: {
+  label: string;
+  onPress: () => void;
+  tone?: 'slate' | 'accent';
+}) {
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+      style={({ pressed }) => [
+        styles.button,
+        tone === 'accent' && styles.buttonAccent,
+        pressed && styles.buttonPressed,
+      ]}
     >
-      <Text style={styles.buttonText}>{label}</Text>
+      <Text style={[styles.buttonText, tone === 'accent' && styles.buttonTextAccent]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -1581,8 +1610,16 @@ const styles = StyleSheet.create({
     marginTop: space.xl,
     minHeight: 52,
   },
+  // Accent is reserved for the recommended route elsewhere in the app; this
+  // is the one other place it appears, and it's the only accent element on
+  // the landing screen.
+  buttonAccent: { backgroundColor: color.accent },
   buttonPressed: { opacity: 0.85 },
   buttonText: { ...type.body, fontWeight: '700', color: color.surface },
+  buttonTextAccent: { color: color.accentInk },
+
+  landing: { marginTop: space.xl * 2 },
+  landingHeadline: { ...type.display, color: color.ink, marginBottom: space.xl },
 
   hero: { marginTop: space.lg, marginBottom: space.lg },
   heroLead: { ...type.title, color: color.ink, marginVertical: 2 },
