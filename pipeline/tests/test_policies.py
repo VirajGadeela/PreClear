@@ -242,6 +242,7 @@ class TestDeclarativeChecks(unittest.TestCase):
         'boolean',
         'min_weeks',
         'radiographs_nondiagnostic',
+        'radiographs_performed',
         'meniscal_pathway',
         'ligament_pathway',
         'objective_findings_then_weeks',

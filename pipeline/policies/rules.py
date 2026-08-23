@@ -175,6 +175,16 @@ def evaluate_check(check, order):
             return Status.NOT_APPLICABLE
         return _weeks_at_least(order, check["weeks"])
 
+    if kind == "radiographs_performed":
+        # Weaker than `radiographs_nondiagnostic`, and deliberately separate.
+        # Carelon requires the films to have been *nondiagnostic*; eviCore and
+        # UnitedHealthcare only require that plain x-rays were performed after
+        # the current episode began. Collapsing the two would overstate what
+        # those payers ask for.
+        if order.prior_radiographs is None:
+            return Status.NOT_DOCUMENTED
+        return Status.MET
+
     if kind == "radiographs_nondiagnostic":
         if order.prior_radiographs is None:
             return Status.NOT_DOCUMENTED
@@ -289,6 +299,152 @@ AETNA_SPINE = Citation(
     effective_date="1998-05-06",
     next_review="2027-02-25",
     source_url="https://www.aetna.com/cpb/medical/data/200_299/0236.html",
+)
+
+
+# --------------------------------------------------------------------------
+# Cigna, reviewed by eviCore — knee and head
+#
+# Retrieved 2026-08-22. Same delegate and the same document family as
+# EVICORE_LUMBAR above, but a different guideline per body region, which is the
+# trap Carelon has too: the knee criteria are in the Musculoskeletal guideline,
+# not in a knee-specific one.
+# --------------------------------------------------------------------------
+
+EVICORE_MSK = Citation(
+    payer="Cigna Healthcare",
+    reviewed_by="eviCore by EVERNORTH",
+    document_title=(
+        "Cigna Medical Coverage Policies - Radiology: Musculoskeletal Imaging "
+        "Guidelines"
+    ),
+    section_id="MS.CS.0029.1",
+    version="V1.0.2026",
+    effective_date="2026-02-03",
+    retrieved_on="2026-08-22",
+    source_url=(
+        "https://www.evicore.com/sites/default/files/clinical-guidelines/2025-10/"
+        "Cigna_Musculoskeletal%20Imaging%20Guidelines_V1.0.2026_eff02.03.2026_"
+        "PUB10.29.2025.pdf"
+    ),
+)
+
+EVICORE_MSK_LIGAMENT = Citation(
+    payer="Cigna Healthcare",
+    reviewed_by="eviCore by EVERNORTH",
+    document_title=(
+        "Cigna Medical Coverage Policies - Radiology: Musculoskeletal Imaging "
+        "Guidelines"
+    ),
+    section_id="MS.LM.0031.1",
+    version="V1.0.2026",
+    effective_date="2026-02-03",
+    retrieved_on="2026-08-22",
+    source_url=(
+        "https://www.evicore.com/sites/default/files/clinical-guidelines/2025-10/"
+        "Cigna_Musculoskeletal%20Imaging%20Guidelines_V1.0.2026_eff02.03.2026_"
+        "PUB10.29.2025.pdf"
+    ),
+)
+
+# A V2.0.2026 of this document is already published and becomes effective
+# 2026-09-01. Both versions were read on 2026-08-22 and HD.HA.0011.0.C is
+# word-for-word identical in each, so the criterion below does not change when
+# the version does — only the string in `version` will.
+EVICORE_HEAD = Citation(
+    payer="Cigna Healthcare",
+    reviewed_by="eviCore by EVERNORTH",
+    document_title=(
+        "Cigna Medical Coverage Policies - Radiology: Head Imaging Guidelines, "
+        "Headache General Guidelines (HD-11.0)"
+    ),
+    section_id="HD.HA.0011.0.C",
+    version="V1.0.2026",
+    effective_date="2026-02-03",
+    next_review="2026-09-01 (superseded by V2.0.2026, section text unchanged)",
+    retrieved_on="2026-08-22",
+    source_url=(
+        "https://www.evicore.com/sites/default/files/clinical-guidelines/2025-10/"
+        "Cigna_Head%20Imaging%20Guidelines_V1.0.2026_eff02.03.2026_PUB10.30.2025.pdf"
+    ),
+)
+
+
+# --------------------------------------------------------------------------
+# Aetna, self-published Clinical Policy Bulletin — extremities
+# --------------------------------------------------------------------------
+
+AETNA_EXTREMITIES = Citation(
+    payer="Aetna",
+    reviewed_by="Aetna (self-published)",
+    document_title=(
+        "Clinical Policy Bulletin 0171: Magnetic Resonance Imaging (MRI) of the "
+        "Extremities"
+    ),
+    section_id="CPB 0171 - Medical Necessity, knee",
+    version="Last Review 2026-03-31",
+    effective_date="1997-08-18",
+    next_review="2027-02-11",
+    retrieved_on="2026-08-22",
+    source_url="https://www.aetna.com/cpb/medical/data/100_199/0171.html",
+)
+
+
+# --------------------------------------------------------------------------
+# UnitedHealthcare, self-published
+#
+# CLAUDE.md recorded that no UHC document applicable to Indiana had been found,
+# because the guideline that surfaces most readily is marked "For Ohio Only".
+# That was a search failure, not an absence: UHC publishes a national
+# Commercial and Exchange guideline covering all three target codes, with no
+# state restriction. Corrected 2026-08-22.
+#
+# Note the section identifiers match eviCore's for the spine (SP.LB.0005.1.A).
+# That is not a copy-paste error in this file — both organisations number these
+# sections the same way, and the thresholds agree independently.
+# --------------------------------------------------------------------------
+
+_UHC_DOC = (
+    "UnitedHealthcare Commercial and Exchange Plans: Cardiovascular and "
+    "Radiology Imaging Guidelines"
+)
+_UHC_URL = (
+    "https://www.uhcprovider.com/content/dam/provider/docs/public/prior-auth/"
+    "radiology/COMM-Exchange-Rad-Card-Guidelines-Nov-2025.pdf"
+)
+
+UHC_KNEE = Citation(
+    payer="UnitedHealthcare",
+    reviewed_by="UnitedHealthcare (self-published)",
+    document_title=_UHC_DOC + ", Knee (MS-25)",
+    section_id="MS.KN.0025.A",
+    version="V5.0.2025 (section v2.0.2025)",
+    effective_date="2025-11-18",
+    retrieved_on="2026-08-22",
+    source_url=_UHC_URL,
+)
+
+UHC_HEAD = Citation(
+    payer="UnitedHealthcare",
+    reviewed_by="UnitedHealthcare (self-published)",
+    document_title=_UHC_DOC + ", Headache General Guidelines (HD-11.0)",
+    section_id="HD.HA.0011.0.A",
+    version="V5.0.2025 (section v1.0.2025)",
+    effective_date="2025-11-18",
+    retrieved_on="2026-08-22",
+    source_url=_UHC_URL,
+)
+
+UHC_LUMBAR = Citation(
+    payer="UnitedHealthcare",
+    reviewed_by="UnitedHealthcare (self-published)",
+    document_title=_UHC_DOC
+    + ", Low Back (Lumbar Spine) Pain without Neurological Features (SP-5.1)",
+    section_id="SP.LB.0005.1.A",
+    version="V5.0.2025 (section v2.0.2025)",
+    effective_date="2025-11-18",
+    retrieved_on="2026-08-22",
+    source_url=_UHC_URL,
 )
 
 
@@ -439,5 +595,160 @@ REQUIREMENTS = (
         check={"type": "boolean", "field": "headache_concerning_feature"},
         alternative_pathway=True,
         note="Listed features: " + ", ".join(CARELON_HEADACHE_FEATURES),
+    ),
+    # ------------------------------------------------------------------
+    # Cigna / eviCore — knee, added 2026-08-22
+    # ------------------------------------------------------------------
+    Requirement(
+        key="evicore-knee-meniscal-radiographs",
+        cpt_codes=("73721",),
+        indication="meniscal_tear",
+        summary="Plain x-rays must have been performed after this episode of "
+        "symptoms began, with results available to the requesting provider.",
+        quote="Plain x-rays have been performed after the beginning of the "
+        "current episode of symptoms started",
+        citation=EVICORE_MSK,
+        check={"type": "radiographs_performed"},
+    ),
+    Requirement(
+        key="evicore-knee-meniscal-six-week-conservative",
+        cpt_codes=("73721",),
+        indication="meniscal_tear",
+        summary="Six weeks of provider-directed conservative treatment, unless "
+        "at least two of four listed exam criteria are documented instead.",
+        quote="Failure of 6 weeks of provider-directed conservative treatment, "
+        "including clinical re-evaluation, occurring after the current episode "
+        "of symptoms started OR at least 2 of the following 4 criteria met",
+        citation=EVICORE_MSK,
+        check={"type": "min_weeks", "weeks": 6},
+        alternative_pathway=True,
+        note="The alternative is 2 of: positive McMurray's, Thessaly or Apley's "
+        "compression test; twisting or acute injury; locked knee; knee effusion. "
+        "The app does not collect exam findings, so this reports as the weeks "
+        "pathway only.",
+    ),
+    Requirement(
+        key="evicore-knee-ligament-radiographs",
+        cpt_codes=("73721",),
+        indication="ligament_tear",
+        summary="Plain x-rays of the knee must have been performed after this "
+        "episode of symptoms began or changed.",
+        quote="Initial plain x-ray imaging of the suspected area must first be "
+        "performed after the current episode of symptoms started or changed "
+        "with results available to the requesting provider",
+        citation=EVICORE_MSK_LIGAMENT,
+        check={"type": "radiographs_performed"},
+    ),
+    Requirement(
+        key="evicore-knee-ligament-six-week-conservative",
+        cpt_codes=("73721",),
+        indication="ligament_tear",
+        summary="Six weeks of provider-directed conservative treatment, unless "
+        "an instability test is positive compared with the other knee.",
+        quote="Otherwise, failure of 6 weeks of provider-directed conservative "
+        "treatment, including clinical re-evaluation, occurring after the "
+        "current episode of symptoms started is required",
+        citation=EVICORE_MSK_LIGAMENT,
+        check={"type": "ligament_pathway", "weeks": 6},
+        alternative_pathway=True,
+        note="Waived if Anterior Drawer, Lachman, Pivot Shift, Posterior Drawer "
+        "or Sag, Valgus Stress or Varus Stress is positive in comparison to the "
+        "opposite knee.",
+    ),
+    # ------------------------------------------------------------------
+    # Cigna / eviCore — head, added 2026-08-22
+    # ------------------------------------------------------------------
+    Requirement(
+        key="evicore-headache-red-flag",
+        cpt_codes=("70450",),
+        indication="headache",
+        summary="A focal neurological deficit or a published red-flag feature "
+        "must be documented; imaging is not indicated for primary headache "
+        "without one.",
+        quote="Advanced imaging of the head is NOT medically necessary for any "
+        "of the following: Primary headache disorder in the absence of focal "
+        "neurological deficits or \u201cred flags\u201d",
+        citation=EVICORE_HEAD,
+        check={"type": "boolean", "field": "headache_concerning_feature"},
+        alternative_pathway=True,
+        note="A significant change in the character, severity or frequency of a "
+        "chronic headache is a separate qualifying pathway in the same section.",
+    ),
+    # ------------------------------------------------------------------
+    # Aetna — knee, added 2026-08-22
+    # ------------------------------------------------------------------
+    Requirement(
+        key="aetna-knee-three-week-conservative",
+        cpt_codes=("73721",),
+        indication="meniscal_tear",
+        summary="Three weeks of conservative therapy where the knee pain is not "
+        "associated with an injury.",
+        quote="Persistent knee pain/swelling and/or instability (giving way) "
+        "when: Not associated with an injury and not responding to at least 3 "
+        "weeks of conservative therapy",
+        citation=AETNA_EXTREMITIES,
+        check={"type": "min_weeks", "weeks": 3},
+        alternative_pathway=True,
+        note="Aetna lists injury-related knee pain, true locking, tumour and "
+        "suspected osteomyelitis as separate qualifying criteria. Three weeks is "
+        "the shortest published threshold of any payer in this file.",
+    ),
+    # ------------------------------------------------------------------
+    # UnitedHealthcare, added 2026-08-22
+    # ------------------------------------------------------------------
+    Requirement(
+        key="uhc-knee-meniscal-radiographs",
+        cpt_codes=("73721",),
+        indication="meniscal_tear",
+        summary="An initial plain x-ray must have been obtained and the results "
+        "available to the provider.",
+        quote="After an initial plain x-ray has been obtained, and results are "
+        "available to the provider, the following advanced imaging is indicated",
+        citation=UHC_KNEE,
+        check={"type": "radiographs_performed"},
+    ),
+    Requirement(
+        key="uhc-knee-meniscal-six-week-conservative",
+        cpt_codes=("73721",),
+        indication="meniscal_tear",
+        summary="Six weeks of provider-directed conservative treatment, unless "
+        "at least two of four listed exam criteria are documented instead.",
+        quote="Conservative treatment is not required if at least 2 of following "
+        "4 criteria are met: 1) Positive McMurray\u2019s, positive Thessaly, or "
+        "positive Apley\u2019s Compression Test 2) twisting or acute injury of "
+        "the knee 3) locked knee/inability to fully extend the knee on exam in "
+        "comparison to the opposite knee 4) knee effusion",
+        citation=UHC_KNEE,
+        check={"type": "min_weeks", "weeks": 6},
+        alternative_pathway=True,
+        note="Same two-of-four alternative as eviCore's knee section, worded "
+        "almost identically. The app does not collect exam findings, so this "
+        "reports as the weeks pathway only.",
+    ),
+    Requirement(
+        key="uhc-headache-red-flag",
+        cpt_codes=("70450",),
+        indication="headache",
+        summary="A focal neurological deficit or a published red-flag feature "
+        "must be documented; imaging is not indicated for primary headache "
+        "without one.",
+        quote="Advanced imaging of the head is NOT indicated for any of the "
+        "following: Primary headache disorder in the absence of focal "
+        "neurological deficits or \"red flags\"",
+        citation=UHC_HEAD,
+        check={"type": "boolean", "field": "headache_concerning_feature"},
+        alternative_pathway=True,
+    ),
+    Requirement(
+        key="uhc-lumbar-six-week-conservative",
+        cpt_codes=("72148",),
+        indication="low_back_pain",
+        summary="A six-week trial of provider-directed treatment within the last "
+        "twelve weeks, unless a red flag is present.",
+        quote="Failure of recent (within 12 weeks) 6-week trial of "
+        "provider-directed treatment (unless presence of a red flag as defined "
+        "in Red Flag Indications (SP-1.2))",
+        citation=UHC_LUMBAR,
+        check={"type": "min_weeks", "weeks": 6, "waived_by_red_flag": True},
     ),
 )
