@@ -17,6 +17,7 @@ import argparse
 import glob
 import json
 import os
+import re
 from collections import defaultdict
 
 from pipeline.costing.routes import eligible_in_network
@@ -25,6 +26,57 @@ from pipeline.route import load_prices
 
 # CPT -> what a patient would call it. Descriptions stay clinical and neutral:
 # the app never proposes a different study, so these are labels, not options.
+
+# Words that stay capitalised when a shouted hospital name is title-cased.
+_KEEP_UPPER = {"IU", "II", "III", "IV", "MRI", "CT", "ER", "LLC"}
+# Lowercase inside a name, never at the start.
+_KEEP_LOWER = {"of", "at", "and", "the", "for", "on", "de"}
+
+
+def normalize_facility_name(raw):
+    """Make a hospital's published name readable without changing which one it is.
+
+    Hospital price transparency files carry the filer's legal name, shouted and
+    sometimes with the corporate entity attached — "FRANCISCAN ALLIANCE, INC.
+    dba FRANCISCAN HEALTH ORTHOPEDIC HOSPITAL - CARMEL". Shown next to a file
+    that happens to use title case, it reads as a different class of thing.
+
+    This only restyles. It never drops a location, a campus or a distinguishing
+    word, because two facilities in this metro can differ by one of those and
+    quoting the wrong one's price is the failure this whole pipeline guards
+    against.
+    """
+    name = (raw or "").strip()
+    if not name:
+        return name
+
+    # "<LEGAL ENTITY>, INC. dba <TRADE NAME>" — keep the trade name, which is
+    # what a patient would see on the building.
+    lowered = name.lower()
+    if " dba " in lowered:
+        name = name[lowered.index(" dba ") + 5:].strip()
+
+    # Only restyle names that are shouted. A file already in title case is left
+    # exactly as its hospital published it.
+    letters = [c for c in name if c.isalpha()]
+    if letters and sum(c.isupper() for c in letters) / len(letters) < 0.8:
+        return name
+
+    words = []
+    for index, word in enumerate(name.split()):
+        bare = word.strip(".,-").upper()
+        if bare in _KEEP_UPPER:
+            words.append(word.upper())
+        elif index and bare.lower() in _KEEP_LOWER:
+            words.append(word.lower())
+        else:
+            words.append(word.capitalize())
+    out = " ".join(words)
+    # "St. Vincent" rather than "St. vincent"; hyphenated campuses keep both sides.
+    out = re.sub(r"(?<=[-/])([a-z])", lambda m: m.group(1).upper(), out)
+    return out
+
+
 PROCEDURES = {
     "73721": {
         "label": "Knee MRI",
@@ -116,8 +168,10 @@ def facility_bundle(prices, payer):
         bundles.append(
             {
                 "facility_key": key,
-                "facility_name": locations[0] if locations else raw_name,
-                "also_at": locations[1:],
+                "facility_name": normalize_facility_name(
+                    locations[0] if locations else raw_name
+                ),
+                "also_at": [normalize_facility_name(x) for x in locations[1:]],
                 "facility_address": addresses.get(key, ""),
                 "plans": unique,
                 "cash_price": cash.get(key),
@@ -206,6 +260,19 @@ def refresh_metadata(path):
             procedure["detail"] = meta["detail"]
             procedure["indications"] = meta["indications"]
     payload["requirements"] = requirement_bundle()
+
+    # Display names too. These are labels rather than prices, so restyling them
+    # does not violate this function's promise to leave the price data alone —
+    # every rate, plan string and facility_key is untouched.
+    for procedure in payload["procedures"]:
+        for bundles in procedure.get("payers", {}).values():
+            for bundle in bundles:
+                bundle["facility_name"] = normalize_facility_name(
+                    bundle.get("facility_name", "")
+                )
+                bundle["also_at"] = [
+                    normalize_facility_name(x) for x in bundle.get("also_at", [])
+                ]
 
     with open(path, "w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2)

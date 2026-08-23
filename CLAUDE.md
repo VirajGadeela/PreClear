@@ -184,11 +184,22 @@ route 3 and found nothing. CPT 70450 had no indications at all in the app, so
 route 3 could not fire for head CT under any payer. Anthem now covers all three
 target codes via Carelon's spine and brain guidelines.
 
-**UnitedHealthcare still has zero requirements** while carrying facility prices
-in the app — the exact silent failure this file warns about under "How expansion
-actually works". The app now says so on the results screen rather than omitting
-route 3 without explanation, but the honest fix is a UHC Indiana document, which
-is still not located.
+**UnitedHealthcare coverage closed, 2026-08-22.** The earlier note here said no
+UHC document applicable to Indiana had been found. That was a search failure,
+not an absence. UHC publishes a national **Commercial and Exchange Plans:
+Cardiovascular and Radiology Imaging Guidelines** (V5.0.2025, effective
+2025-11-18) with no state restriction, covering all three target codes. The
+"For Ohio Only" document that dominates search results is a separate
+state-specific publication — do not treat its existence as evidence that the
+national one does not exist.
+
+Requirement coverage is now **21 rules filling 11 of 12 (payer x CPT) cells**.
+The remaining gap is **Aetna + head CT, and it is real**: Aetna's Clinical
+Policy Bulletin index was read end to end on 2026-08-22 and contains no bulletin
+setting medical-necessity criteria for brain or head CT. The closest are CPB
+0462 (migraine management) and CPB 0707 (invasive headache procedures), neither
+of which governs CPT 70450. An Aetna member ordering a head CT reaches route 3
+and correctly finds nothing recorded.
 
 ### Payer requirement mechanics (verified 2026-08-11)
 
@@ -211,6 +222,35 @@ is still not located.
   different action from the ordering office, so `Status` keeps them separate.
 - Red flag indications (eviCore `SP.GG.0001.2.A`) **waive the waiting period**,
   they do not add a requirement.
+
+### Payer document mechanics (verified 2026-08-22)
+
+- **A "For Ohio Only" document is not proof there is no national one.** UHC
+  publishes both; the state file simply ranks higher. Search the payer's own
+  provider site for the Commercial/Exchange guideline before recording a gap.
+- **eviCore splits by body region the same way Carelon does.** Knee criteria are
+  in *Musculoskeletal Imaging Guidelines*, not a knee document; headache is in
+  *Head Imaging Guidelines* under HD-11.0. Same trap, different delegate.
+- **eviCore and UHC number their sections identically** — both call lumbar
+  `SP.LB.0005.1.A`. Seeing the same identifier under two payers in
+  `rules.py` is expected, not a copy-paste bug.
+- **Version dates matter and can be future-dated.** On 2026-08-22 the Cigna head
+  guideline had V1.0.2026 in force and V2.0.2026 already published for
+  2026-09-01. Both were read; HD.HA.0011.0.C is word-for-word identical, so the
+  criterion survives the version change. Check rather than assume.
+- **Aetna 403s any non-browser client**, including WebFetch. `curl` with a normal
+  UA string works. Their CPB index at `/cpb/medical/data/cpb_num.html` is the
+  reliable way to prove a bulletin does *not* exist.
+- **eviCore and UHC guidelines are PDFs that defeat naive extraction.** Their
+  text streams are CID-encoded, so a hand-rolled zlib/regex extractor returns
+  ICC profile bytes. `pdftotext -layout` (Homebrew `poppler`) reads all of them;
+  the UHC file is 16 MB and 8 million characters, so grep for the section code
+  rather than reading forward.
+- **Requirements the app cannot evaluate must still be honest.** eviCore and UHC
+  both allow "2 of 4 exam criteria" instead of 6 weeks of conservative
+  treatment, and the app collects no exam findings. Those rules carry
+  `alternative_pathway=True` and a `note` naming the alternative, so the
+  checklist hedges rather than asserting the order failed.
 
 ### Carelon document mechanics (verified 2026-08-13)
 
