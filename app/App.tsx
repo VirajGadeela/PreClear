@@ -14,6 +14,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  BackHandler,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -341,6 +342,33 @@ export default function App() {
     setStep(HOUSEHOLD_STEP);
   }, []);
 
+  /**
+   * One step back, and from the first step, home.
+   *
+   * Deliberately a single step rather than a jump straight to the landing
+   * screen: a member on Routes who wants to change their deductible expects
+   * back to reach Coverage, and losing their answers because "back" meant
+   * "start over" is the kind of thing that makes people retype everything.
+   * Home is still always reachable — it is simply the end of the chain, and
+   * from the household page, which is a sibling of home rather than part of
+   * the flow, it is one tap.
+   */
+  const backTarget = step === HOUSEHOLD_STEP || step <= 0 ? -1 : step - 1;
+  const backLabel = backTarget === -1 ? 'Home' : STEPS[backTarget];
+  const goBack = useCallback(() => setStep(backTarget), [backTarget]);
+
+  // The Android system back gesture should do what the on-screen control does.
+  // No-op on iOS, and BackHandler is core React Native, so this costs no
+  // rebuild. Returning false on the landing screen lets the OS close the app.
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (step === -1) return false;
+      setStep(backTarget);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [step, backTarget]);
+
   const restore = useCallback(async () => {
     setNote(null);
     if (!storeReady) {
@@ -358,7 +386,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
-      {step >= 0 && <TopBar />}
+      {step !== -1 && <TopBar backLabel={backLabel} onBack={goBack} />}
       {step >= 0 && <StepBar current={step} onJump={setStep} />}
       {/* The plan-name field sits above the primary button, so without this the
           keyboard covers the way forward. Core React Native, no native module —
@@ -399,7 +427,6 @@ export default function App() {
             note={note}
             onUnlock={unlock}
             onRestore={restore}
-            onBack={() => setStep(-1)}
           />
         )}
 
@@ -496,9 +523,18 @@ export default function App() {
  * button compete with whatever the step actually needed. The plan now has its
  * own destination, reached from the homepage — see `HOUSEHOLD_STEP`.
  */
-function TopBar() {
+/**
+ * Brand plus the way out.
+ *
+ * The back control lives here rather than in each screen's content because this
+ * bar sits outside the ScrollView. A back link inside the content scrolls off
+ * the top, so on a long screen — the routes list, the household review — there
+ * would be no way home without scrolling up first. Here it is always on screen.
+ */
+function TopBar({ backLabel, onBack }: { backLabel: string; onBack: () => void }) {
   return (
     <View style={styles.topBar}>
+      <BackLink label={backLabel} onPress={onBack} />
       <Text style={styles.brand}>Preclear</Text>
     </View>
   );
@@ -606,15 +642,26 @@ function StepBar({
  * bar — neither is part of the numbered flow — so without this a member who
  * opened the plan by mistake has no way back except force-quitting the app.
  */
-function BackLink({ onPress }: { onPress: () => void }) {
+/**
+ * The one back control in the app.
+ *
+ * It names its destination rather than just saying "Back", because this app has
+ * two things a member can be inside — the scan flow and the household plan —
+ * and "Back" alone does not say which way you are about to go. The arrow is a
+ * character, not an icon font: no asset, no native module, and it inherits the
+ * text colour so it can never drift from the label beside it.
+ */
+function BackLink({ label, onPress }: { label: string; onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Back to home"
+      accessibilityLabel={`Back to ${label}`}
+      hitSlop={space.sm}
       onPress={onPress}
       style={({ pressed }) => [styles.backLink, pressed && styles.backLinkPressed]}
     >
-      <Text style={styles.backLinkText}>Back</Text>
+      <Text style={styles.backChevron}>{'\u2039'}</Text>
+      <Text style={styles.backLinkText}>{label}</Text>
     </Pressable>
   );
 }
@@ -1236,19 +1283,16 @@ function HouseholdStep({
   note,
   onUnlock,
   onRestore,
-  onBack,
 }: {
   isSubscribed: boolean;
   demo: boolean;
   note: string | null;
   onUnlock: () => void;
   onRestore: () => void;
-  onBack: () => void;
 }) {
   if (isSubscribed) {
     return (
       <View>
-        <BackLink onPress={onBack} />
         <Text style={styles.h1}>Your household</Text>
         {/* A demo unlock must never be mistaken for a purchase. */}
         {demo && (
@@ -1267,7 +1311,6 @@ function HouseholdStep({
 
   return (
     <View>
-      <BackLink onPress={onBack} />
       <Text style={styles.h1}>{PLAN_NAME}</Text>
       <Text style={styles.body}>
         A scan happens every few years. Bills arrive all year, for everyone on
@@ -1480,9 +1523,13 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1 },
 
   topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: space.lg,
     paddingTop: space.sm,
     paddingBottom: space.sm,
+    gap: space.md,
   },
   brand: { ...type.title, color: color.ink },
 
@@ -1735,12 +1782,21 @@ const styles = StyleSheet.create({
 
   // Same quiet weight as restore: a way out, not a call to action.
   backLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-start',
+    gap: space.xs,
     minHeight: TAP_TARGET,
-    justifyContent: 'center',
-    marginBottom: space.sm,
+    // No trailing margin: it sits in the top bar's row now, not above content.
   },
   backLinkPressed: { opacity: 0.6 },
+  // Optically larger than the label so the arrow reads as an arrow rather than
+  // as punctuation, and lifted to sit on the label's baseline.
+  backChevron: {
+    ...type.title,
+    color: color.inkMuted,
+    lineHeight: type.title.fontSize,
+  },
   backLinkText: { ...type.label, color: color.inkMuted },
 
   note: { ...type.caption, color: color.flag, marginTop: space.md },
