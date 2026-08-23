@@ -63,6 +63,15 @@ export function evaluateCheck(check: any, facts: OrderFacts): Status {
       }
       return weeksAtLeast(facts, check.weeks);
 
+    case 'radiographs_performed':
+      // Weaker than `radiographs_nondiagnostic`, and deliberately separate.
+      // Carelon requires the films to have been *nondiagnostic*; eviCore and
+      // UnitedHealthcare only require that plain x-rays were performed after
+      // the current episode began. Collapsing the two would overstate what
+      // those payers ask for.
+      if (facts.priorRadiographs === undefined) return 'not_documented';
+      return 'met';
+
     case 'radiographs_nondiagnostic':
       if (facts.priorRadiographs === undefined) return 'not_documented';
       return facts.priorRadiographs === 'nondiagnostic' ? 'met' : 'unmet';
