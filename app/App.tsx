@@ -106,15 +106,21 @@ const PAYER_CHIP_LABELS: Record<string, string> = {
 /** Stable empty array, so the gated `routes` memo returns the same reference. */
 const EMPTY_ROUTES: Route[] = [];
 
-const STEPS = ['Scan', 'Coverage', 'Routes', 'Household'] as const;
+const STEPS = ['Scan', 'Coverage', 'Routes'] as const;
 
 /**
- * The paid step. Always reachable, whether or not it is unlocked — a member has
- * to be able to see what the plan is before being asked to pay for it, and a
- * subscriber has to be able to get back to their claims without walking the
- * whole scan flow again.
+ * The paid tier's own page, not a step in the scan flow.
+ *
+ * It used to be step 4 — reachable only after Scan/Coverage/Routes, or via a
+ * pill in the top bar. Neither fit a member who wants the household plan and
+ * nothing else: they were made to declare a scan they don't have, or hunt for
+ * a button that didn't look like a destination. It's a sibling of the landing
+ * screen instead, reached the same way (a tap from the homepage) and hidden
+ * from the same chrome — negative, like `step === -1`, so it renders outside
+ * the numbered flow and neither the step bar nor the top bar mistake it for
+ * part of the sequence.
  */
-const HOUSEHOLD_STEP = STEPS.length - 1;
+const HOUSEHOLD_STEP = -2;
 
 export default function App() {
   const [step, setStep] = useState(-1);
@@ -352,12 +358,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
-      {step >= 0 && (
-        <TopBar
-          subscribed={isSubscribed}
-          onPress={() => (isSubscribed ? setStep(HOUSEHOLD_STEP) : unlock())}
-        />
-      )}
+      {step >= 0 && <TopBar />}
       {step >= 0 && <StepBar current={step} onJump={setStep} />}
       {/* The plan-name field sits above the primary button, so without this the
           keyboard covers the way forward. Core React Native, no native module —
@@ -384,7 +385,23 @@ export default function App() {
         alwaysBounceVertical
         showsVerticalScrollIndicator
       >
-        {step === -1 && <LandingStep onNext={() => setStep(0)} />}
+        {step === -1 && (
+          <LandingStep
+            onNext={() => setStep(0)}
+            onHousehold={() => setStep(HOUSEHOLD_STEP)}
+          />
+        )}
+
+        {step === HOUSEHOLD_STEP && (
+          <HouseholdStep
+            isSubscribed={isSubscribed}
+            demo={demoEntitled}
+            note={note}
+            onUnlock={unlock}
+            onRestore={restore}
+            onBack={() => setStep(-1)}
+          />
+        )}
 
         {step === 0 && (
           <ScanStep
@@ -440,16 +457,6 @@ export default function App() {
             payerLabel={PAYER_LABELS[payer] ?? ''}
           />
         )}
-
-        {step === HOUSEHOLD_STEP && (
-          <HouseholdStep
-            isSubscribed={isSubscribed}
-            demo={demoEntitled}
-            note={note}
-            onUnlock={unlock}
-            onRestore={restore}
-          />
-        )}
       </ScrollView>
       </KeyboardAvoidingView>
 
@@ -482,41 +489,17 @@ export default function App() {
 }
 
 /**
- * Always-visible plan status.
+ * Brand label above the scan flow.
  *
- * The household plan used to be reachable only by scrolling to the bottom of
- * the results, which meant it did not exist until the member had already
- * finished the free thing. This sits above every step: it names the tier, and
- * tapping it either opens the plan or jumps a subscriber to their claims.
+ * Used to also carry a household-plan pill, so the tier was one tap away from
+ * every step regardless of whether a member had asked for it. That made the
+ * button compete with whatever the step actually needed. The plan now has its
+ * own destination, reached from the homepage — see `HOUSEHOLD_STEP`.
  */
-function TopBar({
-  subscribed,
-  onPress,
-}: {
-  subscribed: boolean;
-  onPress: () => void;
-}) {
+function TopBar() {
   return (
     <View style={styles.topBar}>
       <Text style={styles.brand}>Preclear</Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={
-          subscribed
-            ? `${PLAN_NAME} active. Open your household claims.`
-            : `See ${PLAN_NAME}, the paid plan.`
-        }
-        onPress={onPress}
-        style={({ pressed }) => [
-          styles.tierPill,
-          subscribed && styles.tierPillActive,
-          pressed && styles.buttonPressed,
-        ]}
-      >
-        <Text style={[styles.tierText, subscribed && styles.tierTextActive]}>
-          {subscribed ? 'Household plan' : 'See household plan'}
-        </Text>
-      </Pressable>
     </View>
   );
 }
@@ -571,10 +554,8 @@ function StepBar({
         const done = index < current;
         const active = index === current;
         // The scan flow stays sequential — a route ranking before the coverage
-        // questions would be answering with defaults the member never saw. The
-        // household step is exempt: it is not a later part of this flow, it is a
-        // different part of the app.
-        const locked = index > current && index !== HOUSEHOLD_STEP;
+        // questions would be answering with defaults the member never saw.
+        const locked = index > current;
         return (
           <Pressable
             key={label}
@@ -618,13 +599,42 @@ function StepBar({
   );
 }
 
-function LandingStep({ onNext }: { onNext: () => void }) {
+/**
+ * The household page's only way home.
+ *
+ * Both the household page and the landing screen hide the step bar and top
+ * bar — neither is part of the numbered flow — so without this a member who
+ * opened the plan by mistake has no way back except force-quitting the app.
+ */
+function BackLink({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Back to home"
+      onPress={onPress}
+      style={({ pressed }) => [styles.backLink, pressed && styles.backLinkPressed]}
+    >
+      <Text style={styles.backLinkText}>Back</Text>
+    </Pressable>
+  );
+}
+
+function LandingStep({
+  onNext,
+  onHousehold,
+}: {
+  onNext: () => void;
+  onHousehold: () => void;
+}) {
   return (
     <View style={styles.landing}>
       <Text style={styles.landingHeadline}>
         Cash can look cheaper today but cost more by year's end.
       </Text>
       <PrimaryButton label="Compare my options" onPress={onNext} tone="accent" />
+      {/* Slate, not accent — this is a second, equally-weighted destination,
+          not competing with the scan comparison for the one accent color. */}
+      <PrimaryButton label="See household plan" onPress={onHousehold} />
     </View>
   );
 }
@@ -1226,16 +1236,19 @@ function HouseholdStep({
   note,
   onUnlock,
   onRestore,
+  onBack,
 }: {
   isSubscribed: boolean;
   demo: boolean;
   note: string | null;
   onUnlock: () => void;
   onRestore: () => void;
+  onBack: () => void;
 }) {
   if (isSubscribed) {
     return (
       <View>
+        <BackLink onPress={onBack} />
         <Text style={styles.h1}>Your household</Text>
         {/* A demo unlock must never be mistaken for a purchase. */}
         {demo && (
@@ -1254,6 +1267,7 @@ function HouseholdStep({
 
   return (
     <View>
+      <BackLink onPress={onBack} />
       <Text style={styles.h1}>{PLAN_NAME}</Text>
       <Text style={styles.body}>
         A scan happens every few years. Bills arrive all year, for everyone on
@@ -1466,26 +1480,11 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1 },
 
   topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: space.lg,
     paddingTop: space.sm,
     paddingBottom: space.sm,
-    gap: space.md,
   },
   brand: { ...type.title, color: color.ink },
-  tierPill: {
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: color.accent,
-    paddingHorizontal: space.md,
-    minHeight: 36,
-    justifyContent: 'center',
-  },
-  tierPillActive: { backgroundColor: color.accent },
-  tierText: { ...type.label, color: color.accent },
-  tierTextActive: { color: color.accentInk },
 
   // Sits outside the ScrollView, so it is reachable from every step without
   // scrolling. Development builds only.
@@ -1733,6 +1732,16 @@ const styles = StyleSheet.create({
   },
   restorePressed: { opacity: 0.6 },
   restoreText: { ...type.caption, color: color.inkMuted },
+
+  // Same quiet weight as restore: a way out, not a call to action.
+  backLink: {
+    alignSelf: 'flex-start',
+    minHeight: TAP_TARGET,
+    justifyContent: 'center',
+    marginBottom: space.sm,
+  },
+  backLinkPressed: { opacity: 0.6 },
+  backLinkText: { ...type.label, color: color.inkMuted },
 
   note: { ...type.caption, color: color.flag, marginTop: space.md },
 });
