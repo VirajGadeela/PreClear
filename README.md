@@ -77,10 +77,10 @@ Real published data, not estimates from a model:
   knee MRI, lumbar MRI and head CT, extracted from hospital price transparency
   files. Three of those are IU Health EINs publishing identical prices — real
   distinct addresses, but not three independent price observations.
-- **11 requirement rules across 3 payers**, each carrying document title,
+- **21 requirement rules across all 4 payers**, each carrying document title,
   section ID, version, effective date and source URL. The rules are usually
   written by a delegate rather than the payer: Anthem's are Carelon's, Cigna's
-  are eviCore's.
+  are eviCore's, and UnitedHealthcare and Aetna publish their own.
 - **The payer doesn't set the price; the plan does.** Franciscan Health
   Indianapolis publishes ten Anthem plan rows for the same knee MRI, carrying
   five distinct rates from $360.22 to $992.51. Matching the
@@ -96,13 +96,13 @@ exclusively, with no CPT-level imaging prices. A patient whose nearest option is
 one of those gets no comparison for that facility. This is a coverage hole in
 the product, not a task that was skipped.
 
-Requirement coverage is thinner than price coverage. Anthem covers all three
-procedures; Cigna and Aetna cover lumbar MRI only; **UnitedHealthcare has no
-requirement rules at all**, because the UHC radiology guideline that publishes
-most readily is marked "For Ohio Only" and does not apply in Indiana. A UHC
-member still gets real prices and a real cost comparison, but no order check —
-and the app says so on the results screen rather than quietly showing one route
-fewer.
+Requirement coverage now fills 11 of the 12 (payer x procedure) combinations.
+The one gap is **Aetna for head CT, and it is a real absence**: Aetna's Clinical
+Policy Bulletin index contains no bulletin setting medical-necessity criteria
+for brain or head CT, so there is nothing to cite. An Aetna member ordering a
+head CT still gets real prices and a real cost comparison, and the app says on
+the results screen that no requirement is recorded rather than quietly showing
+one route fewer.
 
 ## Running it
 
