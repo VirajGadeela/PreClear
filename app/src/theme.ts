@@ -174,10 +174,10 @@ export const type = {
     letterSpacing: -0.2,
   },
   body: { fontSize: 16, lineHeight: 24 },
-  // Semibold Manrope, not the system font — this is the step-bar number, the
-  // section-label eyebrow, and the chip label, all places where the display
-  // face's character reads even at small sizes without the weight of a full
-  // headline face.
+  // Semibold Manrope, not the system font — this is the step-bar number and
+  // the chip label, places where the display face's character reads even at
+  // small sizes without the weight of a full headline face. It is not
+  // uppercase and has no added tracking; that was the deleted `eyebrow`.
   label: {
     fontSize: 13,
     lineHeight: 16,
@@ -202,22 +202,12 @@ export const type = {
   bodyStrong: { fontSize: 16, lineHeight: 24, fontWeight: '700' as const },
   captionStrong: { fontSize: 13, lineHeight: 20, fontWeight: '700' as const },
 
-  /**
-   * Section eyebrow — the uppercase label above a group.
-   *
-   * Uppercase needs tracking opened back up; 0.6 was the value already in use,
-   * duplicated byte-for-byte in `HouseholdStep` and `LandingStep`. Uppercase
-   * and letter-spacing travel together, so they belong in the token rather
-   * than being re-applied at each site and drifting apart later.
-   */
-  eyebrow: {
-    fontSize: 13,
-    lineHeight: 16,
-    fontWeight: '600' as const,
-    fontFamily: font.semiBold,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.6,
-  },
+  // There was an `eyebrow` role here — an uppercase, letter-spaced label set
+  // above a group. It is deliberately gone, not renamed or shrunk. An
+  // uppercase label above content that a heading already identifies is
+  // decoration wearing the clothes of structure, and having it as a token
+  // made it easy to keep reaching for. Grouping is carried by space and a
+  // hairline now. Do not reintroduce it.
 } as const;
 
 /**
