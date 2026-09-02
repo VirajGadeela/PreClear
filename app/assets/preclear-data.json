@@ -285,6 +285,19 @@
             ],
             "cash_price": 367.93,
             "gross_charge": 1296.0
+          },
+          {
+            "facility_key": "riverview",
+            "facility_name": "Riverview Health",
+            "also_at": [
+              "Riverview Health Emergency Room & Urgent Care - Carmel",
+              "Riverview Health Emergency Room & Urgent Care - Fishers",
+              "Riverview Health Westfield"
+            ],
+            "facility_address": "395 Westfield Rd, Noblesville, IN 46060|14585 Hazel Dell Pkwy, Carmel, IN 46033|9690 E. 116th Street, Fishers, IN 46037|17600 Shamrock Blvd, Westfield, IN 46074",
+            "plans": [],
+            "cash_price": 1474.2,
+            "gross_charge": 2457.0
           }
         ],
         "unitedhealthcare": [
@@ -494,6 +507,19 @@
             ],
             "cash_price": 367.93,
             "gross_charge": 1296.0
+          },
+          {
+            "facility_key": "riverview",
+            "facility_name": "Riverview Health",
+            "also_at": [
+              "Riverview Health Emergency Room & Urgent Care - Carmel",
+              "Riverview Health Emergency Room & Urgent Care - Fishers",
+              "Riverview Health Westfield"
+            ],
+            "facility_address": "395 Westfield Rd, Noblesville, IN 46060|14585 Hazel Dell Pkwy, Carmel, IN 46033|9690 E. 116th Street, Fishers, IN 46037|17600 Shamrock Blvd, Westfield, IN 46074",
+            "plans": [],
+            "cash_price": 1474.2,
+            "gross_charge": 2457.0
           }
         ],
         "aetna": [
@@ -963,6 +989,19 @@
             ],
             "cash_price": 367.93,
             "gross_charge": 1296.0
+          },
+          {
+            "facility_key": "riverview",
+            "facility_name": "Riverview Health",
+            "also_at": [
+              "Riverview Health Emergency Room & Urgent Care - Carmel",
+              "Riverview Health Emergency Room & Urgent Care - Fishers",
+              "Riverview Health Westfield"
+            ],
+            "facility_address": "395 Westfield Rd, Noblesville, IN 46060|14585 Hazel Dell Pkwy, Carmel, IN 46033|9690 E. 116th Street, Fishers, IN 46037|17600 Shamrock Blvd, Westfield, IN 46074",
+            "plans": [],
+            "cash_price": 1474.2,
+            "gross_charge": 2457.0
           }
         ],
         "cigna": [
@@ -1187,6 +1226,19 @@
             ],
             "cash_price": 367.93,
             "gross_charge": 1296.0
+          },
+          {
+            "facility_key": "riverview",
+            "facility_name": "Riverview Health",
+            "also_at": [
+              "Riverview Health Emergency Room & Urgent Care - Carmel",
+              "Riverview Health Emergency Room & Urgent Care - Fishers",
+              "Riverview Health Westfield"
+            ],
+            "facility_address": "395 Westfield Rd, Noblesville, IN 46060|14585 Hazel Dell Pkwy, Carmel, IN 46033|9690 E. 116th Street, Fishers, IN 46037|17600 Shamrock Blvd, Westfield, IN 46074",
+            "plans": [],
+            "cash_price": 1474.2,
+            "gross_charge": 2457.0
           }
         ]
       }
@@ -1492,6 +1544,19 @@
             ],
             "cash_price": 367.93,
             "gross_charge": 1296.0
+          },
+          {
+            "facility_key": "riverview",
+            "facility_name": "Riverview Health",
+            "also_at": [
+              "Riverview Health Emergency Room & Urgent Care - Carmel",
+              "Riverview Health Emergency Room & Urgent Care - Fishers",
+              "Riverview Health Westfield"
+            ],
+            "facility_address": "395 Westfield Rd, Noblesville, IN 46060|14585 Hazel Dell Pkwy, Carmel, IN 46033|9690 E. 116th Street, Fishers, IN 46037|17600 Shamrock Blvd, Westfield, IN 46074",
+            "plans": [],
+            "cash_price": 1296.0,
+            "gross_charge": 2160.0
           }
         ],
         "unitedhealthcare": [
@@ -1711,6 +1776,19 @@
             ],
             "cash_price": 367.93,
             "gross_charge": 1296.0
+          },
+          {
+            "facility_key": "riverview",
+            "facility_name": "Riverview Health",
+            "also_at": [
+              "Riverview Health Emergency Room & Urgent Care - Carmel",
+              "Riverview Health Emergency Room & Urgent Care - Fishers",
+              "Riverview Health Westfield"
+            ],
+            "facility_address": "395 Westfield Rd, Noblesville, IN 46060|14585 Hazel Dell Pkwy, Carmel, IN 46033|9690 E. 116th Street, Fishers, IN 46037|17600 Shamrock Blvd, Westfield, IN 46074",
+            "plans": [],
+            "cash_price": 1296.0,
+            "gross_charge": 2160.0
           }
         ],
         "aetna": [
@@ -2060,6 +2138,19 @@
             ],
             "cash_price": 367.93,
             "gross_charge": 1296.0
+          },
+          {
+            "facility_key": "riverview",
+            "facility_name": "Riverview Health",
+            "also_at": [
+              "Riverview Health Emergency Room & Urgent Care - Carmel",
+              "Riverview Health Emergency Room & Urgent Care - Fishers",
+              "Riverview Health Westfield"
+            ],
+            "facility_address": "395 Westfield Rd, Noblesville, IN 46060|14585 Hazel Dell Pkwy, Carmel, IN 46033|9690 E. 116th Street, Fishers, IN 46037|17600 Shamrock Blvd, Westfield, IN 46074",
+            "plans": [],
+            "cash_price": 1296.0,
+            "gross_charge": 2160.0
           }
         ],
         "cigna": [
@@ -2249,6 +2340,19 @@
             ],
             "cash_price": 367.93,
             "gross_charge": 1296.0
+          },
+          {
+            "facility_key": "riverview",
+            "facility_name": "Riverview Health",
+            "also_at": [
+              "Riverview Health Emergency Room & Urgent Care - Carmel",
+              "Riverview Health Emergency Room & Urgent Care - Fishers",
+              "Riverview Health Westfield"
+            ],
+            "facility_address": "395 Westfield Rd, Noblesville, IN 46060|14585 Hazel Dell Pkwy, Carmel, IN 46033|9690 E. 116th Street, Fishers, IN 46037|17600 Shamrock Blvd, Westfield, IN 46074",
+            "plans": [],
+            "cash_price": 1296.0,
+            "gross_charge": 2160.0
           }
         ]
       }
@@ -2546,6 +2650,19 @@
             ],
             "cash_price": 252.39,
             "gross_charge": 968.0
+          },
+          {
+            "facility_key": "riverview",
+            "facility_name": "Riverview Health",
+            "also_at": [
+              "Riverview Health Emergency Room & Urgent Care - Carmel",
+              "Riverview Health Emergency Room & Urgent Care - Fishers",
+              "Riverview Health Westfield"
+            ],
+            "facility_address": "395 Westfield Rd, Noblesville, IN 46060|14585 Hazel Dell Pkwy, Carmel, IN 46033|9690 E. 116th Street, Fishers, IN 46037|17600 Shamrock Blvd, Westfield, IN 46074",
+            "plans": [],
+            "cash_price": 454.2,
+            "gross_charge": 757.0
           }
         ],
         "unitedhealthcare": [
@@ -2765,6 +2882,19 @@
             ],
             "cash_price": 252.39,
             "gross_charge": 968.0
+          },
+          {
+            "facility_key": "riverview",
+            "facility_name": "Riverview Health",
+            "also_at": [
+              "Riverview Health Emergency Room & Urgent Care - Carmel",
+              "Riverview Health Emergency Room & Urgent Care - Fishers",
+              "Riverview Health Westfield"
+            ],
+            "facility_address": "395 Westfield Rd, Noblesville, IN 46060|14585 Hazel Dell Pkwy, Carmel, IN 46033|9690 E. 116th Street, Fishers, IN 46037|17600 Shamrock Blvd, Westfield, IN 46074",
+            "plans": [],
+            "cash_price": 454.2,
+            "gross_charge": 757.0
           }
         ],
         "aetna": [
@@ -3114,6 +3244,19 @@
             ],
             "cash_price": 252.39,
             "gross_charge": 968.0
+          },
+          {
+            "facility_key": "riverview",
+            "facility_name": "Riverview Health",
+            "also_at": [
+              "Riverview Health Emergency Room & Urgent Care - Carmel",
+              "Riverview Health Emergency Room & Urgent Care - Fishers",
+              "Riverview Health Westfield"
+            ],
+            "facility_address": "395 Westfield Rd, Noblesville, IN 46060|14585 Hazel Dell Pkwy, Carmel, IN 46033|9690 E. 116th Street, Fishers, IN 46037|17600 Shamrock Blvd, Westfield, IN 46074",
+            "plans": [],
+            "cash_price": 454.2,
+            "gross_charge": 757.0
           }
         ],
         "cigna": [
@@ -3318,6 +3461,19 @@
             ],
             "cash_price": 252.39,
             "gross_charge": 968.0
+          },
+          {
+            "facility_key": "riverview",
+            "facility_name": "Riverview Health",
+            "also_at": [
+              "Riverview Health Emergency Room & Urgent Care - Carmel",
+              "Riverview Health Emergency Room & Urgent Care - Fishers",
+              "Riverview Health Westfield"
+            ],
+            "facility_address": "395 Westfield Rd, Noblesville, IN 46060|14585 Hazel Dell Pkwy, Carmel, IN 46033|9690 E. 116th Street, Fishers, IN 46037|17600 Shamrock Blvd, Westfield, IN 46074",
+            "plans": [],
+            "cash_price": 454.2,
+            "gross_charge": 757.0
           }
         ]
       }

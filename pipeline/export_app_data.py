@@ -136,6 +136,17 @@ def facility_bundle(prices, payer):
         if price.gross_charge is not None:
             gross.setdefault(price.facility_key, price.gross_charge)
 
+    # A facility that publishes a cash price but no negotiated rate is not a
+    # gap in the data — it is a non-contracted facility, which is exactly what
+    # route 4 is for. Dropping it hid real cash options: Riverview Health
+    # publishes cash prices across four locations and no payer rows at all.
+    #
+    # `buildRoutes` already tolerates this: it filters to facilities with plans
+    # before ranking in-network routes, and reads the full list for cash. Only
+    # this export was discarding them.
+    for key, price in cash.items():
+        by_facility.setdefault(key, [])
+
     bundles = []
     for key, rows in sorted(by_facility.items()):
         plans = sorted(
