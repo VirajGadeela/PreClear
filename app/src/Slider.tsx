@@ -183,7 +183,9 @@ const styles = StyleSheet.create({
   value: {
     ...typography.label,
     color: color.ink,
-    fontWeight: '700',
+    // No fontWeight. `label` is Manrope-SemiBold, a static weight file, so
+    // fontWeight is not read for this role (see `font` in theme.ts) — the
+    // '700' that used to sit here never rendered.
   },
   presetRow: {
     flexDirection: 'row',
@@ -237,14 +239,14 @@ const styles = StyleSheet.create({
     height: THUMB,
     borderRadius: THUMB / 2,
     backgroundColor: color.surface,
-    borderWidth: 3,
+    borderWidth: stroke.thumb,
     borderColor: color.slate,
   },
   // Held. The ring thickens and takes the accent rather than the thumb growing:
   // a thumb that changes size while it tracks a finger reads as the value
   // jumping, and this control's whole job is that the number under the finger
   // is the number being set.
-  thumbDragging: { borderWidth: 4, borderColor: color.accent },
+  thumbDragging: { borderWidth: stroke.thumbHeld, borderColor: color.accent },
   rangeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

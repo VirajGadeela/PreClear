@@ -1,5 +1,5 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { TAP_TARGET, color, radius, space, stroke, type } from '../theme';
+import { TAP_TARGET, color, radius, space, stroke, textScale, type } from '../theme';
 import { shared } from '../styles/shared';
 import { Chip } from '../components/Chip';
 import { data, PAYER_CHIP_LABELS, PAYER_LABELS, Procedure } from '../appData';
@@ -35,7 +35,7 @@ export function ScanStep({
 }) {
   return (
     <View>
-      <Text style={shared.h1}>What scan was ordered?</Text>
+      <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>What scan was ordered?</Text>
       <View style={shared.chipWrap}>
         {data.procedures.map((item) => (
           <Chip

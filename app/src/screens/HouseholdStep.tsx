@@ -1,7 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { TAP_TARGET, color, radius, space, stroke, type } from '../theme';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { TAP_TARGET, color, radius, space, stroke, textScale, type } from '../theme';
 import { shared } from '../styles/shared';
 import { Money } from '../Money';
 import { PrimaryButton } from '../components/PrimaryButton';
@@ -118,6 +125,11 @@ export function HouseholdStep({
   onRestore: () => void;
 }) {
   const [selected, setSelected] = useState(DEMO_PLANS[0].id);
+  // Above `stackAbove` the term and the price stop sharing a line. See the
+  // token for the measurement; the short version is that a row cannot be made
+  // to fit by capping the text inside it once the price alone fills it.
+  const { fontScale } = useWindowDimensions();
+  const stacked = fontScale > textScale.stackAbove;
   const plan = DEMO_PLANS.find((item) => item.id === selected) ?? DEMO_PLANS[0];
   // Local to this screen: `onStart`/`onRestore` are the app's one entry point
   // for each action regardless of demo vs. real store, so the pending state
@@ -147,7 +159,7 @@ export function HouseholdStep({
   if (isSubscribed) {
     return (
       <View>
-        <Text style={shared.h1}>Your household</Text>
+        <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>Your household</Text>
         {/* A demo unlock must never be mistaken for a purchase. */}
         {demo && (
           <View style={shared.coverageGap}>
@@ -165,7 +177,7 @@ export function HouseholdStep({
 
   return (
     <View>
-      <Text style={shared.h1}>{PLAN_NAME}</Text>
+      <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>{PLAN_NAME}</Text>
       <Text style={shared.body}>
         A scan happens every few years. Bills arrive all year, for everyone on
         the plan. This is the part that keeps working after the comparison is
@@ -187,6 +199,7 @@ export function HouseholdStep({
             onPress={() => setSelected(option.id)}
             style={({ pressed }) => [
               styles.planOption,
+              stacked && styles.planOptionStacked,
               active && styles.planOptionActive,
               pressed && styles.planOptionPressed,
             ]}
@@ -204,14 +217,21 @@ export function HouseholdStep({
                 )}
                 <Text style={styles.planOptionTerm}>{option.term}</Text>
                 {option.badge ? (
-                  <Text style={styles.planBadge}>{option.badge}</Text>
+                  <Text
+                    style={styles.planBadge}
+                    maxFontSizeMultiplier={textScale.badge}
+                  >
+                    {option.badge}
+                  </Text>
                 ) : null}
               </View>
               {option.footnote ? (
                 <Text style={styles.planOptionFootnote}>{option.footnote}</Text>
               ) : null}
             </View>
-            <View style={styles.planOptionPrice}>
+            <View
+              style={[styles.planOptionPrice, stacked && styles.planPriceStacked]}
+            >
               <Text style={[styles.planPrice, active && styles.planPriceActive]}>
                 {option.price}
               </Text>
@@ -290,12 +310,10 @@ const styles = StyleSheet.create({
   planDetailPlain: { marginTop: space.md, gap: space.sm },
 
   planSectionLabel: {
-    ...type.label,
+    ...type.eyebrow,
     color: color.inkMuted,
     marginTop: space.xl,
     marginBottom: space.md,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
   },
 
   planOption: {
@@ -312,27 +330,48 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
     minHeight: TAP_TARGET,
   },
+  // Stacked. The row's `alignItems: 'center'` would centre a full-width
+  // column, so both it and the price block realign to the leading edge.
+  planOptionStacked: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: space.sm,
+  },
   planOptionPressed: { opacity: 0.7 },
   // Selection is carried by the accent border and the price colour — the same
   // accent the recommended route uses, and nowhere else. Not a cheap/expensive
   // signal, just "this is the one chosen."
   planOptionActive: { borderColor: color.accent, backgroundColor: color.accentSoft },
   planOptionMain: { flex: 1, gap: space.xs },
-  planOptionHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  // Wraps. At accessibility text sizes the term, the badge and the price stop
+  // fitting on one line, and a row that cannot fit squeezes its children: the
+  // badge collapsed to a sliver and set one letter per line — "S / a / v / e".
+  // Wrapping drops the badge under the term at its natural width instead.
+  planOptionHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    flexWrap: 'wrap',
+  },
   planOptionCheck: { marginRight: -space.xs },
-  planOptionTerm: { ...type.body, fontWeight: '700', color: color.ink },
+  planOptionTerm: { ...type.bodyStrong, color: color.ink },
   planBadge: {
-    ...type.caption,
-    fontWeight: '700',
+    ...type.captionStrong,
     color: color.accentInk,
     backgroundColor: color.accent,
     borderRadius: radius.sm,
     paddingHorizontal: space.sm,
-    paddingVertical: 2,
+    // Was 2 — the only value in the app that sat off the 8px scale and off its
+    // own 4px half-step. `xs` is the half-step, and the badge grows by 4px.
+    paddingVertical: space.xs,
+    // Never absorb the row's overflow. Without this the badge is the element
+    // that gives, because it is the only one with no intrinsic minimum.
+    flexShrink: 0,
     overflow: 'hidden',
   },
   planOptionFootnote: { ...type.caption, color: color.inkMuted },
   planOptionPrice: { alignItems: 'flex-end' },
+  planPriceStacked: { alignItems: 'flex-start' },
   planPrice: { ...type.amount, color: color.ink },
   planPriceActive: { color: color.accent },
   planCadence: { ...type.caption, color: color.inkMuted },

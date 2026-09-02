@@ -99,6 +99,9 @@ Static weight files, so `fontFamily` names the exact weight:
 | `body` | 16 / 24 | — | system |
 | `label` | 13 / 16 | 600 | Manrope-SemiBold |
 | `caption` | 13 / 20 | — | system |
+| `bodyStrong` | 16 / 24 | 700 | system |
+| `captionStrong` | 13 / 20 | 700 | system |
+| `eyebrow` | 13 / 16 | 600 | Manrope-SemiBold, uppercase, `0.6` tracking |
 
 - All line heights are multiples of 4, so stacked text lands on the same grid as
   the spacing.
@@ -108,6 +111,18 @@ Static weight files, so `fontFamily` names the exact weight:
   reflow as digits change.
 - One scale, globally. There used to be two — this one and a private set inside
   `Money.tsx` — which between them defined ten font sizes with no ratio.
+- `bodyStrong` and `captionStrong` are the emphasis step, and they are the only
+  way to get one. `{ ...type.body, fontWeight: '700' }` at a call site is the
+  same role written out by hand, which is how it drifts: one site used 600 and
+  ten used 700 before these were declared. Both stay on the system font — 700
+  on the platform face *is* the emphasis step, and Manrope at 13px would put a
+  display face on a table value.
+- `eyebrow` carries `textTransform` and `letterSpacing` together, because
+  uppercase without opened tracking is the bug and the two must not be
+  re-applied separately at each site.
+- Never set `fontWeight` over a Manrope role. Those are static weight files, so
+  `fontFamily` names the weight and `fontWeight` is not read — a `'700'` over
+  `label` renders nothing at all.
 
 ## 4. Component styling
 
@@ -115,7 +130,13 @@ Static weight files, so `fontFamily` names the exact weight:
 - `stroke`: `hairline 1` for things that divide (always with `line`);
   `control 1.5` for the boundary of anything a finger operates (always with
   `border`). Pairing a weight with the wrong colour is the failure this token
-  exists to make obvious.
+  exists to make obvious. `thumb 3` / `thumbHeld 4` are the slider thumb's ring
+  and its held state — the thumb is not a divider and not the boundary *of* a
+  control, it is the control.
+- `size`: fixed component dimensions that are neither spacing nor tap targets.
+  `stepDot 24` replaced `width: 24, height: 24, borderRadius: 12` written
+  inline — three numbers describing one circle, where the radius has to stay
+  exactly half the width or the dot stops being round.
 - Existing components are the reference implementation:
   `BackLink` · `Chip` · `PrimaryButton` · `Row` · `StepBar` · `TopBar` ·
   `ErrorBoundary`. Extend these before inventing a sibling.
@@ -166,6 +187,17 @@ the web does not transfer:
 - No GSAP and no ScrollTrigger. Motion is minimal and uses RN primitives.
 - `TAP_TARGET = 44` minimum on anything a finger hits (Apple HIG + WCAG 2.5.5).
 - Honour reduce-motion; nothing essential may live in an animation.
+- **Dynamic Type is a layout constraint, not a font-size setting.** iOS text
+  sizes reach ~3.1x, and React Native breaks *inside a word* rather than
+  overflowing, so a heading becomes "Preclea / r / Househ / old" and a badge in
+  a row too narrow for it becomes "S / a / v / e". `textScale` caps the roles
+  whose failure is one unbreakable word wider than the screen; nothing carrying
+  meaning is capped below WCAG 1.4.4's 200%. Where a *row* is what does not
+  fit, a cap is the wrong instrument — reflow it to a column above
+  `textScale.stackAbove`, because smaller text in a too-narrow row is still one
+  letter per line. Any row pairing text with a number needs this. Check both
+  `accessibility-extra-large` and the default size: a fix that moves the 1.0x
+  rendering is a regression.
 
 ## 9. Agent prompt guide
 

@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { space } from '../theme';
+import { space, textScale } from '../theme';
 import { shared } from '../styles/shared';
 import { Chip } from '../components/Chip';
 import { Slider } from '../Slider';
@@ -34,7 +34,7 @@ export function CoverageStep({
 }) {
   return (
     <View>
-      <Text style={shared.h1}>Your coverage</Text>
+      <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>Your coverage</Text>
       <Text style={shared.caption}>From your plan documents. Nothing is stored.</Text>
 
       <View style={styles.sliderBlock}>

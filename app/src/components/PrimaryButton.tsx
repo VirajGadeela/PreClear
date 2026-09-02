@@ -67,6 +67,6 @@ const styles = StyleSheet.create({
   // the landing screen.
   buttonAccent: { backgroundColor: color.accent },
   buttonPressed: { opacity: 0.85 },
-  buttonText: { ...type.body, fontWeight: '700', color: color.surface },
+  buttonText: { ...type.bodyStrong, color: color.surface },
   buttonTextAccent: { color: color.accentInk },
 });

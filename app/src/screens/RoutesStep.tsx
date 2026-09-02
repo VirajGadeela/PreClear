@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import { color, radius, space, stroke, type } from '../theme';
+import { color, radius, space, stroke, textScale, type } from '../theme';
 import { shared } from '../styles/shared';
 import { Money } from '../Money';
 import { Row } from '../components/Row';
@@ -302,7 +302,7 @@ export function RoutesStep({
   if (routes.length === 0) {
     return (
       <View>
-        <Text style={shared.h1}>No routes to compare</Text>
+        <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>No routes to compare</Text>
         <Text style={shared.body}>
           No facility here publishes a usable price for this insurer and scan.
           That is a gap in the published data, not a sign that no options exist.
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   cardRecommended: { borderColor: color.accent, backgroundColor: color.accentSoft },
   routeLabelRow: { flexDirection: 'row', alignItems: 'center' },
   routeLabelIcon: { marginRight: space.xs },
-  routeLabel: { ...type.caption, fontWeight: '700', color: color.inkMuted },
+  routeLabel: { ...type.captionStrong, color: color.inkMuted },
 
   // Flag colours, not alarm colours — a suspect published row is a limit of
   // the data, the same class of thing as a missing rule.
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   chevron: { ...type.label, color: color.slate },
 
   details: { borderTopWidth: stroke.hairline, borderTopColor: color.line, marginTop: space.md, paddingTop: space.md },
-  rowValue: { ...type.caption, color: color.ink, fontWeight: '700', flexShrink: 1, textAlign: 'right' },
+  rowValue: { ...type.captionStrong, color: color.ink, flexShrink: 1, textAlign: 'right' },
   warning: {
     ...type.caption,
     color: color.flag,
@@ -427,8 +427,8 @@ const styles = StyleSheet.create({
   },
 
   requirement: { borderTopWidth: stroke.hairline, borderTopColor: color.line, marginTop: space.md, paddingTop: space.md },
-  requirementStatus: { ...type.caption, fontWeight: '700', color: color.flag },
-  link: { ...type.caption, fontWeight: '700', color: color.accent, marginTop: space.xs },
+  requirementStatus: { ...type.captionStrong, color: color.flag },
+  link: { ...type.captionStrong, color: color.accent, marginTop: space.xs },
   detailHedge: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
 
   // Hairline, matching `card` above: both are containers that happen to be
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     borderColor: color.accent,
     backgroundColor: color.accentSoft,
   },
-  lockTitle: { ...type.body, fontWeight: '700', color: color.ink },
+  lockTitle: { ...type.bodyStrong, color: color.ink },
   lockBody: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
   lockCta: { ...type.label, color: color.accent, marginTop: space.sm },
   planDetail: {
