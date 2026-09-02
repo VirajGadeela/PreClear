@@ -1,9 +1,25 @@
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { space } from '../theme';
+import { color, space, textScale } from '../theme';
 import { shared } from '../styles/shared';
 import { Chip } from '../components/Chip';
 import { Slider } from '../Slider';
 import { money } from '../costing';
+
+/**
+ * Held outside the component because it renders only in the disclosed state.
+ * The question above it is the control; this is the reference material behind
+ * it, and the collapsed screen is what most people will read.
+ */
+const HEADACHE_EXAMPLE =
+  'For example sudden severe onset, a change in pattern, a new headache after ' +
+  'age 50, or an abnormal neurological exam. Your insurer publishes the full list.';
+
+/** Three states, so the chips are data rather than two hand-written controls. */
+const YES_NO = [
+  { label: 'Yes', value: true },
+  { label: 'No', value: false },
+] as const;
 
 export function CoverageStep({
   deductible,
@@ -32,12 +48,13 @@ export function CoverageStep({
   onTreatmentWeeks: (value: number) => void;
   onHeadacheFeature: (value: boolean | undefined) => void;
 }) {
-  return (
-    <View>
-      <Text style={shared.h1}>Your coverage</Text>
-      <Text style={shared.caption}>From your plan documents. Nothing is stored.</Text>
+  const [showExample, setShowExample] = useState(false);
 
-      <View style={styles.sliderBlock}>
+  return (
+    <>
+      <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>Your coverage</Text>
+      <Text style={[shared.caption, styles.lede]}>Nothing is stored.</Text>
+
         <Slider
           label="Deductible remaining"
           value={deductible}
@@ -88,45 +105,53 @@ export function CoverageStep({
             format={(value) => `${value} ${value === 1 ? 'week' : 'weeks'}`}
           />
         )}
-      </View>
 
       {/* Three states, not two. Neither chip selected means the order does not
           record this, which is the common case and reads as "not documented"
           rather than as a criterion the order failed. Tapping a selected chip
           clears it back to unanswered. */}
       {showHeadacheFeature && (
-        <View style={shared.featureBlock}>
+        <>
           <Text style={shared.rowLabel}>
-            Does the order document a concerning headache feature?
+            Concerning headache feature documented?
           </Text>
-          <Text style={shared.caption}>
-            For example sudden severe onset, a change in pattern, a new headache
-            after age 50, or an abnormal neurological exam. Your insurer
-            publishes the full list.
+          {/* Same disclosure idea as a route card, at the size this screen
+              needs: the examples are reference material, not the question.
+              `onPress` on a Text is core RN, so this costs no wrapper. */}
+          <Text
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showExample }}
+            style={styles.disclosure}
+            onPress={() => setShowExample(!showExample)}
+          >
+            {showExample ? HEADACHE_EXAMPLE : 'Details'}
           </Text>
           <View style={shared.chipWrap}>
-            <Chip
-              label="Yes"
-              selected={headacheFeature === true}
-              onPress={() =>
-                onHeadacheFeature(headacheFeature === true ? undefined : true)
-              }
-            />
-            <Chip
-              label="No"
-              selected={headacheFeature === false}
-              onPress={() =>
-                onHeadacheFeature(headacheFeature === false ? undefined : false)
-              }
-            />
+            {YES_NO.map((option) => (
+              <Chip
+                key={option.label}
+                label={option.label}
+                selected={headacheFeature === option.value}
+                onPress={() =>
+                  onHeadacheFeature(
+                    headacheFeature === option.value ? undefined : option.value,
+                  )
+                }
+              />
+            ))}
           </View>
-        </View>
+        </>
       )}
 
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  sliderBlock: { marginTop: space.lg },
+  // The gap the removed slider-block wrapper used to carry, moved onto the
+  // line above it. One token rather than the wrapper's 24 plus the caption's
+  // own 16, because reaching a total by adding two tokens together is the
+  // arithmetic theme.ts's spacing scale exists to prevent.
+  lede: { marginBottom: space.xl },
+  disclosure: { ...shared.caption, color: color.accentDeep },
 });

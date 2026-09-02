@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { color, space, type } from '../theme';
+import { color, space, textScale, type } from '../theme';
 import { BackLink } from './BackLink';
 
 /**
@@ -14,7 +14,13 @@ export function TopBar({ backLabel, onBack }: { backLabel: string; onBack: () =>
   return (
     <View style={styles.topBar}>
       <BackLink label={backLabel} onPress={onBack} />
-      <Text style={styles.brand}>Preclear</Text>
+      <Text
+        style={styles.brand}
+        maxFontSizeMultiplier={textScale.chrome}
+        numberOfLines={1}
+      >
+        Preclear
+      </Text>
     </View>
   );
 }
@@ -29,5 +35,10 @@ const styles = StyleSheet.create({
     paddingBottom: space.sm,
     gap: space.md,
   },
-  brand: { ...type.title, color: color.ink },
+  // Capped and shrinkable. At accessibility text sizes the wordmark ran off
+  // the right edge of the screen: `space-between` gives it as much width as
+  // it asks for, and it asked for more than the screen had. The cap keeps it
+  // on one line, `flexShrink` keeps it inside the bar if the back label is
+  // long as well, and `numberOfLines` is the last resort behind both.
+  brand: { ...type.title, color: color.ink, flexShrink: 1 },
 });

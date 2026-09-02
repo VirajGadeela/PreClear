@@ -1,7 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import { TAP_TARGET, color, radius, space, stroke, type } from '../theme';
+import { TAP_TARGET, color, radius, space, stroke, textScale, type } from '../theme';
 import { shared } from '../styles/shared';
 import { Money } from '../Money';
 import { Row } from '../components/Row';
@@ -21,9 +20,7 @@ import { summarize } from '../share';
 function Headline({ routes }: { routes: Route[] }) {
   // Which of the three things this comparison says is decided in src/share.ts,
   // because the shared card has to say the same thing. This renders that
-  // answer; it no longer works it out. Two copies of the decision would
-  // eventually disagree, and a card contradicting the screen it came from is
-  // worse than no card at all.
+  // answer; it no longer works it out.
   const summary = summarize(routes);
   if (!summary) return null;
 
@@ -84,27 +81,28 @@ function RouteCard({
 
   return (
     <View style={[styles.card, recommended && styles.cardRecommended]}>
+      {/* Three elements inside the pressable, and that is the whole collapsed
+          card: what the route is, what it costs, and one meta line.
+          
+          What used to be here: a row wrapper holding a checkmark icon beside
+          the label, a pill holding an alert icon beside "Published rate
+          flagged", and a row holding the deductible sentence beside a chevron
+          and the word Details. Nine elements carrying five pieces of
+          information, most of them wrappers. Recommendation, the rate warning
+          and the expand affordance are all words now — which also keeps
+          recommendation from being carried by colour alone, the job the
+          checkmark used to do. */}
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ expanded }}
-        accessibilityLabel={`${route.label} at ${route.facilityName}. Tap for the breakdown.`}
+        accessibilityState={{ expanded, selected: recommended }}
+        accessibilityLabel={`${recommended ? 'Recommended. ' : ''}${route.label} at ${route.facilityName}. Tap for the breakdown.`}
         onPress={onToggle}
         style={({ pressed }) => (pressed ? shared.cardPressed : undefined)}
       >
-        <View style={styles.routeLabelRow}>
-          {/* Recommended is never colour-only either — the same reasoning as
-              a selected chip. The badge on `card` already carries it for
-              sighted users who see hue; this carries it for everyone else. */}
-          {recommended && (
-            <Ionicons
-              name="checkmark-circle"
-              size={16}
-              color={color.accentDeep}
-              style={styles.routeLabelIcon}
-            />
-          )}
-          <Text style={styles.routeLabel}>{route.label}</Text>
-        </View>
+        <Text style={styles.routeLabel}>
+          {recommended ? 'Recommended · ' : ''}
+          {route.label}
+        </Text>
 
         <Money
           value={route.estimate.totalThisYear}
@@ -112,34 +110,14 @@ function RouteCard({
           tone={recommended ? 'accent' : 'ink'}
         />
 
-        {/* The caveat travels with the number it qualifies, rather than waiting
-            behind a tap. These warnings used to render only inside the expanded
-            details, so a facility whose published rate is a percent-of-charge
-            artifact or a carve-out looked identical to a clean one until you
-            opened it — and the collapsed card is what most people will read.
-            The full explanation still sits in the details below. */}
-        {route.warnings.length > 0 && (
-          <View style={styles.badge}>
-            <Ionicons name="alert-circle" size={13} color={color.flag} />
-            <Text style={styles.badgeText}>Published rate flagged</Text>
-          </View>
-        )}
-
-        <View style={styles.whyRow}>
-          <Text style={styles.why} numberOfLines={expanded ? undefined : 2}>
-            {route.estimate.scan.countsTowardDeductible
-              ? 'Counts toward your deductible.'
-              : 'Earns no deductible credit.'}
-          </Text>
-          <View style={styles.chevronRow}>
-            <Text style={styles.chevron}>{expanded ? 'Hide' : 'Details'}</Text>
-            <Ionicons
-              name={expanded ? 'chevron-up' : 'chevron-down'}
-              size={14}
-              color={color.slate}
-            />
-          </View>
-        </View>
+        <Text style={styles.meta} numberOfLines={expanded ? undefined : 2}>
+          {route.estimate.scan.countsTowardDeductible
+            ? 'Counts toward your deductible'
+            : 'Earns no deductible credit'}
+          {route.warnings.length > 0 ? ' · Rate flagged' : ''}
+          {' · '}
+          {expanded ? 'Hide' : 'Details'}
+        </Text>
       </Pressable>
 
       {expanded && (
@@ -300,7 +278,7 @@ export function RoutesStep({
   if (routes.length === 0) {
     return (
       <View>
-        <Text style={shared.h1}>No routes to compare</Text>
+        <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>No routes to compare</Text>
         <Text style={shared.body}>
           No facility here publishes a usable price for this insurer and scan.
           That is a gap in the published data, not a sign that no options exist.
@@ -326,28 +304,23 @@ export function RoutesStep({
         />
       ))}
 
-      {/*
-        Under the ranked list and above the plan offer, so it reads as the end
-        of the free comparison rather than as an upsell.
-
-        The text it produces carries the same "estimate" on every figure that
-        the screen does — see src/share.ts. A number qualified on screen and
-        bare in a screenshot would break hard rule 5 at exactly the point the
-        figure reaches someone who cannot see where it came from.
-      */}
+      {/* The results screen advertises the plan; it does not contain it. The
+          review itself lives on its own step, so a subscriber is not made to
+          re-answer the scan questions to reach the thing they pay for. */}
+      {/* Under the ranked list and above the plan offer, so it reads as the
+          end of the free comparison rather than as an upsell. The text carries
+          the same "estimate" on every figure the screen does — a number
+          qualified on screen and bare in a screenshot would break hard rule 5
+          exactly where the figure reaches someone who cannot see its source. */}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Share this comparison"
         onPress={onShare}
         style={({ pressed }) => [styles.share, pressed && shared.cardPressed]}
       >
-        <Ionicons name="share-outline" size={18} color={color.ink} />
         <Text style={styles.shareText}>Share this comparison</Text>
       </Pressable>
 
-      {/* The results screen advertises the plan; it does not contain it. The
-          review itself lives on its own step, so a subscriber is not made to
-          re-answer the scan questions to reach the thing they pay for. */}
       <PlanOffer subscribed={isSubscribed} onOpenHousehold={onOpenHousehold} />
 
       {/* Route 3 is missing whenever nothing is unmet, but "nothing is unmet"
@@ -384,7 +357,7 @@ export function RoutesStep({
       )}
 
       {/* Reachable from the result as well as the homepage. A member reading
-          a figure they doubt should not have to return to the start to find
+          a figure they doubt should not have to go back to the start to find
           out what produced it. */}
       <Pressable
         accessibilityRole="button"
@@ -414,55 +387,14 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   cardRecommended: { borderColor: color.accent, backgroundColor: color.accentSoft },
+  routeLabel: { ...type.captionStrong, color: color.inkMuted },
 
-  // Outlined and ink-toned rather than accent: sharing is an action performed
-  // on a result, not a result. The one accent in this app marks the
-  // recommended route and must not compete with a button.
-  share: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space.sm,
-    marginTop: space.lg,
-    minHeight: TAP_TARGET,
-    borderRadius: radius.md,
-    borderWidth: stroke.hairline,
-    borderColor: color.border,
-    paddingHorizontal: space.md,
-  },
-  shareText: { ...type.body, fontWeight: '600', color: color.ink },
-  routeLabelRow: { flexDirection: 'row', alignItems: 'center' },
-  routeLabelIcon: { marginRight: space.xs },
-  routeLabel: { ...type.caption, fontWeight: '700', color: color.inkMuted },
-
-  // Flag colours, not alarm colours — a suspect published row is a limit of
-  // the data, the same class of thing as a missing rule.
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: space.xs,
-    backgroundColor: color.flagBg,
-    borderRadius: radius.sm,
-    paddingHorizontal: space.sm,
-    paddingVertical: space.xs,
-    marginTop: space.sm,
-  },
-  badgeText: { ...type.label, color: color.flag },
-
-  whyRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    gap: space.md,
-    marginTop: space.sm,
-  },
-  why: { ...type.caption, color: color.inkMuted, flex: 1 },
-  chevronRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  chevron: { ...type.label, color: color.slate },
+  // One line under the amount, carrying the deductible fact, the data-quality
+  // warning when there is one, and the expand affordance.
+  meta: { ...type.caption, color: color.inkMuted, marginTop: space.sm },
 
   details: { borderTopWidth: stroke.hairline, borderTopColor: color.line, marginTop: space.md, paddingTop: space.md },
-  rowValue: { ...type.caption, color: color.ink, fontWeight: '700', flexShrink: 1, textAlign: 'right' },
+  rowValue: { ...type.captionStrong, color: color.ink, flexShrink: 1, textAlign: 'right' },
   warning: {
     ...type.caption,
     color: color.flag,
@@ -473,8 +405,8 @@ const styles = StyleSheet.create({
   },
 
   requirement: { borderTopWidth: stroke.hairline, borderTopColor: color.line, marginTop: space.md, paddingTop: space.md },
-  requirementStatus: { ...type.caption, fontWeight: '700', color: color.flag },
-  link: { ...type.caption, fontWeight: '700', color: color.accent, marginTop: space.xs },
+  requirementStatus: { ...type.captionStrong, color: color.flag },
+  link: { ...type.captionStrong, color: color.accent, marginTop: space.xs },
   detailHedge: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
 
   // Hairline, matching `card` above: both are containers that happen to be
@@ -494,7 +426,7 @@ const styles = StyleSheet.create({
     borderColor: color.accent,
     backgroundColor: color.accentSoft,
   },
-  lockTitle: { ...type.body, fontWeight: '700', color: color.ink },
+  lockTitle: { ...type.bodyStrong, color: color.ink },
   lockBody: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
   lockCta: { ...type.label, color: color.accent, marginTop: space.sm },
   planDetail: {
@@ -504,4 +436,17 @@ const styles = StyleSheet.create({
     paddingTop: space.md,
     gap: space.sm,
   },
+  // Outlined and ink-toned, never accent: sharing is an action performed on a
+  // result, not a result. The one accent marks the recommended route.
+  share: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: space.lg,
+    minHeight: TAP_TARGET,
+    borderRadius: radius.md,
+    borderWidth: stroke.hairline,
+    borderColor: color.border,
+    paddingHorizontal: space.md,
+  },
+  shareText: { ...type.body, fontWeight: '600', color: color.ink },
 });
