@@ -1,10 +1,10 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { TAP_TARGET, color, radius, space, stroke, type } from '../theme';
+import { TAP_TARGET, color, radius, space, stroke, textScale, type } from '../theme';
 import { Money } from '../Money';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { data } from '../appData';
-import { PlanBenefits } from '../costing';
 import { DEMO_SCENARIOS, DemoScenario } from '../demo';
+import { PlanBenefits } from '../costing';
 import { buildRoutes, rankRoutes } from '../routes';
 
 /**
@@ -98,31 +98,22 @@ function flipRow(key: string, scenario: string, otherSpend: number): FlipRow | n
   return {
     key,
     scenario,
-    // Short enough to sit beside the figure on one line. The longer pair made
-    // the second row wrap under itself, so two rows meant to be read as a pair
-    // were set differently from each other.
     winner: cashWins ? 'Cash' : 'In-network',
     gap: Math.abs(cash.estimate.totalThisYear - inNetwork.estimate.totalThisYear),
   };
 }
 
-// Shortened from "If this scan is your only care this year" / "If you expect
-// $8,000 more care this year". The panel's heading already establishes that
-// these are two readings of one scan, so each row only has to name what
-// changed between them.
 const FLIP = [
   flipRow('alone', 'Only care this year', 0),
   flipRow('more', 'With $8,000 more care', 8000),
 ].filter((row): row is FlipRow => row !== null);
 
 /**
- * The example this panel is already demonstrating.
+ * The example the panel above is already demonstrating.
  *
- * The landing screen used to carry two separate proofs of the same claim: this
- * panel, and a card that opened a worked example making the identical point
- * with a second set of numbers. Two demonstrations of one finding is not twice
- * the evidence, it is half the attention — so the panel is now the way into
- * the full comparison rather than something sitting beside it.
+ * The panel proves the claim on one case and then stops. Making it the way into
+ * the full comparison means the screen does not need a second card repeating
+ * the same finding with a different set of numbers.
  */
 const HEADLINE_SCENARIO = DEMO_SCENARIOS.find(
   (scenario) => scenario.id === 'cash-trap',
@@ -145,51 +136,52 @@ export function LandingStep({
   onMethod: () => void;
 }) {
   return (
-    <View style={styles.landing}>
-      <Text style={styles.landingHeadline}>
-        Cash can look cheaper today but cost more by year's end.
+    <>
+      {/* Two lines at 32px on the narrowest screen. The previous headline ran
+          to four, which is a paragraph set in a display face rather than a
+          headline. */}
+      <Text
+        style={styles.landingHeadline}
+        maxFontSizeMultiplier={textScale.display}
+      >
+        Cash can cost more by year's end.
       </Text>
       <PrimaryButton label="Compare my options" onPress={onNext} tone="accent" />
       {/* Slate, not accent — this is a second, equally-weighted destination,
           not competing with the scan comparison for the one accent color. */}
       <PrimaryButton label="See household plan" onPress={onHousehold} />
 
-      {/*
-        The panel is the proof and the way in, not two separate things. Each
-        row is now the scenario and its outcome rather than a sentence, a
-        second sentence and a figure — the same three facts in a third of the
-        height, which is what lets the whole demonstration sit on one screen
-        instead of asking for a scroll before anything has been shown.
-      */}
+      {/* The panel had an uppercase label above it reading "THE SAME KNEE MRI,
+          TWICE". The two rows below say the same thing by being two readings of
+          one case, and the border already says where the panel starts. */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={
-          HEADLINE_SCENARIO
-            ? `The same knee MRI, twice. Open the full comparison.`
-            : 'The same knee MRI, twice'
-        }
+        accessibilityLabel="The same knee MRI, twice. Open the full comparison."
         disabled={!HEADLINE_SCENARIO}
         onPress={() => HEADLINE_SCENARIO && onScenario(HEADLINE_SCENARIO)}
         style={({ pressed }) => [styles.proof, pressed && styles.proofPressed]}
       >
-        <Text style={styles.proofEyebrow}>The same knee MRI, twice</Text>
-
         {FLIP.map((row, index) => (
           <View
             key={row.key}
             style={[styles.proofRow, index > 0 && styles.proofRowDivided]}
           >
-            <Text style={styles.proofScenario}>{row.scenario}</Text>
-            <View style={styles.proofOutcome}>
-              <Text style={styles.proofWinner}>{row.winner} saves</Text>
-              <Money value={row.gap} size="large" tone="accent" />
-            </View>
+            {/* Scenario and outcome were two Texts inside a wrapper View —
+                three elements for one sentence. The condition and its
+                consequence are one thought, so they are one Text at one
+                weight; the line break is the only separation they need. */}
+            <Text style={styles.proofLine}>
+              {row.scenario}
+              {'\n'}
+              {row.winner} is cheaper by
+            </Text>
+            <Money value={row.gap} size="large" tone="accent" />
           </View>
         ))}
 
-        {/* Trimmed, not dropped. "Yours will differ" is the load-bearing half —
-            it stops a member reading someone else's rate as their own — and the
-            plan is still named, because the plan is what sets the price. */}
+        {/* Names the plan vaguely on purpose: $610.44 is Franciscan's Anthem
+            *employee* COPPS rate, not its Blue Access PPO rate ($992.51), and
+            naming it wrongly is worse than not naming it. */}
         <Text style={styles.proofSource}>
           Franciscan Health Carmel, one Anthem plan. Yours will differ.
         </Text>
@@ -199,9 +191,8 @@ export function LandingStep({
         )}
       </Pressable>
 
-      {/* The remaining examples, as one line each. They had a title and a
-          two-line teaser apiece, which is three lines to say what the title
-          already said. */}
+      {/* The remaining examples, one line each. A title and a two-line teaser
+          apiece was three lines to say what the title already said. */}
       {OTHER_SCENARIOS.length > 0 && (
         <View style={styles.more}>
           {OTHER_SCENARIOS.map((scenario) => (
@@ -218,6 +209,8 @@ export function LandingStep({
         </View>
       )}
 
+      {/* Quiet, like the restore link elsewhere: a way to check the app, not a
+          call to action competing with the two buttons above. */}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Where these numbers come from"
@@ -226,17 +219,23 @@ export function LandingStep({
       >
         <Text style={styles.methodText}>Where these numbers come from</Text>
       </Pressable>
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  landing: { marginTop: space.xl },
-  landingHeadline: { ...type.display, color: color.ink, marginBottom: space.xl },
+  // The screen's own top margin, which used to live on a wrapper View that did
+  // nothing else. One less element for one style property.
+  landingHeadline: {
+    ...type.display,
+    color: color.ink,
+    marginTop: space.xl,
+    marginBottom: space.xl,
+  },
 
-  // A hairline-bordered panel on the canvas rather than a raised card. The
-  // route cards on step 3 are the things that lift; this is evidence, and it
-  // is now also a control, which the "See the full comparison" line says.
+  // A hairline-bordered panel on the canvas rather than a raised card. Nothing
+  // here is interactive, so elevation would be claiming a hierarchy the panel
+  // does not have — the route cards on step 3 are the things that lift.
   proof: {
     marginTop: space.lg,
     borderWidth: stroke.hairline,
@@ -244,36 +243,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: color.surface,
     paddingHorizontal: space.md,
-    paddingVertical: space.md,
+    paddingTop: space.md,
+    paddingBottom: space.md,
   },
-  proofPressed: { opacity: 0.7 },
-  proofEyebrow: {
-    ...type.label,
-    color: color.inkMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: space.sm,
-  },
-  // The sentence under the chart. Text and figure flow together on a shared
-  // baseline, so the one number reads as part of the sentence rather than as a
-  // third thing to look at.
-  // sm, not the previous sm-plus-nested-margins. Two scenarios at three lines
-  // each pushed everything below them off the screen.
   proofRow: { paddingVertical: space.sm },
-  // The divider separates two readings of one case, not two items — the
-  // inversion between them is the entire point of the panel.
+  // The divider sits between the two scenarios because the inversion between
+  // them is the point. It separates two readings of one case, not two items.
   proofRowDivided: { borderTopWidth: stroke.hairline, borderTopColor: color.line },
-  proofScenario: { ...type.caption, color: color.inkMuted },
-  // Winner and figure on one line. It was a label above a number above a
-  // caption; the label is short enough to sit beside the figure instead.
-  proofOutcome: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    flexWrap: 'wrap',
-    gap: space.xs,
-    marginTop: space.xs,
-  },
-  proofWinner: { ...type.label, color: color.ink },
+  proofLine: { ...type.caption, color: color.ink, marginBottom: space.xs },
   proofSource: {
     ...type.caption,
     color: color.inkMuted,
@@ -282,10 +259,11 @@ const styles = StyleSheet.create({
     paddingTop: space.sm,
     marginTop: space.sm,
   },
+  proofPressed: { opacity: 0.7 },
   proofOpen: { ...type.label, color: color.accent, marginTop: space.sm },
 
-  // One line per example. Titles alone: each teaser restated its own title in
-  // thirteen more words.
+  // Cards would compete with the two buttons above for the same attention;
+  // these are one line each because the title is the whole message.
   more: { marginTop: space.md },
   moreRow: {
     minHeight: TAP_TARGET,

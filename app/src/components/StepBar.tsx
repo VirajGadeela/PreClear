@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { TAP_TARGET, color, space, stroke, type } from '../theme';
+import { TAP_TARGET, color, size, space, stroke, type } from '../theme';
 import { STEPS } from '../appData';
 
 export function StepBar({
@@ -83,16 +83,18 @@ const styles = StyleSheet.create({
   },
   stepItemPressed: { opacity: 0.6 },
   stepDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: size.stepDot,
+    height: size.stepDot,
+    // Half the width, derived rather than restated, so the dot cannot stop
+    // being round when the size changes.
+    borderRadius: size.stepDot / 2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: color.line,
   },
   stepDotActive: { backgroundColor: color.accent },
   stepDotDone: { backgroundColor: color.slate },
-  stepNumber: { ...type.caption, fontWeight: '700', color: color.inkMuted },
+  stepNumber: { ...type.captionStrong, color: color.inkMuted },
   stepNumberActive: { color: color.accentInk },
   stepLabel: { ...type.label, color: color.inkMuted },
   stepLabelActive: { color: color.ink },

@@ -44,6 +44,10 @@ const styles = StyleSheet.create({
   devBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    // Wraps, so the second chip drops to its own line at accessibility text
+    // sizes rather than being clipped by the right edge. __DEV__ only, but it
+    // is on screen in every screenshot taken of this app.
+    flexWrap: 'wrap',
     gap: space.sm,
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
@@ -62,5 +66,5 @@ const styles = StyleSheet.create({
   },
   devChipOn: { backgroundColor: color.slate, borderColor: color.slate },
   devChipText: { ...type.caption, color: color.inkMuted },
-  devChipTextOn: { color: color.surface, fontWeight: '700' },
+  devChipTextOn: { ...type.captionStrong, color: color.surface },
 });

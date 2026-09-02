@@ -31,7 +31,7 @@ export const shared = StyleSheet.create({
   citation: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
 
   planRow: { flexDirection: 'row', gap: space.sm },
-  planBullet: { ...type.caption, color: color.accent, fontWeight: '700' },
+  planBullet: { ...type.captionStrong, color: color.accent },
   planLine: { ...type.caption, color: color.ink, flex: 1 },
   planCaveat: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
 

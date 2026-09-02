@@ -467,11 +467,36 @@ route.
   growing the box — "Your coverage" rendered with its tops cut off by the step
   bar. 40 fixes it and matches the 1.25 ratio the other headings use. The bug
   hides on multi-line headings, so check a one-line one.
-- **Palette is deliberately not blue/white and deliberately not red/green.**
-  Green-means-cheap would assert the opposite of the product's finding, so
-  ranking is carried by position, number size, and one accent (`#B2542A`)
-  reserved for the recommended route and used nowhere else. Tokens in
-  `app/src/theme.ts`.
+- **Text clipping has a second cause: Dynamic Type.** The same `display` role
+  that needed 40/32 also breaks mid-word at iOS's accessibility text sizes,
+  because one word grows wider than the 327pt content column and React Native
+  breaks inside the word rather than overflowing — "Preclea / r / Househ / old",
+  the same failure as the chips above. Two other things went with it at
+  `accessibility-extra-large` on an iPhone SE: the `TopBar` wordmark ran off the
+  right edge, and the "Save 27%" badge, in a row that could no longer fit it,
+  was squeezed to a sliver and set one letter per line — "S / a / v / e".
+  `textScale` in `theme.ts` caps the roles whose failure is an unbreakable word
+  wider than the screen, and its `stackAbove` threshold reflows the plan row
+  into a column above 1.6x. The reflow is the fix that matters: capping the
+  text inside a row that is still too narrow only gets you smaller text set one
+  letter per line. Nothing carrying meaning is capped below WCAG 1.4.4's 200%.
+  Reproduce with `xcrun simctl ui booted content_size accessibility-extra-large`
+  — and re-check the default size afterwards, because a Dynamic Type fix that
+  moves the 1.0x rendering is a regression, not a fix.
+- **Palette is deliberately not red/green, and since 2026-08-25 it is blue and
+  off-white.** Green-means-cheap would assert the opposite of the product's
+  finding, so ranking is carried by position, number size, and one accent
+  reserved for the recommended route and used nowhere else. That accent is
+  `#215A8C`, a muted steel/cobalt. The first two passes avoided blue and white
+  on the reasoning that together they read as a clinical portal rather than as
+  something on the patient's side; the third pass overrode that deliberately,
+  at explicit request, and answered the original objection by avoiding the two
+  failure modes it was really about — a bright generic "SaaS blue", and a stark
+  clinical white (the canvas is `#F4F6F8`, off-white with a faint cool tint).
+  Tokens, with the measured WCAG ratio beside every hex, in `app/src/theme.ts`.
+  That file is the source of truth if it and this paragraph ever disagree
+  again: they did between 2026-08-25 and 2026-09-01, when this said `#B2542A`
+  and the code had already moved on.
 - **`<Money>` is the only way a dollar figure renders.** Hard rule 5 says the
   word "estimate" lives inside the string, so it is a component rather than a
   formatter — there is no call path that emits a bare number, and the
