@@ -1,9 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { color, radius, space, stroke, type } from '../theme';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { TAP_TARGET, color, radius, space, stroke, type } from '../theme';
 import { Money } from '../Money';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { data } from '../appData';
 import { PlanBenefits } from '../costing';
+import { DEMO_SCENARIOS, DemoScenario } from '../demo';
 import { buildRoutes, rankRoutes } from '../routes';
 
 /**
@@ -97,22 +98,51 @@ function flipRow(key: string, scenario: string, otherSpend: number): FlipRow | n
   return {
     key,
     scenario,
-    winner: cashWins ? 'Paying cash' : 'Staying in-network',
+    // Short enough to sit beside the figure on one line. The longer pair made
+    // the second row wrap under itself, so two rows meant to be read as a pair
+    // were set differently from each other.
+    winner: cashWins ? 'Cash' : 'In-network',
     gap: Math.abs(cash.estimate.totalThisYear - inNetwork.estimate.totalThisYear),
   };
 }
 
+// Shortened from "If this scan is your only care this year" / "If you expect
+// $8,000 more care this year". The panel's heading already establishes that
+// these are two readings of one scan, so each row only has to name what
+// changed between them.
 const FLIP = [
-  flipRow('alone', 'If this scan is your only care this year', 0),
-  flipRow('more', 'If you expect $8,000 more care this year', 8000),
+  flipRow('alone', 'Only care this year', 0),
+  flipRow('more', 'With $8,000 more care', 8000),
 ].filter((row): row is FlipRow => row !== null);
+
+/**
+ * The example this panel is already demonstrating.
+ *
+ * The landing screen used to carry two separate proofs of the same claim: this
+ * panel, and a card that opened a worked example making the identical point
+ * with a second set of numbers. Two demonstrations of one finding is not twice
+ * the evidence, it is half the attention — so the panel is now the way into
+ * the full comparison rather than something sitting beside it.
+ */
+const HEADLINE_SCENARIO = DEMO_SCENARIOS.find(
+  (scenario) => scenario.id === 'cash-trap',
+);
+
+/** Everything the panel is not already showing. */
+const OTHER_SCENARIOS = DEMO_SCENARIOS.filter(
+  (scenario) => scenario.id !== HEADLINE_SCENARIO?.id,
+);
 
 export function LandingStep({
   onNext,
   onHousehold,
+  onScenario,
+  onMethod,
 }: {
   onNext: () => void;
   onHousehold: () => void;
+  onScenario: (scenario: DemoScenario) => void;
+  onMethod: () => void;
 }) {
   return (
     <View style={styles.landing}>
@@ -124,9 +154,24 @@ export function LandingStep({
           not competing with the scan comparison for the one accent color. */}
       <PrimaryButton label="See household plan" onPress={onHousehold} />
 
-      {/* The one eyebrow on this screen. It labels the panel because the panel
-          is a distinct claim, not a continuation of the headline above it. */}
-      <View style={styles.proof}>
+      {/*
+        The panel is the proof and the way in, not two separate things. Each
+        row is now the scenario and its outcome rather than a sentence, a
+        second sentence and a figure — the same three facts in a third of the
+        height, which is what lets the whole demonstration sit on one screen
+        instead of asking for a scroll before anything has been shown.
+      */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          HEADLINE_SCENARIO
+            ? `The same knee MRI, twice. Open the full comparison.`
+            : 'The same knee MRI, twice'
+        }
+        disabled={!HEADLINE_SCENARIO}
+        onPress={() => HEADLINE_SCENARIO && onScenario(HEADLINE_SCENARIO)}
+        style={({ pressed }) => [styles.proof, pressed && styles.proofPressed]}
+      >
         <Text style={styles.proofEyebrow}>The same knee MRI, twice</Text>
 
         {FLIP.map((row, index) => (
@@ -136,22 +181,51 @@ export function LandingStep({
           >
             <Text style={styles.proofScenario}>{row.scenario}</Text>
             <View style={styles.proofOutcome}>
-              <Text style={styles.proofWinner}>{row.winner} costs less, by</Text>
+              <Text style={styles.proofWinner}>{row.winner} saves</Text>
               <Money value={row.gap} size="large" tone="accent" />
             </View>
           </View>
         ))}
 
-        {/* Names the plan vaguely on purpose, because naming it precisely would
-            need more words than this line can hold and naming it wrongly is
-            worse than not naming it. $610.44 is Franciscan's Anthem *employee*
-            COPPS rate, not its Blue Access PPO rate ($992.51) — the two differ
-            by 63%, which is the entire reason step 1 asks for a plan at all. */}
+        {/* Trimmed, not dropped. "Yours will differ" is the load-bearing half —
+            it stops a member reading someone else's rate as their own — and the
+            plan is still named, because the plan is what sets the price. */}
         <Text style={styles.proofSource}>
-          Published Franciscan Health Carmel rates for one Anthem plan. The plan
-          sets the price, so yours will differ.
+          Franciscan Health Carmel, one Anthem plan. Yours will differ.
         </Text>
-      </View>
+
+        {HEADLINE_SCENARIO && (
+          <Text style={styles.proofOpen}>See the full comparison</Text>
+        )}
+      </Pressable>
+
+      {/* The remaining examples, as one line each. They had a title and a
+          two-line teaser apiece, which is three lines to say what the title
+          already said. */}
+      {OTHER_SCENARIOS.length > 0 && (
+        <View style={styles.more}>
+          {OTHER_SCENARIOS.map((scenario) => (
+            <Pressable
+              key={scenario.id}
+              accessibilityRole="button"
+              accessibilityLabel={`${scenario.title}. ${scenario.teaser}`}
+              onPress={() => onScenario(scenario)}
+              style={({ pressed }) => [styles.moreRow, pressed && styles.morePressed]}
+            >
+              <Text style={styles.moreText}>{scenario.title}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Where these numbers come from"
+        onPress={onMethod}
+        style={({ pressed }) => [styles.method, pressed && styles.methodPressed]}
+      >
+        <Text style={styles.methodText}>Where these numbers come from</Text>
+      </Pressable>
     </View>
   );
 }
@@ -160,9 +234,9 @@ const styles = StyleSheet.create({
   landing: { marginTop: space.xl },
   landingHeadline: { ...type.display, color: color.ink, marginBottom: space.xl },
 
-  // A hairline-bordered panel on the canvas rather than a raised card. Nothing
-  // here is interactive, so elevation would be claiming a hierarchy the panel
-  // does not have — the route cards on step 3 are the things that lift.
+  // A hairline-bordered panel on the canvas rather than a raised card. The
+  // route cards on step 3 are the things that lift; this is evidence, and it
+  // is now also a control, which the "See the full comparison" line says.
   proof: {
     marginTop: space.lg,
     borderWidth: stroke.hairline,
@@ -170,9 +244,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: color.surface,
     paddingHorizontal: space.md,
-    paddingTop: space.md,
-    paddingBottom: space.md,
+    paddingVertical: space.md,
   },
+  proofPressed: { opacity: 0.7 },
   proofEyebrow: {
     ...type.label,
     color: color.inkMuted,
@@ -180,13 +254,26 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     marginBottom: space.sm,
   },
+  // The sentence under the chart. Text and figure flow together on a shared
+  // baseline, so the one number reads as part of the sentence rather than as a
+  // third thing to look at.
+  // sm, not the previous sm-plus-nested-margins. Two scenarios at three lines
+  // each pushed everything below them off the screen.
   proofRow: { paddingVertical: space.sm },
-  // The divider sits between the two scenarios because the inversion between
-  // them is the point. It separates two readings of one case, not two items.
+  // The divider separates two readings of one case, not two items — the
+  // inversion between them is the entire point of the panel.
   proofRowDivided: { borderTopWidth: stroke.hairline, borderTopColor: color.line },
   proofScenario: { ...type.caption, color: color.inkMuted },
-  proofOutcome: { marginTop: space.sm },
-  proofWinner: { ...type.label, color: color.ink, marginBottom: space.xs },
+  // Winner and figure on one line. It was a label above a number above a
+  // caption; the label is short enough to sit beside the figure instead.
+  proofOutcome: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: space.xs,
+    marginTop: space.xs,
+  },
+  proofWinner: { ...type.label, color: color.ink },
   proofSource: {
     ...type.caption,
     color: color.inkMuted,
@@ -195,4 +282,26 @@ const styles = StyleSheet.create({
     paddingTop: space.sm,
     marginTop: space.sm,
   },
+  proofOpen: { ...type.label, color: color.accent, marginTop: space.sm },
+
+  // One line per example. Titles alone: each teaser restated its own title in
+  // thirteen more words.
+  more: { marginTop: space.md },
+  moreRow: {
+    minHeight: TAP_TARGET,
+    justifyContent: 'center',
+    borderBottomWidth: stroke.hairline,
+    borderBottomColor: color.line,
+  },
+  morePressed: { opacity: 0.6 },
+  moreText: { ...type.body, color: color.ink },
+
+  method: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: space.md,
+    minHeight: TAP_TARGET,
+  },
+  methodPressed: { opacity: 0.6 },
+  methodText: { ...type.caption, color: color.inkMuted },
 });

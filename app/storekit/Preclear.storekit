@@ -1,54 +1,65 @@
 {
-  "identifier" : "DAE06F49-6214-4118-BA4C-DBB2476CF2B0",
-  "nonRenewingSubscriptions" : [
-
-  ],
-  "products" : [
-
-  ],
-  "settings" : {
-    "_applicationInternalID" : "",
-    "_developerTeamID" : "",
-    "_lastSynchronizedDate" : 0
+  "identifier": "DAE06F49-6214-4118-BA4C-DBB2476CF2B0",
+  "nonRenewingSubscriptions": [],
+  "products": [],
+  "settings": {
+    "_applicationInternalID": "",
+    "_developerTeamID": "",
+    "_lastSynchronizedDate": 0
   },
-  "subscriptionGroups" : [
+  "subscriptionGroups": [
     {
-      "id" : "4C22C113-87C5-4E3B-AA04-3D19ACE3E6EF",
-      "localizations" : [
-
-      ],
-      "name" : "Preclear Household",
-      "subscriptions" : [
+      "id": "4C22C113-87C5-4E3B-AA04-3D19ACE3E6EF",
+      "localizations": [],
+      "name": "Preclear Household",
+      "subscriptions": [
         {
-          "adHocOffers" : [
-
-          ],
-          "codeOffers" : [
-
-          ],
-          "displayPrice" : "7.99",
-          "familyShareable" : true,
-          "groupNumber" : 1,
-          "internalID" : "FCA9C959-865E-40EF-89F4-437544E0E4F4",
-          "introductoryOffer" : null,
-          "localizations" : [
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "7.99",
+          "familyShareable": true,
+          "groupNumber": 1,
+          "internalID": "FCA9C959-865E-40EF-89F4-437544E0E4F4",
+          "introductoryOffer": null,
+          "localizations": [
             {
-              "description" : "Ongoing review of the bills and explanations of benefits that arrive for your household.",
-              "displayName" : "Preclear Household",
-              "locale" : "en_US"
+              "description": "Ongoing review of the bills and explanations of benefits that arrive for your household.",
+              "displayName": "Preclear Household",
+              "locale": "en_US"
             }
           ],
-          "productID" : "com.viraj.preclear.household.monthly",
-          "recurringSubscriptionPeriod" : "P1M",
-          "referenceName" : "Preclear Household Monthly",
-          "subscriptionGroupID" : "4C22C113-87C5-4E3B-AA04-3D19ACE3E6EF",
-          "type" : "RecurringSubscription"
+          "productID": "com.viraj.preclear.household.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Preclear Household Monthly",
+          "subscriptionGroupID": "4C22C113-87C5-4E3B-AA04-3D19ACE3E6EF",
+          "type": "RecurringSubscription"
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "69.99",
+          "familyShareable": true,
+          "groupNumber": 1,
+          "internalID": "4FDFE4FB-9028-498B-83E7-B44A5C0CB436",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Ongoing review of the bills and explanations of benefits that arrive for your household.",
+              "displayName": "Preclear Household",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.viraj.preclear.household.annual",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Preclear Household Yearly",
+          "subscriptionGroupID": "4C22C113-87C5-4E3B-AA04-3D19ACE3E6EF",
+          "type": "RecurringSubscription"
         }
       ]
     }
   ],
-  "version" : {
-    "major" : 3,
-    "minor" : 0
+  "version": {
+    "major": 3,
+    "minor": 0
   }
 }

@@ -29,6 +29,7 @@ import {
   Platform,
   SafeAreaView,
   ScrollView,
+  Share,
   StyleSheet,
   View,
 } from 'react-native';
@@ -39,6 +40,8 @@ import { PrimaryButton } from './src/components/PrimaryButton';
 import { StepBar } from './src/components/StepBar';
 import { TopBar } from './src/components/TopBar';
 import { PlanBenefits } from './src/costing';
+import { DEMO_SCENARIOS, DemoScenario } from './src/demo';
+import { shareText } from './src/share';
 import {
   configure as configurePurchases,
   onEntitlementChange,
@@ -63,6 +66,7 @@ import {
 import { CoverageStep } from './src/screens/CoverageStep';
 import { HouseholdStep } from './src/screens/HouseholdStep';
 import { LandingStep } from './src/screens/LandingStep';
+import { MethodStep } from './src/screens/MethodStep';
 import { RoutesStep } from './src/screens/RoutesStep';
 import { ScanStep } from './src/screens/ScanStep';
 import { color, space, stroke } from './src/theme';
@@ -83,6 +87,16 @@ const EMPTY_ROUTES: Route[] = [];
  * part of the sequence.
  */
 const HOUSEHOLD_STEP = -2;
+
+/**
+ * Where the numbers come from.
+ *
+ * A sibling of the landing screen for the same reason the household plan is
+ * one: a destination rather than a stage of the scan flow. Someone who wants
+ * to know what this app reads should not have to declare a scan to find out.
+ * Negative, so the step bar and top bar leave it out of the sequence.
+ */
+const METHOD_STEP = -3;
 
 export default function App() {
   // Local weight files, not a variable font, so `type.ts`'s `fontFamily`
@@ -295,6 +309,60 @@ export default function App() {
    * no in-app page can substitute for the App Store's purchase sheet — but it
    * is the one remaining place this app shows a second screen for it.
    */
+  /**
+   * Open a worked example directly on its result.
+   *
+   * Every answer the scan and coverage steps collect is set at once and the
+   * flow jumps to Routes. Nothing is faked on the way: the scenario supplies
+   * the inputs a member would have typed, and the ranking is computed by the
+   * shipped engine over the shipped rates exactly as for a real answer. See
+   * src/demo.ts for why that matters.
+   *
+   * `headacheFeature` is set explicitly rather than left alone, so returning
+   * home and choosing a second example cannot inherit an answer from the
+   * first — the head CT question would otherwise stay answered from a previous
+   * run and quietly change what the requirement check reports.
+   */
+  const applyScenario = useCallback((scenario: DemoScenario) => {
+    setCpt(scenario.cpt);
+    setIndication(scenario.indication);
+    setPayer(scenario.payer);
+    setProduct(undefined);
+    setPlanText(scenario.planText);
+    setDeductible(scenario.deductible);
+    setCoinsurance(scenario.coinsurance);
+    setExpectedOtherSpend(scenario.expectedOtherSpend);
+    setTreatmentWeeks(scenario.treatmentWeeks);
+    setHeadacheFeature(scenario.headacheFeature);
+    setNote(null);
+    setStep(2);
+  }, []);
+
+  /**
+   * Hand the comparison to the system share sheet.
+   *
+   * `Share` is core React Native, so this costs no native module and no
+   * rebuild — CLAUDE.md prefers a JS implementation wherever one is reasonable.
+   *
+   * A dismissed sheet is not an error and says nothing; a genuine failure says
+   * so once rather than throwing into the render tree.
+   */
+  const shareComparison = useCallback(async () => {
+    if (routes.length === 0) return;
+    try {
+      await Share.share({
+        message: shareText({
+          routes,
+          procedureLabel: procedure.label,
+          payerLabel: PAYER_LABELS[payer] ?? '',
+          metro: data.metro,
+        }),
+      });
+    } catch {
+      setNote('Could not open the share sheet.');
+    }
+  }, [routes, procedure, payer]);
+
   const startPlan = useCallback(async () => {
     setNote(null);
     if (!storeReady) {
@@ -317,7 +385,8 @@ export default function App() {
    * from the household page, which is a sibling of home rather than part of
    * the flow, it is one tap.
    */
-  const backTarget = step === HOUSEHOLD_STEP || step <= 0 ? -1 : step - 1;
+  const backTarget =
+    step === HOUSEHOLD_STEP || step === METHOD_STEP || step <= 0 ? -1 : step - 1;
   const backLabel = backTarget === -1 ? 'Home' : STEPS[backTarget];
   const goBack = useCallback(() => setStep(backTarget), [backTarget]);
 
@@ -411,8 +480,12 @@ export default function App() {
             <LandingStep
               onNext={() => setStep(0)}
               onHousehold={() => setStep(HOUSEHOLD_STEP)}
+              onScenario={applyScenario}
+              onMethod={() => setStep(METHOD_STEP)}
             />
           )}
+
+          {step === METHOD_STEP && <MethodStep />}
 
           {step === HOUSEHOLD_STEP && (
             <HouseholdStep
@@ -472,6 +545,8 @@ export default function App() {
               note={note}
               onRestore={restore}
               onOpenHousehold={() => setStep(HOUSEHOLD_STEP)}
+              onShare={shareComparison}
+              onMethod={() => setStep(METHOD_STEP)}
               requirementsChecked={applicableFindings.length}
               payerLabel={PAYER_LABELS[payer] ?? ''}
             />
