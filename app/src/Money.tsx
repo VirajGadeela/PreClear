@@ -82,8 +82,15 @@ export function Money({ value, size = 'body', tone = 'ink' }: Props) {
 const styles = StyleSheet.create({
   // No lineHeight: a nested Text inherits the parent's line box, and setting
   // one here would fight the figure's leading rather than the suffix's.
+  //
+  // `fontFamily` is named explicitly rather than left to inherit. A nested Text
+  // takes the parent's family, and the parent here is the figure — Manrope
+  // Bold or ExtraBold. Inheriting meant the suffix rendered in the figure's
+  // heavier cut at the label's size, which is not the pairing `type.label`
+  // defines anywhere else in the app.
   suffix: {
     fontSize: typography.label.fontSize,
     fontWeight: typography.label.fontWeight,
+    fontFamily: typography.label.fontFamily,
   },
 });

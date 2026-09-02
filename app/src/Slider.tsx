@@ -21,7 +21,7 @@ import {
   View,
 } from 'react-native';
 
-import { TAP_TARGET, color, radius, space, type as typography } from './theme';
+import { TAP_TARGET, color, radius, space, stroke, type as typography } from './theme';
 
 export type Preset = { label: string; value: number };
 
@@ -94,12 +94,23 @@ export function Slider({
     [maximum, minimum, step],
   );
 
+  // On a touch device the pressed state is the focus state — there is no hover
+  // and no keyboard ring. Every other control in this app answers a finger;
+  // the slider was the one that did not, so a drag gave no acknowledgement
+  // that the thumb had been caught rather than the track merely tapped.
+  const [dragging, setDragging] = useState(false);
+
   const responder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (event) => emit(event.nativeEvent.locationX),
+      onPanResponderGrant: (event) => {
+        setDragging(true);
+        emit(event.nativeEvent.locationX);
+      },
       onPanResponderMove: (event) => emit(event.nativeEvent.locationX),
+      onPanResponderRelease: () => setDragging(false),
+      onPanResponderTerminate: () => setDragging(false),
     }),
   ).current;
 
@@ -138,7 +149,9 @@ export function Slider({
       >
         <View style={styles.unfilled} />
         <View style={[styles.fill, { width: thumbLeft + THUMB / 2 }]} />
-        <View style={[styles.thumb, { left: thumbLeft }]} />
+        <View
+          style={[styles.thumb, dragging && styles.thumbDragging, { left: thumbLeft }]}
+        />
       </View>
       {rangeLabels && (
         <View style={styles.rangeRow}>
@@ -180,16 +193,18 @@ const styles = StyleSheet.create({
   },
   preset: {
     borderRadius: radius.sm,
-    borderWidth: 1,
+    // Was 1px. A preset is a Pressable, so it takes the control weight the
+    // Step 1 chips use — it had been drawn as if it were a divider.
+    borderWidth: stroke.control,
     borderColor: color.border,
     paddingHorizontal: space.sm,
     minHeight: TAP_TARGET,
     justifyContent: 'center',
   },
+  presetPressed: { opacity: 0.7 },
   // Matches the Chip component's unselected-state text (type.label, ink) —
   // this is a small button label, the same idiom used for the Step 1 chips,
   // not an explanatory caption.
-  presetPressed: { opacity: 0.7 },
   presetText: {
     ...typography.label,
     color: color.ink,
@@ -225,6 +240,11 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: color.slate,
   },
+  // Held. The ring thickens and takes the accent rather than the thumb growing:
+  // a thumb that changes size while it tracks a finger reads as the value
+  // jumping, and this control's whole job is that the number under the finger
+  // is the number being set.
+  thumbDragging: { borderWidth: 4, borderColor: color.accent },
   rangeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
