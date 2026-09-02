@@ -30,7 +30,7 @@ type Props = {
 const SIZES: Record<NonNullable<Props['size']>, TextStyle> = {
   hero: typography.display,
   large: typography.amount,
-  body: { ...typography.body, fontWeight: '600' },
+  body: typography.bodyStrong,
   small: typography.label,
 };
 

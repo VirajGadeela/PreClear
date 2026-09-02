@@ -106,6 +106,14 @@ export const stroke = {
   hairline: 1,
   /** Chips, inputs, plan options, anything pressable. Always with `color.border`. */
   control: 1.5,
+  /**
+   * The slider thumb's ring, and its held state. Neither of the two weights
+   * above fits: the thumb is not a divider and not the boundary *of* a
+   * control — it is the control. These were `3` and `4` written inline, which
+   * is the same unnamed convention `hairline`/`control` exist to prevent.
+   */
+  thumb: 3,
+  thumbHeld: 4,
 } as const;
 
 /**
@@ -177,6 +185,39 @@ export const type = {
     fontFamily: font.semiBold,
   },
   caption: { fontSize: 13, lineHeight: 20 },
+
+  /**
+   * Emphasised body and caption.
+   *
+   * These existed already, as `{ ...type.body, fontWeight: '700' }` written
+   * out at ten call sites across five files. That is a fourth weight role in
+   * everything but name — undeclared, so unenforceable, and impossible to
+   * change in one place. Declared here at the same size and line height, so
+   * the rendering is unchanged and the scale is once again the whole scale.
+   *
+   * Both stay on the system font: 700 on the platform face is the emphasis
+   * step, and reaching for Manrope here would put a display face on a 13px
+   * table value.
+   */
+  bodyStrong: { fontSize: 16, lineHeight: 24, fontWeight: '700' as const },
+  captionStrong: { fontSize: 13, lineHeight: 20, fontWeight: '700' as const },
+
+  /**
+   * Section eyebrow — the uppercase label above a group.
+   *
+   * Uppercase needs tracking opened back up; 0.6 was the value already in use,
+   * duplicated byte-for-byte in `HouseholdStep` and `LandingStep`. Uppercase
+   * and letter-spacing travel together, so they belong in the token rather
+   * than being re-applied at each site and drifting apart later.
+   */
+  eyebrow: {
+    fontSize: 13,
+    lineHeight: 16,
+    fontWeight: '600' as const,
+    fontFamily: font.semiBold,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.6,
+  },
 } as const;
 
 /**
@@ -185,3 +226,62 @@ export const type = {
  * Apple's HIG and WCAG 2.5.5 both land on 44.
  */
 export const TAP_TARGET = 44;
+
+/**
+ * Fixed component sizes that are not spacing and not tap targets.
+ *
+ * `stepDot` was `width: 24, height: 24, borderRadius: 12` inline — three
+ * magic numbers describing one circle, where the radius has to stay exactly
+ * half the width or the dot stops being round.
+ */
+export const size = {
+  stepDot: 24,
+} as const;
+
+/**
+ * Caps on Dynamic Type scaling, by role.
+ *
+ * iOS's accessibility text sizes run to roughly 3.1x, and three things break
+ * before they get there — measured on an iPhone SE, the narrowest screen this
+ * app supports, at `accessibility-extra-large`:
+ *
+ *   - `display` at that size makes a single word wider than the 327pt content
+ *     column, and React Native breaks mid-word rather than overflowing, so the
+ *     household heading rendered "Preclea / r / Househ / old". Same failure
+ *     already on record for chips ("degenerativ / e spine").
+ *   - The brand wordmark in `TopBar` ran off the right edge of the screen.
+ *   - The "Save 27%" badge, in a row that could no longer fit it, was squeezed
+ *     to a sliver and set one letter per line — "S / a / v / e".
+ *
+ * A cap is the right instrument for the first two, because the failure is that
+ * one unbreakable word is wider than the screen and no amount of wrapping
+ * helps. The third is a layout bug, fixed with `flexWrap` where it happens;
+ * the cap there is only a second line of defence.
+ *
+ * WCAG 1.4.4 asks that text reach 200% without loss of content or function, so
+ * nothing here caps below 2.0 except the two roles that are chrome rather than
+ * content — the wordmark, and a badge whose saving is also stated in the price
+ * beside it. Body, caption and title text is deliberately absent from this
+ * object: it carries the meaning, and it scales the whole way.
+ */
+export const textScale = {
+  /** Screen headings. Holds this app's longest heading word on one line. */
+  display: 1.8,
+  /** The brand wordmark. The screen heading below it carries the content. */
+  chrome: 1.4,
+  /** Pill badges sharing a row with text that already says the same thing. */
+  badge: 1.5,
+  /**
+   * The `fontScale` above which a side-by-side row stacks into a column.
+   *
+   * Not a cap — a layout threshold, and the one that actually fixes the badge.
+   * A capped badge in a row that is still too narrow is a capped badge set one
+   * letter per line. The plan option puts a term and a price on one line, and
+   * at 1.6x the price alone claims most of a 327pt column, leaving the term to
+   * be broken mid-word. Above this the two stack and each gets full width.
+   *
+   * 1.6 is where the measurement puts it, not a round number: `amount` is 26px,
+   * and 26 x 1.6 = 41.6px, at which "$69.99" is about half the content column.
+   */
+  stackAbove: 1.6,
+} as const;

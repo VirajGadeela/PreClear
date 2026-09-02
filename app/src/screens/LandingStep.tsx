@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { color, radius, space, stroke, type } from '../theme';
+import { color, radius, space, stroke, textScale, type } from '../theme';
 import { Money } from '../Money';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { data } from '../appData';
@@ -116,7 +116,10 @@ export function LandingStep({
 }) {
   return (
     <View style={styles.landing}>
-      <Text style={styles.landingHeadline}>
+      <Text
+        style={styles.landingHeadline}
+        maxFontSizeMultiplier={textScale.display}
+      >
         Cash can look cheaper today but cost more by year's end.
       </Text>
       <PrimaryButton label="Compare my options" onPress={onNext} tone="accent" />
@@ -174,10 +177,8 @@ const styles = StyleSheet.create({
     paddingBottom: space.md,
   },
   proofEyebrow: {
-    ...type.label,
+    ...type.eyebrow,
     color: color.inkMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
     marginBottom: space.sm,
   },
   proofRow: { paddingVertical: space.sm },
