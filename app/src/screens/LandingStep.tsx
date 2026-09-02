@@ -97,14 +97,14 @@ function flipRow(key: string, scenario: string, otherSpend: number): FlipRow | n
   return {
     key,
     scenario,
-    winner: cashWins ? 'Paying cash' : 'Staying in-network',
+    winner: cashWins ? 'Cash' : 'In-network',
     gap: Math.abs(cash.estimate.totalThisYear - inNetwork.estimate.totalThisYear),
   };
 }
 
 const FLIP = [
-  flipRow('alone', 'If this scan is your only care this year', 0),
-  flipRow('more', 'If you expect $8,000 more care this year', 8000),
+  flipRow('alone', 'Only care this year', 0),
+  flipRow('more', 'With $8,000 more care', 8000),
 ].filter((row): row is FlipRow => row !== null);
 
 export function LandingStep({
@@ -115,53 +115,63 @@ export function LandingStep({
   onHousehold: () => void;
 }) {
   return (
-    <View style={styles.landing}>
+    <>
+      {/* Two lines at 32px on the narrowest screen. The previous headline ran
+          to four, which is a paragraph set in a display face rather than a
+          headline. */}
       <Text
         style={styles.landingHeadline}
         maxFontSizeMultiplier={textScale.display}
       >
-        Cash can look cheaper today but cost more by year's end.
+        Cash can cost more by year's end.
       </Text>
       <PrimaryButton label="Compare my options" onPress={onNext} tone="accent" />
       {/* Slate, not accent — this is a second, equally-weighted destination,
           not competing with the scan comparison for the one accent color. */}
       <PrimaryButton label="See household plan" onPress={onHousehold} />
 
-      {/* The one eyebrow on this screen. It labels the panel because the panel
-          is a distinct claim, not a continuation of the headline above it. */}
+      {/* The panel had an uppercase label above it reading "THE SAME KNEE MRI,
+          TWICE". The two rows below say the same thing by being two readings of
+          one case, and the border already says where the panel starts. */}
       <View style={styles.proof}>
-        <Text style={styles.proofEyebrow}>The same knee MRI, twice</Text>
-
         {FLIP.map((row, index) => (
           <View
             key={row.key}
             style={[styles.proofRow, index > 0 && styles.proofRowDivided]}
           >
-            <Text style={styles.proofScenario}>{row.scenario}</Text>
-            <View style={styles.proofOutcome}>
-              <Text style={styles.proofWinner}>{row.winner} costs less, by</Text>
-              <Money value={row.gap} size="large" tone="accent" />
-            </View>
+            {/* Scenario and outcome were two Texts inside a wrapper View —
+                three elements for one sentence. The condition and its
+                consequence are one thought, so they are one Text at one
+                weight; the line break is the only separation they need. */}
+            <Text style={styles.proofLine}>
+              {row.scenario}
+              {'\n'}
+              {row.winner} is cheaper by
+            </Text>
+            <Money value={row.gap} size="large" tone="accent" />
           </View>
         ))}
 
-        {/* Names the plan vaguely on purpose, because naming it precisely would
-            need more words than this line can hold and naming it wrongly is
-            worse than not naming it. $610.44 is Franciscan's Anthem *employee*
-            COPPS rate, not its Blue Access PPO rate ($992.51) — the two differ
-            by 63%, which is the entire reason step 1 asks for a plan at all. */}
+        {/* Names the plan vaguely on purpose: $610.44 is Franciscan's Anthem
+            *employee* COPPS rate, not its Blue Access PPO rate ($992.51), and
+            naming it wrongly is worse than not naming it. */}
         <Text style={styles.proofSource}>
-          Published Franciscan Health Carmel rates for one Anthem plan. The plan
-          sets the price, so yours will differ.
+          Franciscan Health Carmel, one Anthem plan. Yours will differ.
         </Text>
       </View>
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  landing: { marginTop: space.xl },
-  landingHeadline: { ...type.display, color: color.ink, marginBottom: space.xl },
+  // The screen's own top margin, which used to live on a wrapper View that did
+  // nothing else. One less element for one style property.
+  landingHeadline: {
+    ...type.display,
+    color: color.ink,
+    marginTop: space.xl,
+    marginBottom: space.xl,
+  },
 
   // A hairline-bordered panel on the canvas rather than a raised card. Nothing
   // here is interactive, so elevation would be claiming a hierarchy the panel
@@ -176,18 +186,11 @@ const styles = StyleSheet.create({
     paddingTop: space.md,
     paddingBottom: space.md,
   },
-  proofEyebrow: {
-    ...type.eyebrow,
-    color: color.inkMuted,
-    marginBottom: space.sm,
-  },
   proofRow: { paddingVertical: space.sm },
   // The divider sits between the two scenarios because the inversion between
   // them is the point. It separates two readings of one case, not two items.
   proofRowDivided: { borderTopWidth: stroke.hairline, borderTopColor: color.line },
-  proofScenario: { ...type.caption, color: color.inkMuted },
-  proofOutcome: { marginTop: space.sm },
-  proofWinner: { ...type.label, color: color.ink, marginBottom: space.xs },
+  proofLine: { ...type.caption, color: color.ink, marginBottom: space.xs },
   proofSource: {
     ...type.caption,
     color: color.inkMuted,

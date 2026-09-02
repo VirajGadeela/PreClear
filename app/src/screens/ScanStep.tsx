@@ -34,7 +34,7 @@ export function ScanStep({
   onPlanText: (value: string) => void;
 }) {
   return (
-    <View>
+    <>
       <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>What scan was ordered?</Text>
       <View style={shared.chipWrap}>
         {data.procedures.map((item) => (
@@ -65,7 +65,7 @@ export function ScanStep({
         </>
       )}
 
-      <Text style={shared.h2}>Your insurer</Text>
+      <Text style={shared.h2}>Insurer</Text>
       <View style={shared.chipWrap}>
         {Object.keys(PAYER_LABELS).map((key) => (
           <Chip
@@ -84,26 +84,17 @@ export function ScanStep({
           contract suffix and match nothing a patient would recognise. */}
       {productOptions.length > 1 && (
         <>
-          <Text style={shared.h2}>Your plan type</Text>
+          <Text style={shared.h2}>Plan type</Text>
           <View style={shared.chipWrap}>
-            {productOptions.map((option) => (
+            {[...productOptions, undefined].map((option) => (
               <Chip
-                key={option}
+                key={option ?? 'unsure'}
                 selected={option === product}
-                label={option.toUpperCase()}
+                label={option ? option.toUpperCase() : 'Not sure'}
                 onPress={() => onProduct(option === product ? undefined : option)}
               />
             ))}
-            <Chip
-              label="Not sure"
-              selected={product === undefined}
-              onPress={() => onProduct(undefined)}
-            />
           </View>
-          <Text style={shared.caption}>
-            It is on your insurance card. Not sure keeps every rate your insurer
-            publishes here, which is a wider range.
-          </Text>
         </>
       )}
 
@@ -111,7 +102,7 @@ export function ScanStep({
           group. Typed rather than photographed: reading the card needs a camera
           and an OCR module, and the image is the one object in this product
           that hard rule 3 has to govern. Nothing here is stored. */}
-      <Text style={shared.h2}>Plan name on your card</Text>
+      <Text style={shared.h2}>Plan name</Text>
       <TextInput
         value={planText}
         onChangeText={onPlanText}
@@ -122,20 +113,19 @@ export function ScanStep({
         accessibilityLabel="Plan name as printed on your insurance card, optional"
         style={styles.input}
       />
-      {planMatch ? (
-        <Text style={planMatch.matched === 0 ? styles.inputWarn : shared.caption}>
-          {planMatch.matched === 0
-            ? 'No published plan matches that name, so every rate is still being shown. Check the spelling, or leave it blank.'
-            : `Matches published plans at ${planMatch.matched} of ${planMatch.total} facilities.`}
-        </Text>
-      ) : (
-        <Text style={shared.caption}>
-          Optional. More exact than the plan type — it pins the single rate your
-          plan is charged rather than a range.
-        </Text>
-      )}
+      {/* One Text, three states. The no-match case still has to say so — a
+          name that matches nothing is silently ignored otherwise. */}
+      <Text
+        style={planMatch?.matched === 0 ? styles.inputWarn : shared.caption}
+      >
+        {!planMatch
+          ? 'Optional. Pins your exact rate.'
+          : planMatch.matched === 0
+            ? 'No match, showing every rate. Check the spelling.'
+            : `Matches ${planMatch.matched} of ${planMatch.total} facilities.`}
+      </Text>
 
-    </View>
+    </>
   );
 }
 

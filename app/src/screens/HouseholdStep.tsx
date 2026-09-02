@@ -186,8 +186,13 @@ export function HouseholdStep({
 
       {/* Prices sit above the benefit list, not below it. The list runs to
           eight lines, and burying the choice under it means the button at the
-          bottom commits to a term the member never saw. */}
-      <Text style={styles.planSectionLabel}>Choose a plan</Text>
+          bottom commits to a term the member never saw.
+
+          There were uppercase labels over this group and the one below it
+          ("CHOOSE A PLAN", "WHAT IT WATCHES"). Both are gone with the eyebrow
+          token: the plan rows are visibly a set of options and the list below
+          is visibly a list, so the labels were naming what the layout already
+          showed. Separation is `space.xl` and a hairline now. */}
       {DEMO_PLANS.map((option) => {
         const active = option.id === selected;
         return (
@@ -241,8 +246,7 @@ export function HouseholdStep({
         );
       })}
 
-      <Text style={styles.planSectionLabel}>What it watches</Text>
-      <View style={styles.planDetailPlain}>
+      <View style={styles.planWatches}>
         {PLAN_INCLUDES.map((line) => (
           <View key={line} style={shared.planRow}>
             <Text style={shared.planBullet}>·</Text>
@@ -307,13 +311,14 @@ const styles = StyleSheet.create({
   },
   findingHead: { ...type.label, color: color.ink },
 
-  planDetailPlain: { marginTop: space.md, gap: space.sm },
-
-  planSectionLabel: {
-    ...type.eyebrow,
-    color: color.inkMuted,
+  // Carries the separation the removed section label used to: a full step of
+  // space above, and a hairline to close the plan options off from the list.
+  planWatches: {
     marginTop: space.xl,
-    marginBottom: space.md,
+    paddingTop: space.lg,
+    borderTopWidth: stroke.hairline,
+    borderTopColor: color.line,
+    gap: space.sm,
   },
 
   planOption: {

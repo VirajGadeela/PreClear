@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { color, radius, space, stroke, textScale, type } from '../theme';
@@ -90,27 +89,28 @@ function RouteCard({
 
   return (
     <View style={[styles.card, recommended && styles.cardRecommended]}>
+      {/* Three elements inside the pressable, and that is the whole collapsed
+          card: what the route is, what it costs, and one meta line.
+          
+          What used to be here: a row wrapper holding a checkmark icon beside
+          the label, a pill holding an alert icon beside "Published rate
+          flagged", and a row holding the deductible sentence beside a chevron
+          and the word Details. Nine elements carrying five pieces of
+          information, most of them wrappers. Recommendation, the rate warning
+          and the expand affordance are all words now — which also keeps
+          recommendation from being carried by colour alone, the job the
+          checkmark used to do. */}
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ expanded }}
-        accessibilityLabel={`${route.label} at ${route.facilityName}. Tap for the breakdown.`}
+        accessibilityState={{ expanded, selected: recommended }}
+        accessibilityLabel={`${recommended ? 'Recommended. ' : ''}${route.label} at ${route.facilityName}. Tap for the breakdown.`}
         onPress={onToggle}
         style={({ pressed }) => (pressed ? shared.cardPressed : undefined)}
       >
-        <View style={styles.routeLabelRow}>
-          {/* Recommended is never colour-only either — the same reasoning as
-              a selected chip. The badge on `card` already carries it for
-              sighted users who see hue; this carries it for everyone else. */}
-          {recommended && (
-            <Ionicons
-              name="checkmark-circle"
-              size={16}
-              color={color.accentDeep}
-              style={styles.routeLabelIcon}
-            />
-          )}
-          <Text style={styles.routeLabel}>{route.label}</Text>
-        </View>
+        <Text style={styles.routeLabel}>
+          {recommended ? 'Recommended · ' : ''}
+          {route.label}
+        </Text>
 
         <Money
           value={route.estimate.totalThisYear}
@@ -118,34 +118,14 @@ function RouteCard({
           tone={recommended ? 'accent' : 'ink'}
         />
 
-        {/* The caveat travels with the number it qualifies, rather than waiting
-            behind a tap. These warnings used to render only inside the expanded
-            details, so a facility whose published rate is a percent-of-charge
-            artifact or a carve-out looked identical to a clean one until you
-            opened it — and the collapsed card is what most people will read.
-            The full explanation still sits in the details below. */}
-        {route.warnings.length > 0 && (
-          <View style={styles.badge}>
-            <Ionicons name="alert-circle" size={13} color={color.flag} />
-            <Text style={styles.badgeText}>Published rate flagged</Text>
-          </View>
-        )}
-
-        <View style={styles.whyRow}>
-          <Text style={styles.why} numberOfLines={expanded ? undefined : 2}>
-            {route.estimate.scan.countsTowardDeductible
-              ? 'Counts toward your deductible.'
-              : 'Earns no deductible credit.'}
-          </Text>
-          <View style={styles.chevronRow}>
-            <Text style={styles.chevron}>{expanded ? 'Hide' : 'Details'}</Text>
-            <Ionicons
-              name={expanded ? 'chevron-up' : 'chevron-down'}
-              size={14}
-              color={color.slate}
-            />
-          </View>
-        </View>
+        <Text style={styles.meta} numberOfLines={expanded ? undefined : 2}>
+          {route.estimate.scan.countsTowardDeductible
+            ? 'Counts toward your deductible'
+            : 'Earns no deductible credit'}
+          {route.warnings.length > 0 ? ' · Rate flagged' : ''}
+          {' · '}
+          {expanded ? 'Hide' : 'Details'}
+        </Text>
       </Pressable>
 
       {expanded && (
@@ -385,35 +365,11 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   cardRecommended: { borderColor: color.accent, backgroundColor: color.accentSoft },
-  routeLabelRow: { flexDirection: 'row', alignItems: 'center' },
-  routeLabelIcon: { marginRight: space.xs },
   routeLabel: { ...type.captionStrong, color: color.inkMuted },
 
-  // Flag colours, not alarm colours — a suspect published row is a limit of
-  // the data, the same class of thing as a missing rule.
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: space.xs,
-    backgroundColor: color.flagBg,
-    borderRadius: radius.sm,
-    paddingHorizontal: space.sm,
-    paddingVertical: space.xs,
-    marginTop: space.sm,
-  },
-  badgeText: { ...type.label, color: color.flag },
-
-  whyRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    gap: space.md,
-    marginTop: space.sm,
-  },
-  why: { ...type.caption, color: color.inkMuted, flex: 1 },
-  chevronRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  chevron: { ...type.label, color: color.slate },
+  // One line under the amount, carrying the deductible fact, the data-quality
+  // warning when there is one, and the expand affordance.
+  meta: { ...type.caption, color: color.inkMuted, marginTop: space.sm },
 
   details: { borderTopWidth: stroke.hairline, borderTopColor: color.line, marginTop: space.md, paddingTop: space.md },
   rowValue: { ...type.captionStrong, color: color.ink, flexShrink: 1, textAlign: 'right' },
