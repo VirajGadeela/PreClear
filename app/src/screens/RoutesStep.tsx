@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import { color, radius, space, stroke, type } from '../theme';
+import { TAP_TARGET, color, radius, space, stroke, type } from '../theme';
 import { shared } from '../styles/shared';
 import { Money } from '../Money';
 import { Row } from '../components/Row';
@@ -9,6 +9,7 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import { PLAN_INCLUDES, PLAN_NAME } from '../plan';
 import { Requirement, Route } from '../routes';
 import { statusLabel } from '../requirements';
+import { summarize } from '../share';
 
 /**
  * The finding, in one sentence, computed for this patient.
@@ -18,58 +19,51 @@ import { statusLabel } from '../requirements';
  * is the point.
  */
 function Headline({ routes }: { routes: Route[] }) {
-  const cash = routes.find((route) => route.kind === 'cash_non_contracted');
-  const insured = routes.find((route) => route.kind !== 'cash_non_contracted');
+  // Which of the three things this comparison says is decided in src/share.ts,
+  // because the shared card has to say the same thing. This renders that
+  // answer; it no longer works it out. Two copies of the decision would
+  // eventually disagree, and a card contradicting the screen it came from is
+  // worse than no card at all.
+  const summary = summarize(routes);
+  if (!summary) return null;
 
-  if (cash && insured) {
-    const todayGap = insured.estimate.scan.patientPays - cash.estimate.scan.patientPays;
-    const yearGap = cash.estimate.totalThisYear - insured.estimate.totalThisYear;
-
-    if (todayGap > 0.01 && yearGap > 0.01) {
-      return (
-        <View style={styles.hero}>
-          <Text style={styles.heroLead}>Paying cash saves</Text>
-          <Money value={todayGap} size="hero" tone="accent" />
-          <Text style={styles.heroLead}>today, and costs</Text>
-          <Money value={yearGap} size="hero" tone="accent" />
-          <Text style={styles.heroLead}>more by the end of this year.</Text>
-          <Text style={styles.heroWhy}>
-            Cash earns no deductible credit, so your later care starts from
-            scratch.
-          </Text>
-        </View>
-      );
-    }
-    if (todayGap > 0.01) {
-      return (
-        <View style={styles.hero}>
-          <Text style={styles.heroLead}>Paying cash saves</Text>
-          <Money value={todayGap} size="hero" tone="accent" />
-          <Text style={styles.heroLead}>today and stays cheaper this year.</Text>
-          <Text style={styles.heroWhy}>
-            You are not expected to reach your deductible, so the missing credit
-            costs you little.
-          </Text>
-        </View>
-      );
-    }
-  }
-
-  const spread =
-    routes.length > 1
-      ? routes[routes.length - 1].estimate.totalThisYear -
-        routes[0].estimate.totalThisYear
-      : 0;
-  if (spread > 0.01) {
+  if (summary.kind === 'cash_costs_more') {
     return (
       <View style={styles.hero}>
-        <Text style={styles.heroLead}>Same scan, same coverage.</Text>
-        <Money value={spread} size="hero" tone="accent" />
-        <Text style={styles.heroLead}>separates your best and worst option.</Text>
+        <Text style={styles.heroLead}>Paying cash saves</Text>
+        <Money value={summary.todayGap} size="hero" tone="accent" />
+        <Text style={styles.heroLead}>today, and costs</Text>
+        <Money value={summary.yearGap} size="hero" tone="accent" />
+        <Text style={styles.heroLead}>more by the end of this year.</Text>
+        <Text style={styles.heroWhy}>
+          Cash earns no deductible credit, so your later care starts from
+          scratch.
+        </Text>
       </View>
     );
   }
-  return null;
+
+  if (summary.kind === 'cash_stays_cheaper') {
+    return (
+      <View style={styles.hero}>
+        <Text style={styles.heroLead}>Paying cash saves</Text>
+        <Money value={summary.todayGap} size="hero" tone="accent" />
+        <Text style={styles.heroLead}>today and stays cheaper this year.</Text>
+        <Text style={styles.heroWhy}>
+          You are not expected to reach your deductible, so the missing credit
+          costs you little.
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.hero}>
+      <Text style={styles.heroLead}>Same scan, same coverage.</Text>
+      <Money value={summary.spread} size="hero" tone="accent" />
+      <Text style={styles.heroLead}>separates your best and worst option.</Text>
+    </View>
+  );
 }
 
 function RouteCard({
@@ -275,6 +269,8 @@ export function RoutesStep({
   note,
   onRestore,
   onOpenHousehold,
+  onShare,
+  onMethod,
   requirementsChecked,
   payerLabel,
 }: {
@@ -284,6 +280,8 @@ export function RoutesStep({
   note: string | null;
   onRestore: () => void;
   onOpenHousehold: () => void;
+  onShare: () => void;
+  onMethod: () => void;
   requirementsChecked: number;
   payerLabel: string;
 }) {
@@ -328,6 +326,25 @@ export function RoutesStep({
         />
       ))}
 
+      {/*
+        Under the ranked list and above the plan offer, so it reads as the end
+        of the free comparison rather than as an upsell.
+
+        The text it produces carries the same "estimate" on every figure that
+        the screen does — see src/share.ts. A number qualified on screen and
+        bare in a screenshot would break hard rule 5 at exactly the point the
+        figure reaches someone who cannot see where it came from.
+      */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Share this comparison"
+        onPress={onShare}
+        style={({ pressed }) => [styles.share, pressed && shared.cardPressed]}
+      >
+        <Ionicons name="share-outline" size={18} color={color.ink} />
+        <Text style={styles.shareText}>Share this comparison</Text>
+      </Pressable>
+
       {/* The results screen advertises the plan; it does not contain it. The
           review itself lives on its own step, so a subscriber is not made to
           re-answer the scan questions to reach the thing they pay for. */}
@@ -366,6 +383,18 @@ export function RoutesStep({
         </Pressable>
       )}
 
+      {/* Reachable from the result as well as the homepage. A member reading
+          a figure they doubt should not have to return to the start to find
+          out what produced it. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Where these numbers come from"
+        onPress={onMethod}
+        style={({ pressed }) => [shared.restore, pressed && shared.restorePressed]}
+      >
+        <Text style={shared.restoreText}>Where these numbers come from</Text>
+      </Pressable>
+
       {note ? <Text style={shared.note}>{note}</Text> : null}
     </View>
   );
@@ -385,6 +414,23 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   cardRecommended: { borderColor: color.accent, backgroundColor: color.accentSoft },
+
+  // Outlined and ink-toned rather than accent: sharing is an action performed
+  // on a result, not a result. The one accent in this app marks the
+  // recommended route and must not compete with a button.
+  share: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.sm,
+    marginTop: space.lg,
+    minHeight: TAP_TARGET,
+    borderRadius: radius.md,
+    borderWidth: stroke.hairline,
+    borderColor: color.border,
+    paddingHorizontal: space.md,
+  },
+  shareText: { ...type.body, fontWeight: '600', color: color.ink },
   routeLabelRow: { flexDirection: 'row', alignItems: 'center' },
   routeLabelIcon: { marginRight: space.xs },
   routeLabel: { ...type.caption, fontWeight: '700', color: color.inkMuted },

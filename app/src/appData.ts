@@ -18,6 +18,12 @@ export type Procedure = {
 };
 export type Bundle = {
   metro: string;
+  // Written by pipeline/export_app_data.py and, until the sources screen,
+  // declared nowhere — so the provenance shipped inside the bundle and no
+  // screen could read it. Shown verbatim rather than restated, so the claim on
+  // screen changes when the pipeline's does.
+  generated_from: string;
+  disclosure: string;
   procedures: Procedure[];
   requirements: Requirement[];
 };
