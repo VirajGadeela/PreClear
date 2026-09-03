@@ -173,13 +173,25 @@ Static weight files, so `fontFamily` names the exact weight:
   icons were set at 16, 18, 20, 22 and 24 across five files with nothing
   choosing between them. `sm` sits beside a label inside a control, `md` is a
   standalone control's own glyph, `lg` is a navigation glyph carrying its own
-  weight. `stepDot 24` lived here and went with `StepBar`.
+  weight. `stepDot 24` is a token because the radius has to stay exactly half
+  the width or the dot stops being round; it belonged to `StepBar`, went with
+  it, and came back for About's numbered steps.
 - Existing components are the reference implementation:
   `BackLink` · `Chip` · `Citation` · `PrimaryButton` · `Row` · `TabBar` ·
   `TopBar` · `ErrorBoundary`. Extend these before inventing a sibling.
   `StepBar` was here until the tab navigation replaced the step chain.
 - Styles used by two or more files live in `app/src/styles/shared.ts`; a style
   used by one screen lives in that screen's own `StyleSheet`.
+- **Stylesheets are built by `themed()`, not `StyleSheet.create`.** Write
+  `themed((c) => ({ ... }))` and read it with `const styles = useStyles(sheets)`;
+  the shared sheet is `useStyles(sharedSheets)`. Each sheet is built once per
+  scheme at module load, so a theme switch is a context read and an index — no
+  allocation on the hot paths. Never reach for an inline colour over a static
+  structure (`style={[s.card, { backgroundColor: c.surface }]}`): it allocates
+  every render and splits one style across two places, which is what the rule
+  above exists to prevent. `useTheme()` gives you `c` for the handful of colours
+  that are props rather than styles — an `Ionicons` colour, a
+  `placeholderTextColor`.
 
 ## 5. Layout
 
@@ -251,7 +263,18 @@ When any design skill is used on this repo, hand it these constraints up front:
 Skills that fit this project: `redesign-existing-projects` (audit existing
 screens), `imagegen-frontend-mobile` (screen concepts before code),
 `ui-ux-pro-max` (component and accessibility patterns — ignore its colour and
-motion output, see `design/README.md`).
+motion output, see `design/README.md`; its React Native answer for animation is
+Reanimated, a native module, which costs a dev-client rebuild this project has
+a standing rule against — `LayoutAnimation` is the core-RN equivalent).
+
+Its `references/pro-rules.md` checklist is the useful part and was run against
+this app on 2026-09-03. Most of it already passed. Two things worth recording so
+they are not re-derived: decorative icons are already out of the accessibility
+tree because React Native's `Pressable` defaults to `accessible={true}`, making
+each control one element — the web advice to add `aria-hidden` has no analogue
+to write here. And `SafeAreaView` from `react-native` is deprecated; the
+replacement, `react-native-safe-area-context`, is a native module, so this is
+recorded rather than fixed.
 
 Skills that do not apply: anything web-first — `ui-styling` (Tailwind/shadcn),
 `gpt-taste` (GSAP), `imagegen-frontend-web`, `slides`, `banner-design`.
