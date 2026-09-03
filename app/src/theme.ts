@@ -337,11 +337,12 @@ export const TAP_TARGET = 44;
  *   md  a standalone control's own glyph — the back chevron, the theme toggle
  *   lg  a navigation glyph carrying its own weight — a tab bar icon
  *
- * `stepDot` lived here — `width: 24, height: 24, borderRadius: 12` written
- * inline, three magic numbers describing one circle where the radius has to
- * stay exactly half the width or the dot stops being round. It went with
- * `StepBar`. If the About screen's numbered steps ever want it back, that
- * comment is the reason it was a token.
+ * `stepDot` is one number describing one circle, and it is a token because the
+ * border radius has to stay exactly half the width or the dot stops being
+ * round — `width: 24, height: 24, borderRadius: 12` was written inline three
+ * times before it had a name. It belonged to `StepBar`, went with it, and came
+ * back for the About screen's numbered steps. Same value, different component,
+ * same reason.
  */
 export const size = {
   icon: {
@@ -349,6 +350,7 @@ export const size = {
     md: 20,
     lg: 24,
   },
+  stepDot: 24,
 } as const;
 
 /**

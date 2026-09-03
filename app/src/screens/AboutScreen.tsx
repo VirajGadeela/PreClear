@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from 'react-native';
-import { TAP_TARGET, radius, space, stroke, textScale, type } from '../theme';
+import { TAP_TARGET, radius, size, space, stroke, textScale, type } from '../theme';
 import { useStyles } from '../ThemeProvider';
 import { themed } from '../styles/themed';
 import { Money } from '../Money';
@@ -8,6 +8,7 @@ import { data } from '../appData';
 import { DEMO_SCENARIOS, DemoScenario } from '../demo';
 import { PlanBenefits } from '../costing';
 import { buildRoutes, rankRoutes } from '../routes';
+import { HOW_IT_WORKS } from '../marketing';
 
 /**
  * The landing screen's proof, and the one thing on this page carrying real
@@ -126,7 +127,22 @@ const OTHER_SCENARIOS = DEMO_SCENARIOS.filter(
   (scenario) => scenario.id !== HEADLINE_SCENARIO?.id,
 );
 
-export function LandingStep({
+/**
+ * The cover, and the only screen outside the tabs.
+ *
+ * It was `LandingStep` while navigation was a chain, and the rename is not
+ * cosmetic: a step is a stage you pass through, and this is a page you read
+ * once. Everything on it leads into the tabs and nothing leads back except the
+ * hardware back gesture, which is the right shape for a cold open.
+ *
+ * Order is deliberate and departs from the reference this borrowed from, which
+ * puts a how-it-works block above its example. The proof panel stays directly
+ * under the two buttons because it is the strongest thing this product owns —
+ * one real published case where the ranking inverts — and a reader who bounces
+ * after four seconds should have seen it. The explanation of the controls is
+ * worth less than the demonstration and sits below it.
+ */
+export function AboutScreen({
   onNext,
   onHousehold,
   onScenario,
@@ -195,6 +211,28 @@ export function LandingStep({
         )}
       </Pressable>
 
+      {/* Numbered, and the numerals are the only decoration on this screen.
+          No eyebrow above it: `theme.ts` deleted that role with a note not to
+          reintroduce it, and a screen explaining a product is exactly where the
+          temptation comes back. The heading identifies the group; the dots
+          carry the sequence. */}
+      <Text style={styles.stepsHeading}>How it works</Text>
+      <View style={styles.steps}>
+        {HOW_IT_WORKS.map((step) => (
+          <View key={step.n} style={styles.step}>
+            <View style={styles.stepDot}>
+              <Text style={styles.stepNumber} maxFontSizeMultiplier={textScale.badge}>
+                {step.n}
+              </Text>
+            </View>
+            <View style={styles.stepBody}>
+              <Text style={styles.stepTitle}>{step.title}</Text>
+              <Text style={styles.stepText}>{step.body}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+
       {/* The remaining examples, one line each. A title and a two-line teaser
           apiece was three lines to say what the title already said. */}
       {OTHER_SCENARIOS.length > 0 && (
@@ -228,12 +266,34 @@ export function LandingStep({
 }
 
 const sheets = themed((c) => ({
+  stepsHeading: { ...type.title, color: c.ink, marginTop: space.xl, marginBottom: space.md },
+  steps: { gap: space.lg },
+  step: { flexDirection: 'row', gap: space.md },
+  // A filled circle in `slate`, not `accent`. Accent is the recommended route's
+  // and a step numeral is not a recommendation — this screen's one accent is
+  // already spent on the primary button and on the winning row of the proof.
+  stepDot: {
+    width: size.stepDot,
+    height: size.stepDot,
+    borderRadius: size.stepDot / 2,
+    backgroundColor: c.slate,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNumber: { ...type.label, color: c.slateInk },
+  stepBody: { flex: 1 },
+  stepTitle: { ...type.bodyStrong, color: c.ink, marginBottom: space.xs },
+  stepText: { ...type.body, color: c.inkMuted },
+
   // The screen's own top margin, which used to live on a wrapper View that did
   // nothing else. One less element for one style property.
+  // `lg` above, not `xl`. The wordmark now sits above this heading on the cover
+  // as it does everywhere else, and stacking a 32pt gap under the bar put the
+  // headline a third of the way down the screen.
   landingHeadline: {
     ...type.display,
     color: c.ink,
-    marginTop: space.xl,
+    marginTop: space.lg,
     marginBottom: space.xl,
   },
 

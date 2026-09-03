@@ -79,7 +79,7 @@ import {
   Route,
 } from './src/routes';
 import { HouseholdStep } from './src/screens/HouseholdStep';
-import { LandingStep } from './src/screens/LandingStep';
+import { AboutScreen } from './src/screens/AboutScreen';
 import { MethodStep } from './src/screens/MethodStep';
 import { space, stroke } from './src/theme';
 import { ThemeProvider, useStyles, useTheme } from './src/ThemeProvider';
@@ -457,18 +457,35 @@ function Preclear() {
    * No-op on iOS, and BackHandler is core React Native, so this costs no
    * rebuild.
    */
+  /**
+   * Where back goes from here — one definition, used by the visible control and
+   * by the hardware gesture.
+   *
+   * They were two implementations of one rule for as long as there was no
+   * visible control, and the moment a button appeared they became a pair that
+   * can disagree. A back button that goes somewhere the back gesture does not
+   * is worse than no back button, because it teaches a wrong model of the app.
+   *
+   * Still no history stack: this is a rule about *where you are*, not about how
+   * you got there. Any tab returns to the screener; the screener returns to the
+   * cover; the cover is the root and yields to the OS.
+   */
+  const back = useMemo(() => {
+    if (showAbout) return null;
+    if (tab !== 'screener') {
+      return { label: 'Compare', run: () => setTab('screener') };
+    }
+    return { label: 'About', run: () => setShowAbout(true) };
+  }, [showAbout, tab]);
+
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (showAbout) return false;
-      if (tab !== 'screener') {
-        setTab('screener');
-        return true;
-      }
-      setShowAbout(true);
+      if (!back) return false;
+      back.run();
       return true;
     });
     return () => subscription.remove();
-  }, [showAbout, tab]);
+  }, [back]);
 
   const restore = useCallback(async () => {
     setNote(null);
@@ -496,9 +513,13 @@ function Preclear() {
           and battery invisible, and it is invisible in a screenshot too — the
           simulator's status bar is drawn by the OS. */}
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      {/* The cover carries its own way forward, so it needs no chrome; every
-          other screen is a tab and keeps the wordmark above it. */}
-      {!showAbout && <TopBar />}
+      {/* On every screen, cover included. The cover used to render no chrome
+          at all, on the reasoning that it carries its own way forward and needs
+          no navigation — which was right about navigation and wrong about the
+          bar, because the bar also holds the theme toggle. A control that
+          disappears on the first screen a member sees is a control they have to
+          discover twice. The wordmark earns its place on a cold open anyway. */}
+      <TopBar backLabel={back?.label} onBack={back?.run} />
       {/* The plan-name field sits above the primary button, so without this the
           keyboard covers the way forward. Core React Native, no native module —
           see App mechanics in CLAUDE.md. */}
@@ -535,7 +556,7 @@ function Preclear() {
           }}
         >
           {showAbout ? (
-            <LandingStep
+            <AboutScreen
               onNext={() => setShowAbout(false)}
               onHousehold={() => {
                 setShowAbout(false);
