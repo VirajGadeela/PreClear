@@ -24,6 +24,7 @@ import { Linking, Pressable, Text, View } from 'react-native';
 import { useMemo } from 'react';
 
 import { data } from '../appData';
+import { FAQ } from '../marketing';
 import { Requirement } from '../routes';
 import { sharedSheets } from '../styles/shared';
 import { TAP_TARGET, radius, space, stroke, type } from '../theme';
@@ -122,6 +123,22 @@ export function MethodStep() {
         </View>
       ))}
 
+      {/* Underneath the sources, not on a tab of its own. A reader with a
+          question about a claim is already here, and an answer sitting beside
+          the document it depends on is worth more than the same answer one tap
+          further away.
+
+          Written as plain stacked blocks rather than as an accordion: six
+          questions do not need progressive disclosure, and a collapsed answer
+          is an answer somebody does not read. */}
+      <Text style={shared.h2}>Questions</Text>
+      {FAQ.map((entry) => (
+        <View key={entry.q} style={styles.faq}>
+          <Text style={styles.faqQuestion}>{entry.q}</Text>
+          <Text style={styles.faqAnswer}>{entry.a}</Text>
+        </View>
+      ))}
+
       <Text style={shared.h2}>What this is not</Text>
       {/* Stated here rather than only in a footnote. This is the screen a
           sceptical reader opens, and so the screen where an overclaim would do
@@ -138,6 +155,10 @@ export function MethodStep() {
 }
 
 const sheets = themed((c) => ({
+  faq: { marginBottom: space.lg },
+  faqQuestion: { ...type.bodyStrong, color: c.ink, marginBottom: space.xs },
+  faqAnswer: { ...type.body, color: c.inkMuted },
+
   procedure: { ...type.caption, color: c.inkMuted, marginBottom: space.xs },
 
   group: { marginTop: space.lg },
