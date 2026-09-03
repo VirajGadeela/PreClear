@@ -22,7 +22,15 @@ import {
   useFonts,
 } from '@expo-google-fonts/manrope';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
 import {
   BackHandler,
   KeyboardAvoidingView,
@@ -36,19 +44,26 @@ import {
 import { data, PAYER_LABELS, STEPS } from './src/appData';
 import { DevTierSwitch } from './src/components/DevTierSwitch';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
-import { PrimaryButton } from './src/components/PrimaryButton';
-import { StepBar } from './src/components/StepBar';
 import { TopBar } from './src/components/TopBar';
 import { PlanBenefits } from './src/costing';
 import { DEMO_SCENARIOS, DemoScenario } from './src/demo';
 import { shareText } from './src/share';
 import {
+  ScreenerQuery,
+  fromScenario,
+  memberPlanOf,
+  queryReducer,
+} from './src/screener';
+import { ScreenerScreen } from './src/screens/ScreenerScreen';
+import {
   configure as configurePurchases,
+  loadPlans,
   onEntitlementChange,
-  presentPaywall,
+  purchasePlan,
   refreshEntitlement,
   restore as restorePurchases,
 } from './src/purchases';
+import { DEMO_PLANS, type PlanOption } from './src/plan';
 import {
   OrderFacts,
   checkOrder,
@@ -63,16 +78,10 @@ import {
   rankRoutes,
   Route,
 } from './src/routes';
-import { CoverageStep } from './src/screens/CoverageStep';
 import { HouseholdStep } from './src/screens/HouseholdStep';
 import { LandingStep } from './src/screens/LandingStep';
 import { MethodStep } from './src/screens/MethodStep';
-import { RoutesStep } from './src/screens/RoutesStep';
-import { ScanStep } from './src/screens/ScanStep';
 import { color, space, stroke } from './src/theme';
-
-/** Stable empty array, so the gated `routes` memo returns the same reference. */
-const EMPTY_ROUTES: Route[] = [];
 
 /**
  * The paid tier's own page, not a step in the scan flow.
@@ -111,25 +120,46 @@ export default function App() {
   });
 
   const [step, setStep] = useState(-1);
-  const [cpt, setCpt] = useState('73721');
-  const [indication, setIndication] = useState('meniscal_tear');
-  const [payer, setPayer] = useState('anthem');
-  // The plan, not the payer, sets the price — one Anthem facility publishes
-  // five different rates for the same knee MRI. Undefined means "not sure",
-  // which keeps the full published range rather than guessing one.
-  const [product, setProduct] = useState<string | undefined>(undefined);
-  // What is printed on the card. Free text because that is what
-  // matchesMemberPlan was built for, and it pins an exact rate where the
-  // product chips can only narrow to a type. Typed, never photographed, and
-  // never stored — hard rules 1 and 3.
-  const [planText, setPlanText] = useState('');
 
-  // The typed name is more specific than the type, so it wins when present.
-  const memberPlan = planText.trim() || (product ? product.toUpperCase() : undefined);
-  const [deductible, setDeductible] = useState(2000);
-  const [coinsurance, setCoinsurance] = useState(0.2);
-  const [expectedOtherSpend, setExpectedOtherSpend] = useState(0);
-  const [treatmentWeeks, setTreatmentWeeks] = useState(2);
+  /**
+   * Everything the screener asks, in one object — see `src/screener.ts` for
+   * why it is a reducer and what `source` guards.
+   *
+   * Seeded from the first worked example rather than from blank defaults,
+   * because a results-first screen has to open on a result. `source` starts at
+   * 'example' and only a member moving a control changes it.
+   */
+  const [query, dispatch] = useReducer(queryReducer, undefined, () => ({
+    ...fromScenario(DEMO_SCENARIOS[0]),
+    source: 'example' as const,
+  }));
+
+  /**
+   * What the ranked list reads.
+   *
+   * The controls read `query` and answer the finger immediately; the routing
+   * pass reads this and settles a frame or two behind in an interruptible
+   * render. This is what lets the filters and the results share one screen.
+   *
+   * The gate this replaces (`showRoutes = step === 2`) was introduced to stop
+   * a routing pass running on every slider report. That diagnosis was wrong:
+   * `Slider.emit` already drops a report whose stepped value has not changed,
+   * so a full-width deductible drag emits ~41 changes rather than ~300, and
+   * one pass is at most ten facilities of arithmetic. The gate was cutting work
+   * that was already cheap, and results-first cannot keep it.
+   */
+  const deferredQuery = useDeferredValue(query);
+
+  const refine = useCallback(
+    (patch: Partial<ScreenerQuery>) => dispatch({ type: 'refine', patch }),
+    [],
+  );
+
+  // Which route is expanded, and whether the filter strip is open. Held here
+  // rather than inside the screen so neither is lost on a trip to another
+  // destination and back.
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [openRouteKind, setOpenRouteKind] = useState<string | null>(null);
 
   // Two independent sources of "unlocked", kept apart on purpose.
   //
@@ -142,6 +172,12 @@ export default function App() {
   const [storeEntitled, setStoreEntitled] = useState(false);
   const [demoEntitled, setDemoEntitled] = useState(false);
   const [storeReady, setStoreReady] = useState(false);
+  // The store's real packages, or null until they arrive — and permanently null
+  // when there is no key, no current offering, or the network is down. Kept
+  // separate from `storeReady` because a configured SDK that cannot read an
+  // offering is a different state from one that was never configured, and only
+  // the first is worth a diagnostic.
+  const [storePlans, setStorePlans] = useState<PlanOption[] | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
   const isSubscribed = storeEntitled || demoEntitled;
@@ -177,27 +213,26 @@ export default function App() {
       .then(setStoreEntitled)
       .catch(() => setStoreEntitled(false));
 
+    // Prices come from the store, not from this repo. `loadPlans` resolves to
+    // null rather than throwing whenever the offering cannot be read, so the
+    // household page falls back to the labelled placeholders instead of showing
+    // an error to a patient who cannot act on it.
+    loadPlans()
+      .then(setStorePlans)
+      .catch(() => setStorePlans(null));
+
     return onEntitlementChange(setStoreEntitled);
   }, []);
 
+  // Live, because these render the controls the member is touching.
   const procedure = useMemo(
-    () => data.procedures.find((item) => item.cpt === cpt) ?? data.procedures[0],
-    [cpt],
+    () => data.procedures.find((item) => item.cpt === query.cpt) ?? data.procedures[0],
+    [query.cpt],
   );
 
-  // Keep the indication valid when the procedure changes.
-  useEffect(() => {
-    const options = procedure.indications;
-    if (options.length === 0) {
-      setIndication('');
-    } else if (!options.some((option) => option.key === indication)) {
-      setIndication(options[0].key);
-    }
-  }, [procedure, indication]);
-
   const facilities = useMemo(
-    () => procedure.payers[payer] ?? [],
-    [procedure, payer],
+    () => procedure.payers[query.payer] ?? [],
+    [procedure, query.payer],
   );
 
   const productOptions = useMemo(
@@ -205,98 +240,91 @@ export default function App() {
     [facilities],
   );
 
-  // Clear a product this payer does not publish here, so a stale selection from
-  // a previous payer cannot silently stop matching anything.
+  // Keep the indication valid when the procedure changes. A correction, not an
+  // answer — hence `normalize`, which leaves `source` alone. Dispatching
+  // `refine` here would let simply changing procedure relabel an untouched
+  // example as the member's own figures.
   useEffect(() => {
-    if (product && !productOptions.includes(product)) {
-      setProduct(undefined);
+    const options = procedure.indications;
+    if (options.length === 0) {
+      if (query.indication !== '') dispatch({ type: 'normalize', patch: { indication: '' } });
+    } else if (!options.some((option) => option.key === query.indication)) {
+      dispatch({ type: 'normalize', patch: { indication: options[0].key } });
     }
-  }, [product, productOptions]);
+  }, [procedure, query.indication]);
 
-  // Left undefined until the patient says otherwise, so an unanswered question
-  // reports as "not documented" rather than as a failed criterion.
-  const [headacheFeature, setHeadacheFeature] = useState<boolean | undefined>(
-    undefined,
-  );
-
-  const facts: OrderFacts = useMemo(
-    () => ({
-      conservativeTherapyWeeks: treatmentWeeks,
-      headacheConcerningFeature: headacheFeature,
-    }),
-    [treatmentWeeks, headacheFeature],
-  );
-
-  // Kept separate from the unmet subset below, because "every recorded
-  // requirement is met" and "no requirement is recorded for this payer and
-  // scan" both produce zero unmet findings and mean entirely different things.
-  // Route 3 is absent either way, so without this the app cannot say which.
-  const applicableFindings = useMemo(
-    () =>
-      checkOrder(
-        data.requirements,
-        PAYER_LABELS[payer] ?? '',
-        cpt,
-        indication,
-        facts,
-      ),
-    [payer, cpt, indication, facts],
-  );
-
-  const findings = useMemo(
-    () => unmetFindings(applicableFindings),
-    [applicableFindings],
-  );
-
-  const benefits: PlanBenefits = useMemo(
-    () => ({
-      deductibleRemaining: deductible,
-      coinsuranceRate: coinsurance,
-      oopMaxRemaining: 6000,
-      copay: 0,
-    }),
-    [deductible, coinsurance],
-  );
+  // Clear a plan type this payer does not publish, so a stale selection cannot
+  // silently stop matching anything. Also a correction, not an answer.
+  useEffect(() => {
+    if (query.product && !productOptions.includes(query.product)) {
+      dispatch({ type: 'normalize', patch: { product: undefined } });
+    }
+  }, [query.product, productOptions]);
 
   /**
-   * Only computed on the step that shows it.
+   * The ranking, and the requirement check it depends on, from one deferred
+   * query.
    *
-   * This is what made the sliders feel slow. A slider reports a value on every
-   * touch-move, and each report re-ran `buildRoutes` and `rankRoutes` across
-   * every facility — a full routing pass per frame, on a step that renders no
-   * route. Gating on the step removes all of it, and the ranking is still ready
-   * the instant the member arrives, because arriving is itself a step change.
-   *
-   * `routes` is read only by `RoutesStep`, so nothing else can observe this.
+   * Derived together inside a single memo rather than as four chained ones, so
+   * the routes, the findings and the label describing them can never come from
+   * different snapshots of the query while the deferred value is catching up.
    */
-  const showRoutes = step === 2;
-  const routes = useMemo(() => {
-    if (!showRoutes) return EMPTY_ROUTES;
-    return rankRoutes(
+  const result = useMemo(() => {
+    const q = deferredQuery;
+    const proc = data.procedures.find((item) => item.cpt === q.cpt) ?? data.procedures[0];
+    const facs = proc.payers[q.payer] ?? [];
+
+    const facts: OrderFacts = {
+      conservativeTherapyWeeks: q.treatmentWeeks,
+      headacheConcerningFeature: q.headacheFeature,
+    };
+
+    // Kept apart from the unmet subset because "every recorded requirement is
+    // met" and "no requirement is recorded for this payer and scan" both
+    // produce zero unmet findings and mean entirely different things.
+    const applicable = checkOrder(
+      data.requirements,
+      PAYER_LABELS[q.payer] ?? '',
+      q.cpt,
+      q.indication,
+      facts,
+    );
+    const unmet = unmetFindings(applicable);
+
+    const benefits: PlanBenefits = {
+      deductibleRemaining: q.deductible,
+      coinsuranceRate: q.coinsurance,
+      oopMaxRemaining: 6000,
+      copay: 0,
+    };
+
+    const routes = rankRoutes(
       buildRoutes({
-        facilities,
+        facilities: facs,
         benefits,
-        expectedOtherAllowedSpend: expectedOtherSpend,
-        memberPlan,
-        unmetRequirements: findings.map((finding) => finding.requirement),
-        // Surfaced when the deductible is unlikely to be met, which is when
-        // the missing credit costs the patient least.
-        cashIsAppropriate: expectedOtherSpend < deductible,
+        expectedOtherAllowedSpend: q.expectedOtherSpend,
+        memberPlan: memberPlanOf(q),
+        unmetRequirements: unmet.map((finding) => finding.requirement),
+        // Surfaced when the deductible is unlikely to be met, which is when the
+        // missing credit costs the patient least.
+        cashIsAppropriate: q.expectedOtherSpend < q.deductible,
       }),
     );
-  }, [
-    showRoutes,
-    facilities,
-    benefits,
-    expectedOtherSpend,
-    deductible,
-    findings,
-    memberPlan,
-  ]);
+
+    return {
+      routes,
+      findings: unmet,
+      applicable,
+      procedureLabel: proc.label,
+      payerLabel: PAYER_LABELS[q.payer] ?? '',
+    };
+  }, [deferredQuery]);
+
+  const { routes, findings, applicable: applicableFindings } = result;
 
   const planMatch = useMemo(
-    () => planMatchSummary(facilities, planText),
-    [facilities, planText],
+    () => planMatchSummary(facilities, query.planText),
+    [facilities, query.planText],
   );
 
   /**
@@ -323,19 +351,19 @@ export default function App() {
    * first — the head CT question would otherwise stay answered from a previous
    * run and quietly change what the requirement check reports.
    */
+  /**
+   * Open a worked example.
+   *
+   * One dispatch rather than ten setters, and it deliberately does not mark the
+   * query as the member's own — an example is still an example after it is
+   * opened. `fromScenario` sets every field including the ones the scenario
+   * does not mention, so an answer cannot survive from a previous example.
+   */
   const applyScenario = useCallback((scenario: DemoScenario) => {
-    setCpt(scenario.cpt);
-    setIndication(scenario.indication);
-    setPayer(scenario.payer);
-    setProduct(undefined);
-    setPlanText(scenario.planText);
-    setDeductible(scenario.deductible);
-    setCoinsurance(scenario.coinsurance);
-    setExpectedOtherSpend(scenario.expectedOtherSpend);
-    setTreatmentWeeks(scenario.treatmentWeeks);
-    setHeadacheFeature(scenario.headacheFeature);
+    dispatch({ type: 'example', scenario });
     setNote(null);
-    setStep(2);
+    setOpenRouteKind(null);
+    setStep(0);
   }, []);
 
   /**
@@ -353,26 +381,35 @@ export default function App() {
       await Share.share({
         message: shareText({
           routes,
-          procedureLabel: procedure.label,
-          payerLabel: PAYER_LABELS[payer] ?? '',
+          // From the same snapshot the routes came from, so a share taken while
+          // the deferred value is settling cannot label one query's ranking
+          // with another query's scan.
+          procedureLabel: result.procedureLabel,
+          payerLabel: result.payerLabel,
           metro: data.metro,
         }),
       });
     } catch {
       setNote('Could not open the share sheet.');
     }
-  }, [routes, procedure, payer]);
+  }, [routes, result]);
 
-  const startPlan = useCallback(async () => {
-    setNote(null);
-    if (!storeReady) {
-      setDemoEntitled(true);
-      return;
-    }
-    const outcome = await presentPaywall();
-    setStoreEntitled(outcome.entitled);
-    setNote(outcome.message);
-  }, [storeReady]);
+  const startPlan = useCallback(
+    async (planId: string) => {
+      setNote(null);
+      // No key, or a key whose offering could not be read. Either way there is
+      // no real package to buy, so the demo unlock stands in — and the strip on
+      // the household page says so on screen.
+      if (!storeReady || !storePlans) {
+        setDemoEntitled(true);
+        return;
+      }
+      const outcome = await purchasePlan(planId);
+      setStoreEntitled(outcome.entitled);
+      setNote(outcome.message);
+    },
+    [storeReady, storePlans],
+  );
 
   /**
    * One step back, and from the first step, home.
@@ -416,13 +453,6 @@ export default function App() {
    * Only steps 0 and 1. The landing and household screens are destinations
    * whose buttons are their content, and the routes step is terminal.
    */
-  const primaryAction =
-    step === 0
-      ? { label: 'Next: your coverage', onPress: () => setStep(1) }
-      : step === 1
-        ? { label: 'See my routes', onPress: () => setStep(2) }
-        : null;
-
   const restore = useCallback(async () => {
     setNote(null);
     if (!storeReady) {
@@ -446,7 +476,6 @@ export default function App() {
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
       {step !== -1 && <TopBar backLabel={backLabel} onBack={goBack} />}
-      {step >= 0 && <StepBar current={step} onJump={setStep} />}
       {/* The plan-name field sits above the primary button, so without this the
           keyboard covers the way forward. Core React Native, no native module —
           see App mechanics in CLAUDE.md. */}
@@ -492,80 +521,45 @@ export default function App() {
               isSubscribed={isSubscribed}
               demo={demoEntitled}
               note={note}
-              storeReady={storeReady}
+              livePricing={storePlans !== null}
+              plans={storePlans ?? DEMO_PLANS}
               onStart={startPlan}
               onRestore={restore}
             />
           )}
 
           {step === 0 && (
-            <ScanStep
+            <ScreenerScreen
+              routes={routes}
+              findings={findings}
+              query={query}
+              source={query.source}
               procedure={procedure}
-              cpt={cpt}
-              indication={indication}
-              payer={payer}
-              product={product}
               productOptions={productOptions}
-              planText={planText}
               planMatch={planMatch}
-              onCpt={setCpt}
-              onIndication={setIndication}
-              onPayer={setPayer}
-              onProduct={setProduct}
-              onPlanText={setPlanText}
-            />
-          )}
-
-          {step === 1 && (
-            <CoverageStep
-              deductible={deductible}
-              coinsurance={coinsurance}
-              expectedOtherSpend={expectedOtherSpend}
-              treatmentWeeks={treatmentWeeks}
               showTreatment={applicableFindings.some((finding) =>
                 usesTreatmentWeeks(finding.requirement.check),
               )}
-              headacheFeature={headacheFeature}
               showHeadacheFeature={applicableFindings.some((finding) =>
                 readsField(finding.requirement.check, 'headache_concerning_feature'),
               )}
-              onDeductible={setDeductible}
-              onCoinsurance={setCoinsurance}
-              onExpectedOtherSpend={setExpectedOtherSpend}
-              onTreatmentWeeks={setTreatmentWeeks}
-              onHeadacheFeature={setHeadacheFeature}
+              filtersOpen={filtersOpen}
+              openRouteKind={openRouteKind}
+              requirementsChecked={applicableFindings.length}
+              payerLabel={result.payerLabel}
+              note={note}
+              onToggleFilters={() => setFiltersOpen((open) => !open)}
+              onOpenRoute={setOpenRouteKind}
+              onRefine={refine}
+              onExample={applyScenario}
+              onShare={shareComparison}
+              onMethod={() => setStep(METHOD_STEP)}
             />
           )}
 
-          {step === 2 && (
-            <RoutesStep
-              routes={routes}
-              findings={findings}
-              isSubscribed={isSubscribed}
-              note={note}
-              onRestore={restore}
-              onOpenHousehold={() => setStep(HOUSEHOLD_STEP)}
-              onShare={shareComparison}
-              onMethod={() => setStep(METHOD_STEP)}
-              requirementsChecked={applicableFindings.length}
-              payerLabel={PAYER_LABELS[payer] ?? ''}
-            />
-          )}
         </ErrorBoundary>
       </ScrollView>
 
-      {/* Inside the KeyboardAvoidingView, after the ScrollView — so on the scan
-          step the bar rides above the keyboard while the plan name is being
-          typed, instead of being covered by it. */}
-      {primaryAction && (
-        <View style={styles.actionBar}>
-          <PrimaryButton
-            label={primaryAction.label}
-            onPress={primaryAction.onPress}
-            compact
-          />
-        </View>
-      )}
       </KeyboardAvoidingView>
 
       {/* Development only. Two flows have to be verifiable without a store
@@ -598,6 +592,12 @@ const styles = StyleSheet.create({
   // the same divider weight used everywhere something merely divides. The
   // button keeps its slate tone: accent stays reserved for the recommended
   // route and the one landing CTA.
+  // Unused since the screener answers on arrival and there is no step to
+  // advance to. Kept because the pinned bar is the fix for a failure CLAUDE.md
+  // has recorded twice — a primary button below the fold behind three sliders —
+  // and the next screen needing one should not have to rediscover it. The
+  // collapsed filter strip is the obvious next occupant if the ranked list ever
+  // grows long enough to scroll it out of reach.
   actionBar: {
     borderTopWidth: stroke.hairline,
     borderTopColor: color.line,

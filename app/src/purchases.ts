@@ -20,10 +20,13 @@
 
 import Purchases, {
   LOG_LEVEL,
+  PACKAGE_TYPE,
   type CustomerInfo,
   type PurchasesOfferings,
+  type PurchasesPackage,
 } from 'react-native-purchases';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
+import type { PlanOption } from './plan';
 
 /**
  * Must match the entitlement identifier in the RevenueCat dashboard exactly.
@@ -79,6 +82,21 @@ export function isConfigured(): boolean {
   return configured;
 }
 
+/**
+ * Whether this build is talking to RevenueCat's Test Store.
+ *
+ * Test Store keys carry a `test_` prefix, which is the only signal available
+ * before any call is made. It changes what the setup advice in `diagnose()`
+ * should say, and it is worth surfacing: a purchase made against the Test Store
+ * is real to the SDK and to the entitlement, but no money moves.
+ *
+ * The SDK deliberately refuses to run a release build configured with one, so
+ * this can never be true in a shipped app.
+ */
+export function usingTestStore(): boolean {
+  return Boolean(apiKey?.startsWith('test_'));
+}
+
 /** The single definition of "unlocked". */
 export function isEntitled(info: CustomerInfo): boolean {
   return Boolean(info.entitlements.active[ENTITLEMENT]);
@@ -120,10 +138,16 @@ export type PurchaseOutcome = {
 };
 
 /**
- * Show the RevenueCat paywall and report what came back.
+ * Show RevenueCat's own templated paywall and report what came back.
  *
  * A cancel is not an error and must not surface as one — the member looked at
  * the price and said no, which is a normal outcome.
+ *
+ * No longer on the app's purchase path: the household page renders the real
+ * packages itself and buys the selected one through `purchasePlan`, so nothing
+ * calls this. Kept because it is the fastest way to check a dashboard-side
+ * paywall configuration without touching this app's layout, but it is dead code
+ * until something calls it — delete it if that stops being worth the room.
  */
 export async function presentPaywall(): Promise<PurchaseOutcome> {
   const ready = configure();
@@ -174,6 +198,160 @@ export async function restore(): Promise<PurchaseOutcome> {
 }
 
 /**
+ * How each package type is described to the member.
+ *
+ * Only the terms this product actually sells are mapped. Anything else — a
+ * lifetime package, a six-month one, a custom identifier — returns null and is
+ * dropped rather than guessed at, because a package the copy cannot describe
+ * correctly is worse on screen than one that is absent.
+ */
+function describePackage(pkg: PurchasesPackage): { term: string; cadence: string } | null {
+  switch (pkg.packageType) {
+    case PACKAGE_TYPE.ANNUAL:
+      return { term: 'Yearly', cadence: 'per year' };
+    case PACKAGE_TYPE.MONTHLY:
+      return { term: 'Monthly', cadence: 'per month' };
+    default:
+      return null;
+  }
+}
+
+/**
+ * A derived figure in the product's own currency, or null if it cannot be made.
+ *
+ * Only ever used for the "works out at X a month" footnote. The headline price
+ * is always the store's `priceString` and is never computed here — the store
+ * knows the member's currency, locale and tax treatment, and this app does not.
+ */
+function formatDerived(amount: number, currencyCode: string): string | null {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: currencyCode,
+    }).format(amount);
+  } catch {
+    // Intl or the currency code is unavailable. The footnote is a nicety; the
+    // price above it is not, and that one came from the store already.
+    return null;
+  }
+}
+
+/** Yearly above monthly, matching how the demo placeholders are ordered. */
+function rank(term: string): number {
+  return term === 'Yearly' ? 0 : 1;
+}
+
+/**
+ * The current offering's packages, as the household page renders them.
+ *
+ * Returns null rather than throwing whenever the store cannot answer — no key,
+ * no offering, no packages, or a network failure. The caller treats null as
+ * "show the demo placeholders and say so", which keeps the app usable and
+ * honest on a machine that has never been near a RevenueCat dashboard.
+ *
+ * The saving badge is computed from the two real prices rather than hardcoded.
+ * A badge claiming a discount the store does not actually give is a false
+ * statement about money, and hardcoding one guarantees it goes stale the first
+ * time either price changes.
+ */
+export async function loadPlans(): Promise<PlanOption[] | null> {
+  if (!configured) return null;
+
+  let offerings: PurchasesOfferings;
+  try {
+    offerings = await Purchases.getOfferings();
+  } catch {
+    return null;
+  }
+
+  const current = offerings.current;
+  if (!current || current.availablePackages.length === 0) return null;
+
+  const described = current.availablePackages
+    .map((pkg) => ({ pkg, label: describePackage(pkg) }))
+    .filter((entry): entry is { pkg: PurchasesPackage; label: { term: string; cadence: string } } =>
+      entry.label !== null,
+    );
+  if (described.length === 0) return null;
+
+  const monthly = described.find(
+    (entry) => entry.pkg.packageType === PACKAGE_TYPE.MONTHLY,
+  )?.pkg;
+
+  const plans = described.map(({ pkg, label }) => {
+    const plan: PlanOption = {
+      id: pkg.identifier,
+      term: label.term,
+      price: pkg.product.priceString,
+      cadence: label.cadence,
+    };
+
+    if (pkg.packageType === PACKAGE_TYPE.ANNUAL) {
+      const perMonth = formatDerived(pkg.product.price / 12, pkg.product.currencyCode);
+      if (perMonth) plan.footnote = `Works out at ${perMonth} a month.`;
+
+      if (monthly && monthly.product.price > 0) {
+        const saving = 1 - pkg.product.price / (monthly.product.price * 12);
+        // Only when it rounds to something worth saying. A "Save 0%" badge on a
+        // yearly plan priced at twelve times the monthly one is noise.
+        if (saving >= 0.01) plan.badge = `Save ${Math.round(saving * 100)}%`;
+      }
+    } else {
+      plan.footnote = 'Cancel any time.';
+    }
+
+    return plan;
+  });
+
+  return plans.sort((a, b) => rank(a.term) - rank(b.term));
+}
+
+/**
+ * Buy one specific package.
+ *
+ * This exists rather than only `presentPaywall()` because the household page
+ * already shows the terms and prices and the member has already chosen one.
+ * Handing them to a second screen to choose again is a worse flow, and it made
+ * the selection on the first screen decorative — it was collected and then
+ * thrown away.
+ *
+ * A cancelled purchase is a normal outcome and returns no message. The SDK
+ * reports it as a thrown error with `userCancelled` set, which is why it is
+ * caught here and not treated as a failure.
+ */
+export async function purchasePlan(id: string): Promise<PurchaseOutcome> {
+  const ready = configure();
+  if (!ready.ok) return { entitled: false, message: ready.message };
+
+  try {
+    const offerings = await Purchases.getOfferings();
+    const pkg = offerings.current?.availablePackages.find(
+      (candidate) => candidate.identifier === id,
+    );
+    // The offering changed under us between rendering and tapping. Rare, and
+    // diagnose() is more useful here than "package not found".
+    if (!pkg) return { entitled: false, message: await diagnose() };
+
+    const { customerInfo } = await Purchases.purchasePackage(pkg);
+    return { entitled: isEntitled(customerInfo), message: null };
+  } catch (error) {
+    if (wasCancelled(error)) {
+      return { entitled: await refreshEntitlement(), message: null };
+    }
+    return { entitled: false, message: describeError(error) };
+  }
+}
+
+function wasCancelled(error: unknown): boolean {
+  return Boolean(
+    error &&
+      typeof error === 'object' &&
+      'userCancelled' in error &&
+      (error as { userCancelled?: boolean }).userCancelled,
+  );
+}
+
+/**
  * Work out which setup step is missing and say so in plain words.
  *
  * The order matters: each check is a precondition for the next, so the first
@@ -202,11 +380,13 @@ export async function diagnose(): Promise<string> {
   }
 
   if (offerings.current.availablePackages.length === 0) {
-    return (
-      'The current offering has no available packages. Usually this means the product ' +
-      'exists in RevenueCat but StoreKit returned nothing — check the product ID matches ' +
-      'App Store Connect exactly, and that the product has a price and is Ready to Submit.'
-    );
+    return usingTestStore()
+      ? 'The current offering has no available packages. On a Test Store this means the ' +
+        'products exist in the Product catalog but are not attached to the offering — open ' +
+        'the offering and add a package for each one.'
+      : 'The current offering has no available packages. Usually this means the product ' +
+        'exists in RevenueCat but StoreKit returned nothing — check the product ID matches ' +
+        'App Store Connect exactly, and that the product has a price and is Ready to Submit.';
   }
 
   return (

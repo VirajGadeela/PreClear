@@ -388,18 +388,45 @@ route.
   changing an initial value does nothing to a running screen (terminate and
   relaunch the app), and `contentOffset` on a `ScrollView` only applies on
   mount, so scrolling a screen to its lower half needs the same relaunch.
-- **The paywall is a demo sheet, not RevenueCat.** No store product exists yet,
-  so `app/src/DemoPaywall.tsx` shows placeholder prices and unlocks the tier
-  locally. `App.tsx` chooses which paywall to present in exactly one place, on
-  whether a RevenueCat key configured successfully; when the store side is
-  finished that condition starts choosing the real sheet and no caller changes.
-  The entitlement is kept as two separate flags — `storeEntitled` and
-  `demoEntitled` — because merging them would make a demo unlock
-  indistinguishable from a purchase, and the unlocked screen says which one it
-  is. Subscription prices live in `app/src/plan.ts` and deliberately do **not**
-  render through `<Money>`: hard rule 5 exists because every dollar figure in
-  this app is a projected medical cost, and a subscription price is the exact
-  amount charged, so labelling it "estimate" would be false.
+- **Prices come from RevenueCat, not from this repo** (wired 2026-09-02).
+  `loadPlans()` in `app/src/purchases.ts` reads the current offering and maps
+  each package to a `PlanOption`, using the store's own localised `priceString`.
+  The household page renders those and `purchasePlan(id)` buys the package the
+  member actually selected. Three things this fixed:
+  - The earlier flow called `RevenueCatUI.presentPaywall()`, so the member chose
+    a term on the household page and was then asked to choose again on
+    RevenueCat's sheet. The first selection was collected and discarded.
+  - `DEMO_PLANS` in `app/src/plan.ts` hardcoded `$69.99`, `$7.99` and a
+    `Save 27%` badge. The badge is now computed from the two real prices, so it
+    cannot claim a discount the store does not give.
+  - Hardcoded strings are wrong in every currency but one. `priceString` is the
+    store's, and this app never formats a headline price itself.
+
+  `presentPaywall()` is still exported and is now unused — kept as a way to test
+  a dashboard paywall config, and marked in its docstring as dead until called.
+- **Three states, not two, and the screen says which.** `storeReady` (a key
+  configured) and `storePlans !== null` (an offering actually read) are separate,
+  because a configured SDK that cannot reach an offering is a different failure
+  from one that was never configured. `livePricing` drives the on-screen strip;
+  when it is false the demo placeholders show and say so, and the CTA unlocks
+  locally. The entitlement stays two flags — `storeEntitled` and `demoEntitled`
+  — because merging them would make a demo unlock indistinguishable from a
+  purchase.
+- **Use a RevenueCat Test Store for development and for filming.** Key prefix
+  `test_`, set in `app/.env`. No App Store Connect, no Paid Applications
+  agreement, no sandbox tester accounts, and Next Gen requires no store release
+  at all. Needs `react-native-purchases` 9.5.4+; this repo is on 10.7.0. Test
+  subscriptions renew about every 5 minutes and auto-renew 5 times before
+  cancelling, which is useful for filming a renewal and misleading if left
+  running. The SDK refuses to run a *release* build configured with a test key,
+  so it cannot leak to production.
+- **`EXPO_PUBLIC_` variables are inlined at build time.** Editing `app/.env`
+  does nothing to a running bundler — restart with `npx expo start -c`. A key
+  that "isn't working" is usually a warm cache.
+- Subscription prices deliberately do **not** render through `<Money>`: hard
+  rule 5 exists because every dollar figure in this app is a projected medical
+  cost, and a subscription price is the exact amount charged, so labelling it
+  "estimate" would be false.
 - **`__DEV__` gates a visible Free/Household switch** at the bottom of the
   screen. Both tiers have to be checkable without a store account, and a hidden
   gesture is how one of them quietly stops being checked.
@@ -752,6 +779,7 @@ These are compliance red lines. Flag immediately if any code or copy would break
 preclear/
 ├── CLAUDE.md
 ├── README.md              # judges read this first — keep it current
+├── LICENSE                # MIT. Required by the rules — see below
 ├── .gitignore
 ├── .env.example
 ├── pipeline/              # Python: data ingestion + rules
@@ -760,11 +788,23 @@ preclear/
 │   ├── costing/           # the deductible-aware engine
 │   └── tests/
 ├── app/                   # mobile app + RevenueCat SDK
+│   └── .env.example       # the app reads app/.env, not the root one
 └── data/
     └── samples/           # synthetic fixtures only — safe to commit
 ```
 
 Never commit anything under `data/` except `data/samples/`. MRF files are gigabytes.
+
+**`LICENSE` is a submission requirement, not housekeeping.** The Next Gen rules
+ask for a public repository with a *visible* license file, so it is checked
+rather than assumed: MIT, at the repository root, tracked in git, and linked
+from the README. Verify with `git ls-files LICENSE` — a file that exists on
+disk but was never added proves nothing to a judge reading GitHub.
+
+**There are two `.env.example` files and that is deliberate.** Expo treats
+`app/` as its project root and reads `app/.env`; the root one serves the
+pipeline. Putting the RevenueCat key only in the root file is why it can look
+configured and still be missing.
 
 ## Timeline
 
