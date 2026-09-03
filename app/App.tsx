@@ -16,6 +16,9 @@
  */
 
 import {
+  InstrumentSerif_400Regular,
+} from '@expo-google-fonts/instrument-serif';
+import {
   Manrope_600SemiBold,
   Manrope_700Bold,
   Manrope_800ExtraBold,
@@ -105,6 +108,7 @@ export default function App() {
   // bundled local asset, not a network fetch, so this resolves in one frame
   // on every real launch.
   const [fontsLoaded] = useFonts({
+    'InstrumentSerif-Regular': InstrumentSerif_400Regular,
     'Manrope-SemiBold': Manrope_600SemiBold,
     'Manrope-Bold': Manrope_700Bold,
     'Manrope-ExtraBold': Manrope_800ExtraBold,
