@@ -52,31 +52,62 @@ sitting at stark white. Neither reads as a hospital portal on its own.
 
 ## 2. Colour palette & roles
 
-Every ratio below is measured, not estimated. Any change to a hex must be
-re-measured before it lands.
+Two schemes, one set of roles. A palette is a set of *roles*, never a set of
+colours — there is no `grey900` or `blue500` anywhere — which is the only reason
+a second scheme was possible without touching a single call site. `surface` sits
+above `canvas` in light and below it in dark, and every stylesheet still reads
+the same sentence: cards lift off the canvas.
 
-| Token | Hex | Role | Measured |
+Every ratio below is measured by `scripts/check-contrast.py`, which parses this
+palette out of `theme.ts` and asserts all 46 pairs on both schemes. That script,
+not this table, is the source of truth; run it after changing any hex. Several
+ratios in the previous version of this table had drifted from the code by small
+amounts, which is what happens to a documented number nobody checks.
+
+| Token | Light | Dark | Role |
 |---|---|---|---|
-| `ink` | `#161B22` | Primary text | 16.0:1 canvas · 17.6:1 surface |
-| `inkMuted` | `#565F6B` | Secondary text | 5.97:1 canvas · 6.53:1 surface |
-| `canvas` | `#F4F6F8` | App background, faint cool tint | — |
-| `surface` | `#FFFFFF` | Cards, lifted off canvas | — |
-| `line` | `#DEE3E7` | Decorative hairlines, card edges **only** | 1.05:1 — invisible by design |
-| `accent` | `#215A8C` | **Recommended route only** | 6.67:1 canvas · 7.23:1 surface |
-| `accentInk` | `#FFFFFF` | On accent | 7.23:1 |
-| `accentSoft` | `#E4EDF5` | Accent-tinted recommended card | — |
-| `accentDeep` | `#173F63` | Accent text below 18px | 9.20:1 accentSoft · 10.06:1 canvas |
-| `border` | `#828C97` | Boundary of anything interactive | 3.15:1 canvas · 3.40:1 surface |
-| `slate` | `#3B4652` | Every non-recommended route, equal weight | 9.62:1 white-on · 8.88:1 canvas |
-| `flag` | `#6B5A2E` | Data-quality warnings | 5.68:1 on flagBg |
-| `flagBg` | `#EFECE1` | Flag background | — |
+| `ink` | `#161B22` | `#E8ECF1` | Primary text |
+| `inkMuted` | `#565F6B` | `#A3AEBA` | Secondary text |
+| `canvas` | `#F4F6F8` | `#12171D` | App background, faint cool tint |
+| `surface` | `#FFFFFF` | `#1C232B` | Cards, lifted off canvas |
+| `line` | `#DEE3E7` | `#262E37` | Decorative hairlines, card edges **only** |
+| `accent` | `#215A8C` | `#6FA8D6` | **Recommended route only** |
+| `accentInk` | `#FFFFFF` | `#0E141A` | On an accent fill |
+| `accentSoft` | `#E4EDF5` | `#18293A` | Accent-tinted recommended card |
+| `accentText` | `#173F63` | `#9FC6E4` | Accent text below 18px |
+| `border` | `#828C97` | `#6E7885` | Boundary of anything interactive |
+| `slate` | `#3B4652` | `#C7D0DA` | Every non-recommended route, equal weight |
+| `slateInk` | `#FFFFFF` | `#12171D` | On a slate fill |
+| `flag` | `#6B5A2E` | `#C9B37E` | Data-quality warnings |
+| `flagBg` | `#EFECE1` | `#2A2822` | Flag background |
 
-Two pairings are load-bearing and must not drift:
+Measured, light · dark: `ink` 15.97 · 15.18 on canvas. `inkMuted` 5.97 · 7.99 on
+canvas. `accent` 6.67 · 7.07 on canvas. `accentText` 9.20 · 8.24 on accentSoft.
+`border` 3.15 · 4.02 on canvas. `slateInk` 9.62 · 11.55 on slate. `flag` 5.68 ·
+7.18 on flagBg. `line` 1.19 · 1.31 on canvas — below the ceiling, by design.
 
-- `line` is decorative and measures 1.05:1. It may never bound a control.
+Three pairings are load-bearing and must not drift:
+
+- `line` is decorative and stays under 1.5:1 in both schemes. It may never bound
+  a control. The checker asserts this from below, as a ceiling.
 - `border` exists because WCAG 1.4.11 wants 3:1 for an interactive boundary. An
-  unselected chip is white on near-white canvas — this border is the only thing
-  saying a control is there.
+  unselected chip is surface-on-canvas, which is invisible — this border is the
+  only thing saying a control is there.
+- `surface` must be lighter than `canvas` in **both** schemes. §6 bans shadow, so
+  a value step plus a hairline is the only lift this system has, and a card that
+  went darker than its ground would read as a hole rather than as a card.
+
+`accentText` was called `accentDeep` until dark mode arrived. The role is
+"accent variant clearing 4.5:1 below 18px"; the old name described a value, and
+in dark that value is the lighter of the two.
+
+`slateInk` was added at the same time. Four call sites used `surface` to mean
+"text on a slate fill" — the primary button's label, a selected chip's label and
+checkmark, the dev tier switch. That pairing does not actually fail in dark:
+`surface` and `slate` invert together, so the label measures 10.16:1. It is a
+naming fix, and the reason it still matters is that nothing in the code said
+those two roles had to move together. Lightening `surface` to lift cards further
+off the canvas would have walked a button label toward its own fill, silently.
 
 There is no `success` and no `error` colour, and adding one is a design change
 that needs an argument, not a token.
@@ -101,7 +132,6 @@ Static weight files, so `fontFamily` names the exact weight:
 | `caption` | 13 / 20 | — | system |
 | `bodyStrong` | 16 / 24 | 700 | system |
 | `captionStrong` | 13 / 20 | 700 | system |
-| `eyebrow` | 13 / 16 | 600 | Manrope-SemiBold, uppercase, `0.6` tracking |
 
 - All line heights are multiples of 4, so stacked text lands on the same grid as
   the spacing.
@@ -117,9 +147,14 @@ Static weight files, so `fontFamily` names the exact weight:
   ten used 700 before these were declared. Both stay on the system font — 700
   on the platform face *is* the emphasis step, and Manrope at 13px would put a
   display face on a table value.
-- `eyebrow` carries `textTransform` and `letterSpacing` together, because
-  uppercase without opened tracking is the bug and the two must not be
-  re-applied separately at each site.
+- There is no `eyebrow`. It was an uppercase, letter-spaced label set above a
+  group, and it was deleted from `theme.ts` rather than renamed or shrunk: an
+  uppercase label above content a heading already identifies is decoration
+  wearing the clothes of structure, and having it as a token made it easy to
+  keep reaching for. Grouping is carried by space and a hairline. This table
+  listed it for some time after the code stopped defining it, which is how a
+  deleted role gets hand-reimplemented at a call site — and one was, in
+  `MethodStep`. Do not reintroduce it.
 - Never set `fontWeight` over a Manrope role. Those are static weight files, so
   `fontFamily` names the weight and `fontWeight` is not read — a `'700'` over
   `label` renders nothing at all.
@@ -138,8 +173,9 @@ Static weight files, so `fontFamily` names the exact weight:
   inline — three numbers describing one circle, where the radius has to stay
   exactly half the width or the dot stops being round.
 - Existing components are the reference implementation:
-  `BackLink` · `Chip` · `PrimaryButton` · `Row` · `StepBar` · `TopBar` ·
-  `ErrorBoundary`. Extend these before inventing a sibling.
+  `BackLink` · `Chip` · `Citation` · `PrimaryButton` · `Row` · `TabBar` ·
+  `TopBar` · `ErrorBoundary`. Extend these before inventing a sibling.
+  `StepBar` was here until the tab navigation replaced the step chain.
 - Styles used by two or more files live in `app/src/styles/shared.ts`; a style
   used by one screen lives in that screen's own `StyleSheet`.
 

@@ -24,9 +24,11 @@
  */
 
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
-import { TAP_TARGET, color, space, stroke, textScale, type } from '../theme';
+import { TAP_TARGET, space, stroke, textScale, type } from '../theme';
+import { useStyles, useTheme } from '../ThemeProvider';
+import { themed } from '../styles/themed';
 
 export type Tab = 'screener' | 'sources' | 'household';
 
@@ -68,6 +70,9 @@ export function TabBar({
    */
   onSelect: (tab: Tab) => void;
 }) {
+  const styles = useStyles(sheets);
+  const { c } = useTheme();
+
   return (
     <View style={styles.bar} accessibilityRole="tablist">
       {TABS.map((tab) => {
@@ -84,7 +89,7 @@ export function TabBar({
             <Ionicons
               name={active ? tab.activeIcon : tab.icon}
               size={24}
-              color={active ? color.ink : color.inkMuted}
+              color={active ? c.ink : c.inkMuted}
             />
             <Text
               style={[styles.label, active && styles.labelActive]}
@@ -100,12 +105,12 @@ export function TabBar({
   );
 }
 
-const styles = StyleSheet.create({
+const sheets = themed((c) => ({
   bar: {
     flexDirection: 'row',
     borderTopWidth: stroke.hairline,
-    borderTopColor: color.line,
-    backgroundColor: color.canvas,
+    borderTopColor: c.line,
+    backgroundColor: c.canvas,
   },
   tab: {
     flex: 1,
@@ -116,8 +121,8 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
   },
   tabPressed: { opacity: 0.6 },
-  label: { ...type.caption, color: color.inkMuted },
+  label: { ...type.caption, color: c.inkMuted },
   // Manrope-SemiBold via the `label` role rather than a fontWeight, which this
   // font's static weight files would not read.
-  labelActive: { ...type.label, color: color.ink },
-});
+  labelActive: { ...type.label, color: c.ink },
+}));

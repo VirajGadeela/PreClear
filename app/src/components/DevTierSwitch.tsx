@@ -1,5 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { TAP_TARGET, color, radius, space, stroke, type } from '../theme';
+import { Pressable, Text, View } from 'react-native';
+import { TAP_TARGET, radius, space, stroke, type } from '../theme';
+import { useStyles } from '../ThemeProvider';
+import { themed } from '../styles/themed';
 
 /** Free/Pro switch for testing. `__DEV__` only — see the call site in App.tsx. */
 export function DevTierSwitch({
@@ -11,6 +13,8 @@ export function DevTierSwitch({
   onFree: () => void;
   onPro: () => void;
 }) {
+  const styles = useStyles(sheets);
+
   return (
     <View style={styles.devBar}>
       <Text style={styles.devLabel}>Testing</Text>
@@ -38,7 +42,7 @@ export function DevTierSwitch({
   );
 }
 
-const styles = StyleSheet.create({
+const sheets = themed((c) => ({
   // Sits outside the ScrollView, so it is reachable from every step without
   // scrolling. Development builds only.
   devBar: {
@@ -52,19 +56,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
     borderTopWidth: stroke.hairline,
-    borderTopColor: color.line,
-    backgroundColor: color.surface,
+    borderTopColor: c.line,
+    backgroundColor: c.surface,
   },
-  devLabel: { ...type.caption, color: color.inkMuted, marginRight: space.xs },
+  devLabel: { ...type.caption, color: c.inkMuted, marginRight: space.xs },
   devChip: {
     borderRadius: radius.sm,
     borderWidth: stroke.control,
-    borderColor: color.border,
+    borderColor: c.border,
     paddingHorizontal: space.md,
     minHeight: TAP_TARGET,
     justifyContent: 'center',
   },
-  devChipOn: { backgroundColor: color.slate, borderColor: color.slate },
-  devChipText: { ...type.caption, color: color.inkMuted },
-  devChipTextOn: { ...type.captionStrong, color: color.surface },
-});
+  devChipOn: { backgroundColor: c.slate, borderColor: c.slate },
+  devChipText: { ...type.caption, color: c.inkMuted },
+  devChipTextOn: { ...type.captionStrong, color: c.slateInk },
+}));

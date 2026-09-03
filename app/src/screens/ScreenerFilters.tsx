@@ -17,7 +17,7 @@
  * and the examples serve the second case in one tap.
  */
 
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { Chip } from '../components/Chip';
 import { Slider } from '../Slider';
@@ -25,8 +25,10 @@ import { money } from '../costing';
 import { DEMO_SCENARIOS, DemoScenario } from '../demo';
 import { PAYER_CHIP_LABELS, PAYER_LABELS, Procedure, data } from '../appData';
 import { QuerySource, ScreenerQuery } from '../screener';
-import { shared } from '../styles/shared';
-import { TAP_TARGET, color, radius, space, stroke, textScale, type } from '../theme';
+import { sharedSheets } from '../styles/shared';
+import { TAP_TARGET, radius, space, stroke, textScale, type } from '../theme';
+import { useStyles, useTheme } from '../ThemeProvider';
+import { themed } from '../styles/themed';
 
 /**
  * The collapsed line.
@@ -69,6 +71,10 @@ export function ScreenerFilters({
   onRefine: (patch: Partial<ScreenerQuery>) => void;
   onExample: (scenario: DemoScenario) => void;
 }) {
+  const styles = useStyles(sheets);
+  const shared = useStyles(sharedSheets);
+  const { c } = useTheme();
+
   return (
     <View style={styles.strip}>
       <Pressable
@@ -207,7 +213,7 @@ export function ScreenerFilters({
             value={query.planText}
             onChangeText={(value) => onRefine({ planText: value })}
             placeholder="e.g. Blue Access PPO"
-            placeholderTextColor={color.inkMuted}
+            placeholderTextColor={c.inkMuted}
             autoCorrect={false}
             autoCapitalize="words"
             accessibilityLabel="Plan name as printed on your insurance card, optional"
@@ -321,12 +327,12 @@ export function ScreenerFilters({
   );
 }
 
-const styles = StyleSheet.create({
+const sheets = themed((c) => ({
   strip: {
-    backgroundColor: color.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.md,
     borderWidth: stroke.hairline,
-    borderColor: color.line,
+    borderColor: c.line,
     marginTop: space.md,
     marginBottom: space.lg,
   },
@@ -343,30 +349,30 @@ const styles = StyleSheet.create({
   // Not `flag`. A worked example is not a data-quality problem — it is the app
   // being honest about whose numbers these are, and the brown reserved for
   // published-data limits would misfile it as one.
-  exampleTag: { ...type.label, color: color.inkMuted, marginBottom: space.xs },
-  summary: { ...type.body, color: color.ink },
-  toggle: { ...type.label, color: color.accentDeep },
+  exampleTag: { ...type.label, color: c.inkMuted, marginBottom: space.xs },
+  summary: { ...type.body, color: c.ink },
+  toggle: { ...type.label, color: c.accentText },
   body: {
     borderTopWidth: stroke.hairline,
-    borderTopColor: color.line,
+    borderTopColor: c.line,
     paddingHorizontal: space.md,
     paddingBottom: space.md,
   },
   lede: { marginTop: -space.xs },
   input: {
     ...type.body,
-    color: color.ink,
-    backgroundColor: color.surface,
+    color: c.ink,
+    backgroundColor: c.surface,
     borderRadius: radius.md,
     borderWidth: stroke.control,
     // A control outline, not a hairline — WCAG 1.4.11 wants 3:1 and `line`
     // measures 1.05:1 against the canvas.
-    borderColor: color.border,
+    borderColor: c.border,
     paddingHorizontal: space.md,
     minHeight: TAP_TARGET + space.xs,
     marginBottom: space.sm,
   },
   // Brown, matching the data-quality flags. A name that matches nothing is a
   // limit of the published data, not an error the patient made.
-  inputWarn: { ...type.caption, color: color.flag },
-});
+  inputWarn: { ...type.caption, color: c.flag },
+}));

@@ -1,5 +1,7 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
-import { color, radius, space, type } from '../theme';
+import { ActivityIndicator, Pressable, Text } from 'react-native';
+import { radius, space, type } from '../theme';
+import { useStyles, useTheme } from '../ThemeProvider';
+import { themed } from '../styles/themed';
 
 export function PrimaryButton({
   label,
@@ -26,6 +28,9 @@ export function PrimaryButton({
   pending?: boolean;
   compact?: boolean;
 }) {
+  const styles = useStyles(sheets);
+  const { c } = useTheme();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -41,7 +46,7 @@ export function PrimaryButton({
       ]}
     >
       {pending ? (
-        <ActivityIndicator color={tone === 'accent' ? color.accentInk : color.surface} />
+        <ActivityIndicator color={tone === 'accent' ? c.accentInk : c.slateInk} />
       ) : (
         <Text style={[styles.buttonText, tone === 'accent' && styles.buttonTextAccent]}>
           {label}
@@ -51,11 +56,11 @@ export function PrimaryButton({
   );
 }
 
-const styles = StyleSheet.create({
+const sheets = themed((c) => ({
   button: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: color.slate,
+    backgroundColor: c.slate,
     borderRadius: radius.md,
     marginTop: space.xl,
     minHeight: space.xl + space.lg,
@@ -65,8 +70,8 @@ const styles = StyleSheet.create({
   // Accent is reserved for the recommended route elsewhere in the app; this
   // is the one other place it appears, and it's the only accent element on
   // the landing screen.
-  buttonAccent: { backgroundColor: color.accent },
+  buttonAccent: { backgroundColor: c.accent },
   buttonPressed: { opacity: 0.85 },
-  buttonText: { ...type.bodyStrong, color: color.surface },
-  buttonTextAccent: { color: color.accentInk },
-});
+  buttonText: { ...type.bodyStrong, color: c.slateInk },
+  buttonTextAccent: { color: c.accentInk },
+}));

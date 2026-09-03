@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { TAP_TARGET, color, radius, space, stroke, type } from '../theme';
+import { Pressable, Text, View } from 'react-native';
+import { TAP_TARGET, radius, space, stroke, type } from '../theme';
+import { useStyles, useTheme } from '../ThemeProvider';
+import { themed } from '../styles/themed';
 
 export function Chip({
   selected,
@@ -26,6 +28,9 @@ export function Chip({
   block?: boolean;
   onPress: () => void;
 }) {
+  const styles = useStyles(sheets);
+  const { c } = useTheme();
+
   return (
     <Pressable
       accessibilityRole="radio"
@@ -43,7 +48,7 @@ export function Chip({
         {/* Selection is never color-only: a checkmark carries it too, so the
             state reads the same for a colorblind member as for anyone else. */}
         {selected && (
-          <Ionicons name="checkmark" size={16} color={color.surface} style={styles.chipIcon} />
+          <Ionicons name="checkmark" size={16} color={c.slateInk} style={styles.chipIcon} />
         )}
         <Text
           style={[
@@ -59,7 +64,7 @@ export function Chip({
   );
 }
 
-const styles = StyleSheet.create({
+const sheets = themed((c) => ({
   chip: {
     borderRadius: radius.md,
     borderWidth: stroke.control,
@@ -67,13 +72,13 @@ const styles = StyleSheet.create({
     // measures 1.2:1 against the canvas — an unselected chip is white on
     // near-white canvas (1.1:1), so this border is the only thing that says a
     // control is there.
-    borderColor: color.border,
-    backgroundColor: color.surface,
+    borderColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: space.md,
     minHeight: TAP_TARGET,
     justifyContent: 'center',
   },
-  chipSelected: { borderColor: color.slate, backgroundColor: color.slate },
+  chipSelected: { borderColor: c.slate, backgroundColor: c.slate },
   chipPressed: { opacity: 0.7 },
   chipContent: { flexDirection: 'row', alignItems: 'center' },
   chipIcon: { marginRight: space.xs },
@@ -83,6 +88,6 @@ const styles = StyleSheet.create({
   // overflowing, and a three-across row rendered "degenerativ / e spine".
   chipBlock: { width: '100%', alignItems: 'flex-start' },
   chipTextBlock: { textAlign: 'left' },
-  chipText: { ...type.label, color: color.ink },
-  chipTextSelected: { color: color.surface },
-});
+  chipText: { ...type.label, color: c.ink },
+  chipTextSelected: { color: c.slateInk },
+}));

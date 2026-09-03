@@ -11,15 +11,17 @@
  * recommended route's card and 2.84:1 in the headline, against the 4.5:1 WCAG
  * asks of text that size. The single word this product is required to show was
  * the least legible text in the app. It now renders at full opacity, in
- * `accentDeep` when the figure is accent-toned, which measures 5.2:1.
+ * `accentText` when the figure is accent-toned, which measures 9.20:1.
  *
  * Sizes come from the shared scale in `theme.ts`. This file used to carry a
  * private one.
  */
 
-import { StyleSheet, Text, TextStyle } from 'react-native';
+import { Text, TextStyle } from 'react-native';
 
-import { color, type as typography } from './theme';
+import { type as typography } from './theme';
+import { useStyles } from './ThemeProvider';
+import { themed } from './styles/themed';
 
 type Props = {
   value: number;
@@ -34,24 +36,23 @@ const SIZES: Record<NonNullable<Props['size']>, TextStyle> = {
   small: typography.label,
 };
 
-const TONES: Record<NonNullable<Props['tone']>, string> = {
-  ink: color.ink,
-  accent: color.accent,
-  inverse: color.accentInk,
-};
-
 /**
  * The suffix's colour, which is not always the figure's colour.
  *
- * `accent` is bright enough for a 26px figure (4.3:1 clears the 3:1 large-text
- * bar) and not for the 13px word beside it. Ink and inverse are already far
- * clear of 4.5:1 at any size, so they are used as-is.
+ * `accent` is bright enough for a 26px figure (it clears the 3:1 large-text
+ * bar) and not for the 13px word beside it, which is held to 4.5:1. Ink and
+ * inverse are already far clear at any size, so they are used as-is.
+ *
+ * Both tone maps used to be module-scope records of raw colours. They are
+ * entries in the themed sheet now — the tone is still selected by name, but the
+ * name resolves to a style rather than to a hex, which is what lets it differ
+ * between schemes without this file knowing there are two.
  */
-const SUFFIX_TONES: Record<NonNullable<Props['tone']>, string> = {
-  ink: color.ink,
-  accent: color.accentDeep,
-  inverse: color.accentInk,
-};
+const SUFFIX_TONE = {
+  ink: 'suffixInk',
+  accent: 'suffixAccent',
+  inverse: 'suffixInverse',
+} as const;
 
 export function formatAmount(value: number): string {
   return value.toLocaleString('en-US', {
@@ -63,23 +64,33 @@ export function formatAmount(value: number): string {
 }
 
 export function Money({ value, size = 'body', tone = 'ink' }: Props) {
+  const styles = useStyles(sheets);
   const amount = formatAmount(value);
+
   return (
     <Text
       // The accessible label carries the full phrase so a screen reader never
       // hears a bare figure either.
       accessibilityLabel={`${amount} estimate`}
-      style={[SIZES[size], { color: TONES[tone] }]}
+      style={[SIZES[size], styles[tone]]}
     >
       {amount}
-      <Text style={[styles.suffix, { color: SUFFIX_TONES[tone] }]}>
+      <Text style={[styles.suffix, styles[SUFFIX_TONE[tone]]]}>
         {'  estimate'}
       </Text>
     </Text>
   );
 }
 
-const styles = StyleSheet.create({
+const sheets = themed((c) => ({
+  ink: { color: c.ink },
+  accent: { color: c.accent },
+  inverse: { color: c.accentInk },
+
+  suffixInk: { color: c.ink },
+  suffixAccent: { color: c.accentText },
+  suffixInverse: { color: c.accentInk },
+
   // No lineHeight: a nested Text inherits the parent's line box, and setting
   // one here would fight the figure's leading rather than the suffix's.
   //
@@ -93,4 +104,4 @@ const styles = StyleSheet.create({
     fontWeight: typography.label.fontWeight,
     fontFamily: typography.label.fontFamily,
   },
-});
+}));

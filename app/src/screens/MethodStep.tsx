@@ -20,15 +20,19 @@
  * true in the README and stops being true in the data.
  */
 
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
 import { useMemo } from 'react';
 
 import { data } from '../appData';
 import { Requirement } from '../routes';
-import { shared } from '../styles/shared';
-import { TAP_TARGET, color, radius, space, stroke, type } from '../theme';
+import { sharedSheets } from '../styles/shared';
+import { TAP_TARGET, radius, space, stroke, type } from '../theme';
+import { useStyles } from '../ThemeProvider';
+import { themed } from '../styles/themed';
 
 export function MethodStep() {
+  const styles = useStyles(sheets);
+  const shared = useStyles(sharedSheets);
   // Grouped by payer, because a payer with two recorded rules and one with
   // nine are different products to a member, and a flat list of 21 hides that
   // completely.
@@ -133,35 +137,35 @@ export function MethodStep() {
   );
 }
 
-const styles = StyleSheet.create({
-  procedure: { ...type.caption, color: color.inkMuted, marginBottom: space.xs },
+const sheets = themed((c) => ({
+  procedure: { ...type.caption, color: c.inkMuted, marginBottom: space.xs },
 
   group: { marginTop: space.lg },
   groupPayer: {
     ...type.label,
-    color: color.ink,
+    color: c.ink,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     marginBottom: space.sm,
   },
   source: {
-    backgroundColor: color.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.md,
     borderWidth: stroke.hairline,
-    borderColor: color.line,
+    borderColor: c.line,
     padding: space.md,
     marginBottom: space.sm,
   },
   // Italic behind a rule, so the payer's words are visibly not ours.
   quote: {
     ...type.caption,
-    color: color.inkMuted,
+    color: c.inkMuted,
     fontStyle: 'italic',
     marginTop: space.sm,
     paddingLeft: space.sm,
     borderLeftWidth: 2,
-    borderLeftColor: color.line,
+    borderLeftColor: c.line,
   },
   link: { minHeight: TAP_TARGET, justifyContent: 'center' },
-  linkText: { ...type.caption, fontWeight: '700', color: color.accent },
-});
+  linkText: { ...type.caption, fontWeight: '700', color: c.accent },
+}));

@@ -447,7 +447,7 @@ route.
   **2.77:1** on the recommended route's card against the 4.5:1 that size needs.
   The most legally load-bearing word in the app was its least legible text.
   Two tokens were added rather than changing any existing hue — `accentDeep`
-  `#A04A24` for accent text under 18px (5.2:1 on `accentSoft`) and `border`
+  (renamed `accentText` when dark mode landed) `#A04A24` for accent text under 18px (5.2:1 on `accentSoft`) and `border`
   `#8C8779` for control outlines, because `line` measures **1.2:1** and an
   unselected chip is white on near-white canvas (1.1:1), so its border was the
   only cue that a control existed and it was invisible. Re-measure before
@@ -524,6 +524,37 @@ route.
   That file is the source of truth if it and this paragraph ever disagree
   again: they did between 2026-08-25 and 2026-09-01, when this said `#B2542A`
   and the code had already moved on.
+- **There are two palettes now, and only colour differs between them** (added
+  2026-09-03). `space`, `radius`, `stroke`, `type`, `TAP_TARGET`, `size` and
+  `textScale` are invariant, so `themed()` in `app/src/styles/themed.ts` builds
+  every stylesheet twice at module load and `useStyles` picks one with a context
+  read. A theme switch allocates nothing, which matters because route rows
+  re-rank under a dragged slider.
+  - **The toggle is session-only and does not follow the system.** Persisting it
+    needs AsyncStorage — a native module, so a dev-client rebuild — to remember
+    one boolean. Following the system is already dead: `ios/Preclear/Info.plist`
+    pins `UIUserInterfaceStyle: Light`, so `Appearance.getColorScheme()` returns
+    `'light'` on this build whatever the device is set to. The seed reads it
+    anyway, so the day that plist changes this starts behaving correctly with no
+    code change.
+  - **A class component cannot read the theme.** `ErrorBoundary` has to be a
+    class, so its fallback UI was split into a function component. `contextType`
+    would also work and reads worse.
+  - **`scripts/check-contrast.py` is the guard, and it is the fourth of these.**
+    It parses both palettes out of `theme.ts` rather than keeping its own copy —
+    a checker holding a copy of the values it checks passes forever — and
+    asserts 46 pairs. It also asserts `line` from *below*: it must stay under
+    1.5:1 in both schemes, because a legible `line` is a second `border` and
+    collapses a distinction the stroke weights are built on.
+  - **Several ratios in the comments had drifted before anything checked them.**
+    Small amounts — 17.6 written for what measures 17.3 — but a documented ratio
+    nobody verifies is worse than none, because it gets quoted in review.
+  - **`slateInk` is a naming fix, not a bug fix, and the difference matters.**
+    Four sites used `surface` to mean "text on a slate fill". That pairing does
+    not fail in dark: `surface` and `slate` invert together, so the label lands
+    at 10.16:1. Nothing in the code said they had to invert together, though, so
+    lightening `surface` to lift cards further off the canvas would have walked
+    a button's label toward its own fill with no name and no test to catch it.
 - **`<Money>` is the only way a dollar figure renders.** Hard rule 5 says the
   word "estimate" lives inside the string, so it is a component rather than a
   formatter — there is no call path that emits a bare number, and the

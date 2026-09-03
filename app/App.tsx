@@ -38,7 +38,6 @@ import {
   SafeAreaView,
   ScrollView,
   Share,
-  StyleSheet,
   View,
 } from 'react-native';
 import { data, PAYER_LABELS } from './src/appData';
@@ -82,7 +81,9 @@ import {
 import { HouseholdStep } from './src/screens/HouseholdStep';
 import { LandingStep } from './src/screens/LandingStep';
 import { MethodStep } from './src/screens/MethodStep';
-import { color, space, stroke } from './src/theme';
+import { space, stroke } from './src/theme';
+import { ThemeProvider, useStyles, useTheme } from './src/ThemeProvider';
+import { themed } from './src/styles/themed';
 
 /**
  * Where the app opens, and the only screen outside the tabs.
@@ -97,7 +98,23 @@ import { color, space, stroke } from './src/theme';
  * and worth restating.
  */
 
+/**
+ * The provider has to sit outside anything that reads the theme, and `App` is
+ * the outermost thing there is — so the exported component is a wrapper and the
+ * app itself is one level in. Nothing else changed shape.
+ */
 export default function App() {
+  return (
+    <ThemeProvider>
+      <Preclear />
+    </ThemeProvider>
+  );
+}
+
+function Preclear() {
+  const styles = useStyles(sheets);
+  const { scheme } = useTheme();
+
   // Local weight files, not a variable font, so `type.ts`'s `fontFamily`
   // string names the exact weight it wants. Gating the whole app behind this
   // avoids a flash of the system font before Manrope arrives — the load is a
@@ -474,7 +491,11 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar style="dark" />
+      {/* The bar's glyphs, not its background: `light` means light text, which
+          is what a dark canvas needs. Getting this backwards leaves the clock
+          and battery invisible, and it is invisible in a screenshot too — the
+          simulator's status bar is drawn by the OS. */}
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       {/* The cover carries its own way forward, so it needs no chrome; every
           other screen is a tab and keeps the wordmark above it. */}
       {!showAbout && <TopBar />}
@@ -603,8 +624,8 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: color.canvas },
+const sheets = themed((c) => ({
+  safe: { flex: 1, backgroundColor: c.canvas },
   scrollView: { flex: 1 },
   scroll: { paddingHorizontal: space.lg, paddingBottom: space.xl * 2 },
 
@@ -620,10 +641,10 @@ const styles = StyleSheet.create({
   // grows long enough to scroll it out of reach.
   actionBar: {
     borderTopWidth: stroke.hairline,
-    borderTopColor: color.line,
-    backgroundColor: color.canvas,
+    borderTopColor: c.line,
+    backgroundColor: c.canvas,
     paddingHorizontal: space.lg,
     paddingTop: space.md,
     paddingBottom: space.md,
   },
-});
+}));
