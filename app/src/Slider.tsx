@@ -104,6 +104,19 @@ export function Slider({
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
+      // Capture, not bubble.
+      //
+      // This slider sits inside the screener's scroll view, under a filter
+      // panel and above a ranked list — so there is a lot to scroll and the
+      // ScrollView is eager to claim a drag with any vertical component. It
+      // would win the negotiation mid-gesture, fire onPanResponderTerminate,
+      // and drop the thumb halfway through a drag. Claiming on the capture
+      // phase settles it before the ScrollView is asked.
+      //
+      // This was survivable while the sliders had a short screen to themselves.
+      // It is not survivable on a screen you can scroll.
+      onStartShouldSetPanResponderCapture: () => true,
+      onMoveShouldSetPanResponderCapture: () => true,
       onPanResponderGrant: (event) => {
         setDragging(true);
         emit(event.nativeEvent.locationX);
@@ -147,9 +160,24 @@ export function Slider({
         onLayout={onLayout}
         {...responder.panHandlers}
       >
-        <View style={styles.unfilled} />
-        <View style={[styles.fill, { width: thumbLeft + THUMB / 2 }]} />
+        {/*
+          None of these may become the touch target.
+
+          `emit` reads `nativeEvent.locationX`, which React Native measures
+          against the view the touch was dispatched to — not against the view
+          holding the responder. The thumb is a 30pt child of the track, so
+          grabbing the thumb rather than the bare track made locationX a number
+          between 0 and 30 relative to the thumb, and the value snapped toward
+          the minimum. Grabbing the thumb is the obvious way to use a slider,
+          which is what made this look like the whole control was broken.
+
+          pointerEvents="none" keeps the track the only target, so locationX is
+          always measured against the thing the arithmetic assumes.
+        */}
+        <View pointerEvents="none" style={styles.unfilled} />
+        <View pointerEvents="none" style={[styles.fill, { width: thumbLeft + THUMB / 2 }]} />
         <View
+          pointerEvents="none"
           style={[styles.thumb, dragging && styles.thumbDragging, { left: thumbLeft }]}
         />
       </View>
