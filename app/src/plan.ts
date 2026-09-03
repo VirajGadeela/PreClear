@@ -21,11 +21,29 @@ export const PLAN_INCLUDES = [
   'The scan comparison stays free, and stays here whenever a new order comes up.',
 ];
 
-export type DemoPlan = {
+/**
+ * One purchasable term, however it was sourced.
+ *
+ * Named for what it is rather than where it came from, because the household
+ * page now renders two kinds: real packages read from a RevenueCat offering
+ * (see `loadPlans` in `src/purchases.ts`) and the placeholders below, used only
+ * when no key is configured. The screen renders both identically on purpose —
+ * if the two shapes diverged, the demo would stop being a rehearsal of the
+ * real thing.
+ */
+export type PlanOption = {
+  /**
+   * The RevenueCat package identifier for a real plan, so the term the member
+   * selected is the one that gets purchased. Arbitrary for the demo plans.
+   */
   id: string;
   /** What the member is choosing, e.g. "Monthly". */
   term: string;
-  /** The headline figure, already formatted. Not a medical cost — see below. */
+  /**
+   * The headline figure, already formatted. Not a medical cost — see below.
+   * For a real plan this is the store's own localised string, never a number
+   * this app formatted itself.
+   */
   price: string;
   /** The unit the price is charged in, e.g. "per month". */
   cadence: string;
@@ -38,9 +56,11 @@ export type DemoPlan = {
 /**
  * Demo prices.
  *
- * These are placeholders for a store product that does not exist yet, and the
- * paywall says so on screen. When RevenueCat is wired up, the real localised
- * price comes from the store and this list stops being used.
+ * Placeholders, used only when no RevenueCat key is configured or the offering
+ * cannot be read. When the store answers, `loadPlans()` returns the real
+ * localised prices and this list is not rendered — the household page says
+ * which of the two it is showing, because a placeholder price presented as a
+ * real one is the kind of thing that has to be impossible rather than unlikely.
  *
  * Deliberately not rendered through <Money>. Hard rule 5 puts the word
  * "estimate" inside every dollar figure because every dollar figure in this app
@@ -48,7 +68,7 @@ export type DemoPlan = {
  * the exact amount charged — and labelling it as one would be false in the
  * opposite direction from the rule's intent.
  */
-export const DEMO_PLANS: DemoPlan[] = [
+export const DEMO_PLANS: PlanOption[] = [
   {
     id: 'annual',
     term: 'Yearly',

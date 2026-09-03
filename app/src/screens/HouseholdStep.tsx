@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -15,7 +15,7 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import household from '../../assets/household-eobs.json';
 import { Eob, HouseholdPlan, review, totalAtStake } from '../claims';
 import { money } from '../costing';
-import { DEMO_PLANS, PLAN_INCLUDES, PLAN_NAME } from '../plan';
+import { PLAN_INCLUDES, PLAN_NAME, type PlanOption } from '../plan';
 
 /**
  * The subscription tier: the household's claims, checked against themselves.
@@ -113,24 +113,40 @@ export function HouseholdStep({
   isSubscribed,
   demo,
   note,
-  storeReady,
+  livePricing,
+  plans,
   onStart,
   onRestore,
 }: {
   isSubscribed: boolean;
   demo: boolean;
   note: string | null;
-  storeReady: boolean;
-  onStart: () => void;
+  /**
+   * Whether the prices below came from the store rather than from the demo
+   * placeholders. Drives the strip that says so, and nothing else — the two
+   * kinds of plan render identically by design.
+   */
+  livePricing: boolean;
+  plans: PlanOption[];
+  onStart: (planId: string) => void;
   onRestore: () => void;
 }) {
-  const [selected, setSelected] = useState(DEMO_PLANS[0].id);
+  const [selected, setSelected] = useState(plans[0].id);
   // Above `stackAbove` the term and the price stop sharing a line. See the
   // token for the measurement; the short version is that a row cannot be made
   // to fit by capping the text inside it once the price alone fills it.
   const { fontScale } = useWindowDimensions();
   const stacked = fontScale > textScale.stackAbove;
-  const plan = DEMO_PLANS.find((item) => item.id === selected) ?? DEMO_PLANS[0];
+  // The plans can be replaced after first render: the demo placeholders paint
+  // immediately, then the store answers and the real packages arrive with
+  // entirely different identifiers. Without this the selection would still hold
+  // "annual" while the rows are keyed by RevenueCat package ids, so every row
+  // would draw as unselected and the CTA would buy whatever sorted first.
+  useEffect(() => {
+    if (!plans.some((item) => item.id === selected)) setSelected(plans[0].id);
+  }, [plans, selected]);
+
+  const plan = plans.find((item) => item.id === selected) ?? plans[0];
   // Local to this screen: `onStart`/`onRestore` are the app's one entry point
   // for each action regardless of demo vs. real store, so the pending state
   // for "is this specific tap still in flight" belongs at the call site, not
@@ -141,7 +157,7 @@ export function HouseholdStep({
   const handleStart = async () => {
     setStarting(true);
     try {
-      await onStart();
+      await onStart(plan.id);
     } finally {
       setStarting(false);
     }
@@ -193,7 +209,7 @@ export function HouseholdStep({
           token: the plan rows are visibly a set of options and the list below
           is visibly a list, so the labels were naming what the layout already
           showed. Separation is `space.xl` and a hairline now. */}
-      {DEMO_PLANS.map((option) => {
+      {plans.map((option) => {
         const active = option.id === selected;
         return (
           <Pressable
@@ -264,7 +280,7 @@ export function HouseholdStep({
       {/* Stated where the prices are, not only next to the button — and only
           in demo mode, where it is true. Once a RevenueCat key is configured
           this button opens a real purchase screen instead. */}
-      {!storeReady && (
+      {!livePricing && (
         <View style={styles.demoStrip}>
           <Text style={styles.demoText}>
             Demo pricing. Nothing is charged, no purchase is made and no payment

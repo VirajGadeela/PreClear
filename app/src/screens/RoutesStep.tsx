@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { TAP_TARGET, color, radius, space, stroke, textScale, type } from '../theme';
 import { shared } from '../styles/shared';
 import { Money } from '../Money';
@@ -7,7 +7,8 @@ import { Row } from '../components/Row';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { PLAN_INCLUDES, PLAN_NAME } from '../plan';
 import { Requirement, Route } from '../routes';
-import { statusLabel } from '../requirements';
+import { Status } from '../requirements';
+import { Citation, publisher } from '../components/Citation';
 import { summarize } from '../share';
 
 /**
@@ -73,7 +74,7 @@ function RouteCard({
   route: Route;
   recommended: boolean;
   expanded: boolean;
-  findings: { requirement: Requirement; status: string }[];
+  findings: { requirement: Requirement; status: Status }[];
   onToggle: () => void;
 }) {
   const statusFor = (key: string) =>
@@ -118,6 +119,29 @@ function RouteCard({
           {' · '}
           {expanded ? 'Hide' : 'Details'}
         </Text>
+
+        {/* The citation, named on the collapsed card.
+
+            The published section ID is the most checkable thing this app
+            produces and it used to be two taps deep, so a reader who never
+            expanded route 3 saw only our own paraphrase of a payer rule.
+            Naming the publisher and the section here means the evidence is
+            visible before anyone decides whether to trust the screen.
+
+            "Cites" rather than "Fails": a requirement can be documented as not
+            met or simply not documented yet, and those are different findings.
+            The distinction is drawn in the Citation block below. */}
+        {route.unmetRequirements.length > 0 && (
+          <Text style={styles.evidence} numberOfLines={2}>
+            Cites {publisher(route.unmetRequirements[0])}{' '}
+            {route.unmetRequirements[0].section_id}
+            {route.unmetRequirements.length > 1
+              ? ` +${route.unmetRequirements.length - 1} more`
+              : ''}
+            {' · '}
+            {expanded ? 'quoted below' : 'tap for the quote'}
+          </Text>
+        )}
       </Pressable>
 
       {expanded && (
@@ -146,26 +170,11 @@ function RouteCard({
           ))}
 
           {route.unmetRequirements.map((requirement) => (
-            <View key={requirement.key} style={styles.requirement}>
-              <Text style={styles.requirementStatus}>
-                {statusLabel(statusFor(requirement.key) as any)}
-              </Text>
-              <Text style={shared.detailSummary}>{requirement.summary}</Text>
-              <Text style={shared.citation}>
-                {requirement.payer} · {requirement.section_id} · {requirement.version}
-              </Text>
-              <Pressable
-                accessibilityRole="link"
-                onPress={() => Linking.openURL(requirement.source_url)}
-              >
-                <Text style={styles.link}>Source document</Text>
-              </Pressable>
-              {requirement.alternative_pathway && (
-                <Text style={styles.detailHedge}>
-                  One of several alternative criteria; another may apply instead.
-                </Text>
-              )}
-            </View>
+            <Citation
+              key={requirement.key}
+              requirement={requirement}
+              status={statusFor(requirement.key)}
+            />
           ))}
         </View>
       )}
@@ -253,7 +262,7 @@ export function RoutesStep({
   payerLabel,
 }: {
   routes: Route[];
-  findings: { requirement: Requirement; status: string }[];
+  findings: { requirement: Requirement; status: Status }[];
   isSubscribed: boolean;
   note: string | null;
   onRestore: () => void;
@@ -404,10 +413,10 @@ const styles = StyleSheet.create({
     marginTop: space.sm,
   },
 
-  requirement: { borderTopWidth: stroke.hairline, borderTopColor: color.line, marginTop: space.md, paddingTop: space.md },
-  requirementStatus: { ...type.captionStrong, color: color.flag },
-  link: { ...type.captionStrong, color: color.accent, marginTop: space.xs },
-  detailHedge: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
+  // Sits under `meta` and is deliberately not muted like it: this line is the
+  // reason to believe the card. `accentDeep` clears 4.5:1 at 13px on both card
+  // backgrounds — 10.89:1 on surface, 9.20:1 on accentSoft.
+  evidence: { ...type.captionStrong, color: color.accentDeep, marginTop: space.xs },
 
   // Hairline, matching `card` above: both are containers that happen to be
   // tappable, and in both the control is identified by its own heading and CTA
