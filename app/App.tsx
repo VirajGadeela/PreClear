@@ -41,9 +41,10 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { data, PAYER_LABELS, STEPS } from './src/appData';
+import { data, PAYER_LABELS } from './src/appData';
 import { DevTierSwitch } from './src/components/DevTierSwitch';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { TabBar, Tab } from './src/components/TabBar';
 import { TopBar } from './src/components/TopBar';
 import { PlanBenefits } from './src/costing';
 import { DEMO_SCENARIOS, DemoScenario } from './src/demo';
@@ -84,28 +85,17 @@ import { MethodStep } from './src/screens/MethodStep';
 import { color, space, stroke } from './src/theme';
 
 /**
- * The paid tier's own page, not a step in the scan flow.
+ * Where the app opens, and the only screen outside the tabs.
  *
- * It used to be step 4 — reachable only after Scan/Coverage/Routes, or via a
- * pill in the top bar. Neither fit a member who wants the household plan and
- * nothing else: they were made to declare a scan they don't have, or hunt for
- * a button that didn't look like a destination. It's a sibling of the landing
- * screen instead, reached the same way (a tap from the homepage) and hidden
- * from the same chrome — negative, like `step === -1`, so it renders outside
- * the numbered flow and neither the step bar nor the top bar mistake it for
- * part of the sequence.
- */
-const HOUSEHOLD_STEP = -2;
-
-/**
- * Where the numbers come from.
+ * It is a cover rather than a tab because it is read once and then not again:
+ * it says what the app is for, and every route out of it leads into the tabs.
+ * A tab that a member never returns to is a tab spending permanent space on a
+ * one-time job.
  *
- * A sibling of the landing screen for the same reason the household plan is
- * one: a destination rather than a stage of the scan flow. Someone who wants
- * to know what this app reads should not have to declare a scan to find out.
- * Negative, so the step bar and top bar leave it out of the sequence.
+ * Not persisted, because nothing in this app is. It therefore shows on every
+ * launch, which is right for a product whose central claim is counterintuitive
+ * and worth restating.
  */
-const METHOD_STEP = -3;
 
 export default function App() {
   // Local weight files, not a variable font, so `type.ts`'s `fontFamily`
@@ -119,7 +109,8 @@ export default function App() {
     'Manrope-ExtraBold': Manrope_800ExtraBold,
   });
 
-  const [step, setStep] = useState(-1);
+  const [tab, setTab] = useState<Tab>('screener');
+  const [showAbout, setShowAbout] = useState(true);
 
   /**
    * Everything the screener asks, in one object — see `src/screener.ts` for
@@ -183,17 +174,23 @@ export default function App() {
   const isSubscribed = storeEntitled || demoEntitled;
 
   /**
-   * Send each step back to the top.
+   * Send each destination back to the top.
    *
-   * One ScrollView renders every step, so it keeps its offset when the step
-   * changes: scroll down on the scan step to reach "Next", tap it, and the
-   * coverage step opens halfway down with its heading cut off. Nothing looks
-   * broken, which is what makes it easy to miss.
+   * One ScrollView renders every destination, so it keeps its offset when the
+   * tab changes: scroll to the bottom of Sources, switch to Compare, and the
+   * screener opens halfway down with its heading cut off. Nothing looks broken,
+   * which is what makes it easy to miss.
+   *
+   * The trade this accepts: iOS convention is to preserve a scroll position per
+   * tab, and one shared ScrollView cannot. Matching the previous behaviour is
+   * the smaller surprise, and `selectTab` supplies the other half of the
+   * convention — tapping the tab you are already on returns you to the top.
    */
   const scrollRef = useRef<ScrollView>(null);
-  useEffect(() => {
+  const scrollToTop = useCallback(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
-  }, [step]);
+  }, []);
+  useEffect(scrollToTop, [tab, showAbout, scrollToTop]);
 
   useEffect(() => {
     const ready = configurePurchases();
@@ -363,7 +360,8 @@ export default function App() {
     dispatch({ type: 'example', scenario });
     setNote(null);
     setOpenRouteKind(null);
-    setStep(0);
+    setShowAbout(false);
+    setTab('screener');
   }, []);
 
   /**
@@ -412,47 +410,49 @@ export default function App() {
   );
 
   /**
-   * One step back, and from the first step, home.
+   * Choosing a destination, including the one already showing.
    *
-   * Deliberately a single step rather than a jump straight to the landing
-   * screen: a member on Routes who wants to change their deductible expects
-   * back to reach Coverage, and losing their answers because "back" meant
-   * "start over" is the kind of thing that makes people retype everything.
-   * Home is still always reachable — it is simply the end of the chain, and
-   * from the household page, which is a sibling of home rather than part of
-   * the flow, it is one tap.
+   * A second tap on the active tab scrolls it to the top rather than doing
+   * nothing — iOS convention, and the only way back to the top of a long
+   * Sources list without a long drag.
    */
-  const backTarget =
-    step === HOUSEHOLD_STEP || step === METHOD_STEP || step <= 0 ? -1 : step - 1;
-  const backLabel = backTarget === -1 ? 'Home' : STEPS[backTarget];
-  const goBack = useCallback(() => setStep(backTarget), [backTarget]);
+  const selectTab = useCallback(
+    (next: Tab) => {
+      if (next === tab) {
+        scrollToTop();
+        return;
+      }
+      setTab(next);
+    },
+    [tab, scrollToTop],
+  );
 
-  // The Android system back gesture should do what the on-screen control does.
-  // No-op on iOS, and BackHandler is core React Native, so this costs no
-  // rebuild. Returning false on the landing screen lets the OS close the app.
+  /**
+   * Android's back gesture, given a contract that matches the tabs.
+   *
+   * Deliberately no history stack. Android's own guidance for bottom
+   * navigation is that back returns to the start destination rather than
+   * retracing which tabs were visited, and a retracing stack is exactly what
+   * makes a hand-rolled tab bar feel wrong. So: from the cover, let the OS
+   * close the app; from any tab that is not the screener, go to the screener;
+   * from the screener, back out to the cover.
+   *
+   * No-op on iOS, and BackHandler is core React Native, so this costs no
+   * rebuild.
+   */
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (step === -1) return false;
-      setStep(backTarget);
+      if (showAbout) return false;
+      if (tab !== 'screener') {
+        setTab('screener');
+        return true;
+      }
+      setShowAbout(true);
       return true;
     });
     return () => subscription.remove();
-  }, [step, backTarget]);
+  }, [showAbout, tab]);
 
-  /**
-   * The two wizard steps' forward action, pinned rather than scrolled to.
-   *
-   * Measured on an iPhone SE: the coverage step's button sat two full screens
-   * below the fold, behind three sliders. CLAUDE.md has recorded this failure
-   * twice already ("the primary button at the bottom of a step becomes
-   * unreachable and the flow dead-ends") and both previous fixes were to buy
-   * vertical budget back — which only holds until the next control is added.
-   * Taking the button out of the scroll entirely is the fix that does not
-   * regress the next time a step grows.
-   *
-   * Only steps 0 and 1. The landing and household screens are destinations
-   * whose buttons are their content, and the routes step is terminal.
-   */
   const restore = useCallback(async () => {
     setNote(null);
     if (!storeReady) {
@@ -475,7 +475,9 @@ export default function App() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
-      {step !== -1 && <TopBar backLabel={backLabel} onBack={goBack} />}
+      {/* The cover carries its own way forward, so it needs no chrome; every
+          other screen is a tab and keeps the wordmark above it. */}
+      {!showAbout && <TopBar />}
       {/* The plan-name field sits above the primary button, so without this the
           keyboard covers the way forward. Core React Native, no native module —
           see App mechanics in CLAUDE.md. */}
@@ -501,66 +503,84 @@ export default function App() {
         alwaysBounceVertical
         showsVerticalScrollIndicator
       >
-        {/* `key={step}` remounts the boundary on every step change, so a
-            caught error from a previous step can never linger and mask the
-            next screen's own render. */}
-        <ErrorBoundary key={step} onReset={() => setStep(-1)}>
-          {step === -1 && (
+        {/* Remounted per destination, so a caught error from one can never
+            linger and mask the next screen's own render. Keyed on the cover as
+            well as the tab, because the cover is a destination too. */}
+        <ErrorBoundary
+          key={showAbout ? 'about' : tab}
+          onReset={() => {
+            setShowAbout(true);
+            setTab('screener');
+          }}
+        >
+          {showAbout ? (
             <LandingStep
-              onNext={() => setStep(0)}
-              onHousehold={() => setStep(HOUSEHOLD_STEP)}
+              onNext={() => setShowAbout(false)}
+              onHousehold={() => {
+                setShowAbout(false);
+                setTab('household');
+              }}
               onScenario={applyScenario}
-              onMethod={() => setStep(METHOD_STEP)}
+              onMethod={() => {
+                setShowAbout(false);
+                setTab('sources');
+              }}
             />
-          )}
-
-          {step === METHOD_STEP && <MethodStep />}
-
-          {step === HOUSEHOLD_STEP && (
-            <HouseholdStep
-              isSubscribed={isSubscribed}
-              demo={demoEntitled}
-              note={note}
-              livePricing={storePlans !== null}
-              plans={storePlans ?? DEMO_PLANS}
-              onStart={startPlan}
-              onRestore={restore}
-            />
-          )}
-
-          {step === 0 && (
-            <ScreenerScreen
-              routes={routes}
-              findings={findings}
-              query={query}
-              source={query.source}
-              procedure={procedure}
-              productOptions={productOptions}
-              planMatch={planMatch}
-              showTreatment={applicableFindings.some((finding) =>
-                usesTreatmentWeeks(finding.requirement.check),
+          ) : (
+            <>
+              {tab === 'screener' && (
+                <ScreenerScreen
+                  routes={routes}
+                  findings={findings}
+                  query={query}
+                  source={query.source}
+                  procedure={procedure}
+                  productOptions={productOptions}
+                  planMatch={planMatch}
+                  showTreatment={applicableFindings.some((finding) =>
+                    usesTreatmentWeeks(finding.requirement.check),
+                  )}
+                  showHeadacheFeature={applicableFindings.some((finding) =>
+                    readsField(finding.requirement.check, 'headache_concerning_feature'),
+                  )}
+                  filtersOpen={filtersOpen}
+                  openRouteKind={openRouteKind}
+                  requirementsChecked={applicableFindings.length}
+                  payerLabel={result.payerLabel}
+                  note={note}
+                  onToggleFilters={() => setFiltersOpen((open) => !open)}
+                  onOpenRoute={setOpenRouteKind}
+                  onRefine={refine}
+                  onExample={applyScenario}
+                  onShare={shareComparison}
+                  onMethod={() => setTab('sources')}
+                />
               )}
-              showHeadacheFeature={applicableFindings.some((finding) =>
-                readsField(finding.requirement.check, 'headache_concerning_feature'),
-              )}
-              filtersOpen={filtersOpen}
-              openRouteKind={openRouteKind}
-              requirementsChecked={applicableFindings.length}
-              payerLabel={result.payerLabel}
-              note={note}
-              onToggleFilters={() => setFiltersOpen((open) => !open)}
-              onOpenRoute={setOpenRouteKind}
-              onRefine={refine}
-              onExample={applyScenario}
-              onShare={shareComparison}
-              onMethod={() => setStep(METHOD_STEP)}
-            />
-          )}
 
+              {tab === 'sources' && <MethodStep />}
+
+              {tab === 'household' && (
+                <HouseholdStep
+                  isSubscribed={isSubscribed}
+                  demo={demoEntitled}
+                  note={note}
+                  livePricing={storePlans !== null}
+                  plans={storePlans ?? DEMO_PLANS}
+                  onStart={startPlan}
+                  onRestore={restore}
+                />
+              )}
+            </>
+          )}
         </ErrorBoundary>
       </ScrollView>
 
       </KeyboardAvoidingView>
+
+      {/* Outside the KeyboardAvoidingView on purpose: a tab bar that rides up
+          on the keyboard is the wrong behaviour on iOS, where the keyboard is
+          expected to cover it. Hidden on the cover, which is not a tab. */}
+      {!showAbout && <TabBar current={tab} onSelect={selectTab} />}
 
       {/* Development only. Two flows have to be verifiable without a store
           account, and hunting for a hidden gesture to switch between them is how

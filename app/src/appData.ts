@@ -52,5 +52,3 @@ export const PAYER_CHIP_LABELS: Record<string, string> = {
   aetna: 'Aetna',
   cigna: 'Cigna',
 };
-
-export const STEPS = ['Scan', 'Coverage', 'Routes'] as const;

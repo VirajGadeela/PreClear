@@ -1,19 +1,20 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { color, space, textScale, type } from '../theme';
-import { BackLink } from './BackLink';
 
 /**
- * Brand plus the way out.
+ * The wordmark, and for now nothing else.
  *
- * The back control lives here rather than in each screen's content because this
- * bar sits outside the ScrollView. A back link inside the content scrolls off
- * the top, so on a long screen — the routes list, the household review — there
- * would be no way home without scrolling up first. Here it is always on screen.
+ * It used to carry a back link, because navigation was a chain and every screen
+ * needed a way one step up it. The tab bar ended the chain: every destination
+ * is one tap from every other, so a back control here would either duplicate a
+ * tab or walk a history the tabs deliberately do not keep.
+ *
+ * The right slot is left free on purpose — the theme toggle belongs there, and
+ * a bar with one item is easier to add a second to than a bar with three.
  */
-export function TopBar({ backLabel, onBack }: { backLabel: string; onBack: () => void }) {
+export function TopBar() {
   return (
     <View style={styles.topBar}>
-      <BackLink label={backLabel} onPress={onBack} />
       <Text
         style={styles.brand}
         maxFontSizeMultiplier={textScale.chrome}
