@@ -327,12 +327,28 @@ export const TAP_TARGET = 44;
 /**
  * Fixed component sizes that are not spacing and not tap targets.
  *
- * `stepDot` was `width: 24, height: 24, borderRadius: 12` inline — three
- * magic numbers describing one circle, where the radius has to stay exactly
- * half the width or the dot stops being round.
+ * `icon` is three sizes, and it used to be five. Icons were set at 16, 18, 20,
+ * 22 and 24 across five files with nothing choosing between them — 18 and 22
+ * existed only because nobody had written down what the scale was. Three sizes
+ * with a job each is a scale; five picked per call site is drift that reads as
+ * a lack of polish before anyone can say why.
+ *
+ *   sm  beside a label, inside a control — a chip's checkmark
+ *   md  a standalone control's own glyph — the back chevron, the theme toggle
+ *   lg  a navigation glyph carrying its own weight — a tab bar icon
+ *
+ * `stepDot` lived here — `width: 24, height: 24, borderRadius: 12` written
+ * inline, three magic numbers describing one circle where the radius has to
+ * stay exactly half the width or the dot stops being round. It went with
+ * `StepBar`. If the About screen's numbered steps ever want it back, that
+ * comment is the reason it was a token.
  */
 export const size = {
-  stepDot: 24,
+  icon: {
+    sm: 16,
+    md: 20,
+    lg: 24,
+  },
 } as const;
 
 /**

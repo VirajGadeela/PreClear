@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
-import { TAP_TARGET, space, textScale, type } from '../theme';
+import { TAP_TARGET, size, space, textScale, type } from '../theme';
 import { useStyles, useTheme } from '../ThemeProvider';
 import { themed } from '../styles/themed';
 
@@ -43,7 +43,7 @@ export function TopBar() {
       >
         <Ionicons
           name={dark ? 'sunny-outline' : 'moon-outline'}
-          size={22}
+          size={size.icon.md}
           color={c.inkMuted}
         />
       </Pressable>

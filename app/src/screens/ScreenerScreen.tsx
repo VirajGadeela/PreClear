@@ -18,7 +18,7 @@
  */
 
 import { memo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 
 import { Citation, publisher } from '../components/Citation';
 import { Money } from '../Money';
@@ -77,16 +77,27 @@ function tiedTotals(routes: Route[]): Set<number> {
  */
 function Headline({ routes }: { routes: Route[] }) {
   const styles = useStyles(sheets);
+  // Above this the phrase and the figure stop sharing a line. Same instrument
+  // HouseholdStep uses on its plan row, and for the same reason: a row that no
+  // longer fits cannot be fixed by shrinking the text inside it.
+  const { fontScale } = useWindowDimensions();
+  const stacked = fontScale > textScale.stackAbove;
   const summary = summarize(routes);
   if (!summary) return null;
+
+  const line = [styles.heroLine, stacked && styles.heroLineStacked];
 
   if (summary.kind === 'cash_costs_more') {
     return (
       <View style={styles.hero}>
-        <Text style={styles.heroLead}>Paying cash saves</Text>
-        <Money value={summary.todayGap} size="large" tone="accent" />
-        <Text style={styles.heroLead}>today, and costs</Text>
-        <Money value={summary.yearGap} size="large" tone="accent" />
+        <View style={line}>
+          <Text style={styles.heroLead}>Paying cash saves</Text>
+          <Money value={summary.todayGap} size="large" tone="accent" />
+        </View>
+        <View style={line}>
+          <Text style={styles.heroLead}>today, and costs</Text>
+          <Money value={summary.yearGap} size="large" tone="accent" />
+        </View>
         <Text style={styles.heroLead}>more by the end of this year.</Text>
         <Text style={styles.heroWhy}>
           Cash earns no deductible credit, so your later care starts from
@@ -99,8 +110,10 @@ function Headline({ routes }: { routes: Route[] }) {
   if (summary.kind === 'cash_stays_cheaper') {
     return (
       <View style={styles.hero}>
-        <Text style={styles.heroLead}>Paying cash saves</Text>
-        <Money value={summary.todayGap} size="large" tone="accent" />
+        <View style={line}>
+          <Text style={styles.heroLead}>Paying cash saves</Text>
+          <Money value={summary.todayGap} size="large" tone="accent" />
+        </View>
         <Text style={styles.heroLead}>today and stays cheaper this year.</Text>
         <Text style={styles.heroWhy}>
           You are not expected to reach your deductible, so the missing credit
@@ -112,8 +125,10 @@ function Headline({ routes }: { routes: Route[] }) {
 
   return (
     <View style={styles.hero}>
-      <Text style={styles.heroLead}>Same scan, same coverage.</Text>
-      <Money value={summary.spread} size="large" tone="accent" />
+      <View style={line}>
+        <Text style={styles.heroLead}>Same scan, same coverage.</Text>
+        <Money value={summary.spread} size="large" tone="accent" />
+      </View>
       <Text style={styles.heroLead}>separates your best and worst option.</Text>
     </View>
   );
@@ -373,6 +388,25 @@ export function ScreenerScreen({
 
 const sheets = themed((c) => ({
   hero: { marginBottom: space.lg },
+
+  // Phrase and figure share a line, baseline-aligned.
+  //
+  // Every word and every size here is unchanged; only the arrangement moved.
+  // Stacked, this headline was five blocks plus their margins and only the
+  // top-ranked route cleared the tab bar — on the one screen whose whole
+  // purpose is a comparison. Pairing each phrase with its own figure gets two
+  // lines and about 70pt back, which is most of a route row.
+  //
+  // `baseline`, not `center`: a 16px phrase centred against a 26px figure sits
+  // visibly high, and the two are read as one sentence.
+  heroLine: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: space.sm,
+  },
+  heroLineStacked: { flexDirection: 'column', alignItems: 'flex-start' },
+
   // `body`, not `title`, and the figures at `large` rather than `hero`.
   //
   // The finding is still the largest thing on the screen, but at title/hero it
