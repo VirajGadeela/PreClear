@@ -191,6 +191,20 @@ export function LandingStep({
         )}
       </Pressable>
 
+      {/* Where the comparison comes from. The reference puts a stat band in
+          this position; the difference is that each of these is a count of
+          something in the bundle, so none of them can drift from the data. */}
+      <View style={styles.stats}>
+        {corpusStats().map((stat) => (
+          <View key={stat.label} style={styles.stat}>
+            <Text style={styles.statValue} maxFontSizeMultiplier={textScale.display}>
+              {stat.value}
+            </Text>
+            <Text style={styles.statLabel}>{stat.label}</Text>
+          </View>
+        ))}
+      </View>
+
       {/* The remaining examples, one line each. A title and a two-line teaser
           apiece was three lines to say what the title already said. */}
       {OTHER_SCENARIOS.length > 0 && (
@@ -223,11 +237,35 @@ export function LandingStep({
   );
 }
 
+/**
+ * What the comparison is actually built on, counted from the bundle.
+ *
+ * Read rather than written down, so a figure here cannot outlive the data it
+ * describes — the facility count changed twice this month. The reference this
+ * borrows from puts unverifiable stats in this position ("95% accuracy"); every
+ * number below is a length of something in `preclear-data.json`.
+ */
+function corpusStats() {
+  const facilities = new Set<string>();
+  const payers = new Set<string>();
+  for (const procedure of data.procedures) {
+    for (const [payer, list] of Object.entries(procedure.payers)) {
+      payers.add(payer);
+      for (const facility of list) facilities.add(facility.facility_key);
+    }
+  }
+  return [
+    { value: String(facilities.size), label: 'Indianapolis hospitals, real published prices' },
+    { value: String(data.requirements.length), label: 'payer requirement rules, each one citable' },
+    { value: String(payers.size), label: 'insurers, with prices for every one' },
+  ];
+}
+
 const styles = StyleSheet.create({
   // The screen's own top margin, which used to live on a wrapper View that did
   // nothing else. One less element for one style property.
   landingHeadline: {
-    ...type.display,
+    ...type.serifDisplay,
     color: color.ink,
     marginTop: space.xl,
     marginBottom: space.xl,
@@ -240,12 +278,23 @@ const styles = StyleSheet.create({
     marginTop: space.lg,
     borderWidth: stroke.hairline,
     borderColor: color.line,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     backgroundColor: color.surface,
-    paddingHorizontal: space.md,
-    paddingTop: space.md,
-    paddingBottom: space.md,
+    paddingHorizontal: space.lg,
+    paddingTop: space.lg,
+    paddingBottom: space.lg,
   },
+  // A row per stat rather than a three-across band: the labels here are
+  // sentences, not single words, and three of them across a phone would break
+  // mid-word the way the indication chips once did.
+  stats: { marginTop: space.lg, gap: space.md },
+  stat: { flexDirection: 'row', alignItems: 'baseline', gap: space.md },
+  // The sans, not the serif, and for a specific reason: Instrument Serif's
+  // figure one is a plain vertical stroke, so "11" rendered as "ll". The
+  // reference sets its stat numerals in the geometric sans for the same reason.
+  statValue: { ...type.display, color: color.accent, minWidth: 56 },
+  statLabel: { ...type.caption, color: color.inkMuted, flex: 1 },
+
   proofRow: { paddingVertical: space.sm },
   // The divider sits between the two scenarios because the inversion between
   // them is the point. It separates two readings of one case, not two items.
