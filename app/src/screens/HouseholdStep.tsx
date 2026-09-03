@@ -7,7 +7,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { TAP_TARGET, radius, space, stroke, textScale, type } from '../theme';
+import { TAP_TARGET, radius, size, space, stroke, textScale, type } from '../theme';
 import { useStyles, useTheme } from '../ThemeProvider';
 import { themed } from '../styles/themed';
 import { sharedSheets } from '../styles/shared';
@@ -238,7 +238,7 @@ export function HouseholdStep({
                 {active && (
                   <Ionicons
                     name="checkmark-circle"
-                    size={18}
+                    size={size.icon.sm}
                     color={c.accent}
                     style={styles.planOptionCheck}
                   />

@@ -169,9 +169,11 @@ Static weight files, so `fontFamily` names the exact weight:
   and its held state — the thumb is not a divider and not the boundary *of* a
   control, it is the control.
 - `size`: fixed component dimensions that are neither spacing nor tap targets.
-  `stepDot 24` replaced `width: 24, height: 24, borderRadius: 12` written
-  inline — three numbers describing one circle, where the radius has to stay
-  exactly half the width or the dot stops being round.
+  `size.icon` is `sm 16` · `md 20` · `lg 24`, and it used to be five values —
+  icons were set at 16, 18, 20, 22 and 24 across five files with nothing
+  choosing between them. `sm` sits beside a label inside a control, `md` is a
+  standalone control's own glyph, `lg` is a navigation glyph carrying its own
+  weight. `stepDot 24` lived here and went with `StepBar`.
 - Existing components are the reference implementation:
   `BackLink` · `Chip` · `Citation` · `PrimaryButton` · `Row` · `TabBar` ·
   `TopBar` · `ErrorBoundary`. Extend these before inventing a sibling.

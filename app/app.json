@@ -8,7 +8,10 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.viraj.preclear"
+      "bundleIdentifier": "com.viraj.preclear",
+      "infoPlist": {
+        "EXDevMenuShowFloatingActionButton": false
+      }
     },
     "android": {
       "adaptiveIcon": {

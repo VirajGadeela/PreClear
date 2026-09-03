@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text } from 'react-native';
-import { TAP_TARGET, space, type } from '../theme';
+import { TAP_TARGET, size, space, type } from '../theme';
 import { useStyles, useTheme } from '../ThemeProvider';
 import { themed } from '../styles/themed';
 
@@ -30,7 +30,7 @@ export function BackLink({ label, onPress }: { label: string; onPress: () => voi
       onPress={onPress}
       style={({ pressed }) => [styles.backLink, pressed && styles.backLinkPressed]}
     >
-      <Ionicons name="chevron-back" size={20} color={c.inkMuted} />
+      <Ionicons name="chevron-back" size={size.icon.md} color={c.inkMuted} />
       <Text style={styles.backLinkText}>{label}</Text>
     </Pressable>
   );

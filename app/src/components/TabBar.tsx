@@ -26,7 +26,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
-import { TAP_TARGET, space, stroke, textScale, type } from '../theme';
+import { TAP_TARGET, size, space, stroke, textScale, type } from '../theme';
 import { useStyles, useTheme } from '../ThemeProvider';
 import { themed } from '../styles/themed';
 
@@ -88,7 +88,7 @@ export function TabBar({
           >
             <Ionicons
               name={active ? tab.activeIcon : tab.icon}
-              size={24}
+              size={size.icon.lg}
               color={active ? c.ink : c.inkMuted}
             />
             <Text

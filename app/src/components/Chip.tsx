@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
-import { TAP_TARGET, radius, space, stroke, type } from '../theme';
+import { TAP_TARGET, radius, size, space, stroke, type } from '../theme';
 import { useStyles, useTheme } from '../ThemeProvider';
 import { themed } from '../styles/themed';
 
@@ -48,7 +48,7 @@ export function Chip({
         {/* Selection is never color-only: a checkmark carries it too, so the
             state reads the same for a colorblind member as for anyone else. */}
         {selected && (
-          <Ionicons name="checkmark" size={16} color={c.slateInk} style={styles.chipIcon} />
+          <Ionicons name="checkmark" size={size.icon.sm} color={c.slateInk} style={styles.chipIcon} />
         )}
         <Text
           style={[
