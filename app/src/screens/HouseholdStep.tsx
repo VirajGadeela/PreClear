@@ -3,13 +3,14 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  StyleSheet,
   Text,
   View,
   useWindowDimensions,
 } from 'react-native';
-import { TAP_TARGET, color, radius, space, stroke, textScale, type } from '../theme';
-import { shared } from '../styles/shared';
+import { TAP_TARGET, radius, space, stroke, textScale, type } from '../theme';
+import { useStyles, useTheme } from '../ThemeProvider';
+import { themed } from '../styles/themed';
+import { sharedSheets } from '../styles/shared';
 import { Money } from '../Money';
 import { PrimaryButton } from '../components/PrimaryButton';
 import household from '../../assets/household-eobs.json';
@@ -28,6 +29,9 @@ import { PLAN_INCLUDES, PLAN_NAME, type PlanOption } from '../plan';
  * The claims are synthetic fixtures. Nothing real is read, stored or sent.
  */
 function HouseholdReview() {
+  const styles = useStyles(sheets);
+  const shared = useStyles(sharedSheets);
+  const { c } = useTheme();
   const findings = useMemo(
     () => review(household.eobs as Eob[], household.plan as HouseholdPlan),
     [],
@@ -131,6 +135,9 @@ export function HouseholdStep({
   onStart: (planId: string) => void;
   onRestore: () => void;
 }) {
+  const styles = useStyles(sheets);
+  const shared = useStyles(sharedSheets);
+  const { c } = useTheme();
   const [selected, setSelected] = useState(plans[0].id);
   // Above `stackAbove` the term and the price stop sharing a line. See the
   // token for the measurement; the short version is that a row cannot be made
@@ -232,7 +239,7 @@ export function HouseholdStep({
                   <Ionicons
                     name="checkmark-circle"
                     size={18}
-                    color={color.accent}
+                    color={c.accent}
                     style={styles.planOptionCheck}
                   />
                 )}
@@ -305,7 +312,7 @@ export function HouseholdStep({
         style={({ pressed }) => [shared.restore, pressed && shared.restorePressed]}
       >
         {restoring ? (
-          <ActivityIndicator size="small" color={color.inkMuted} />
+          <ActivityIndicator size="small" color={c.inkMuted} />
         ) : (
           <Text style={shared.restoreText}>Restore purchase</Text>
         )}
@@ -316,16 +323,16 @@ export function HouseholdStep({
   );
 }
 
-const styles = StyleSheet.create({
+const sheets = themed((c) => ({
   household: { marginTop: space.md, gap: space.sm },
   finding: {
-    backgroundColor: color.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.md,
     borderWidth: stroke.hairline,
-    borderColor: color.line,
+    borderColor: c.line,
     padding: space.md,
   },
-  findingHead: { ...type.label, color: color.ink },
+  findingHead: { ...type.label, color: c.ink },
 
   // Carries the separation the removed section label used to: a full step of
   // space above, and a hairline to close the plan options off from the list.
@@ -333,7 +340,7 @@ const styles = StyleSheet.create({
     marginTop: space.xl,
     paddingTop: space.lg,
     borderTopWidth: stroke.hairline,
-    borderTopColor: color.line,
+    borderTopColor: c.line,
     gap: space.sm,
   },
 
@@ -342,11 +349,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: space.md,
-    backgroundColor: color.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.lg,
     borderWidth: stroke.control,
     // A control boundary, not a hairline. See `border` in theme.ts.
-    borderColor: color.border,
+    borderColor: c.border,
     padding: space.md,
     marginBottom: space.sm,
     minHeight: TAP_TARGET,
@@ -362,7 +369,7 @@ const styles = StyleSheet.create({
   // Selection is carried by the accent border and the price colour — the same
   // accent the recommended route uses, and nowhere else. Not a cheap/expensive
   // signal, just "this is the one chosen."
-  planOptionActive: { borderColor: color.accent, backgroundColor: color.accentSoft },
+  planOptionActive: { borderColor: c.accent, backgroundColor: c.accentSoft },
   planOptionMain: { flex: 1, gap: space.xs },
   // Wraps. At accessibility text sizes the term, the badge and the price stop
   // fitting on one line, and a row that cannot fit squeezes its children: the
@@ -375,11 +382,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   planOptionCheck: { marginRight: -space.xs },
-  planOptionTerm: { ...type.bodyStrong, color: color.ink },
+  planOptionTerm: { ...type.bodyStrong, color: c.ink },
   planBadge: {
     ...type.captionStrong,
-    color: color.accentInk,
-    backgroundColor: color.accent,
+    color: c.accentInk,
+    backgroundColor: c.accent,
     borderRadius: radius.sm,
     paddingHorizontal: space.sm,
     // Was 2 — the only value in the app that sat off the 8px scale and off its
@@ -390,18 +397,18 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     overflow: 'hidden',
   },
-  planOptionFootnote: { ...type.caption, color: color.inkMuted },
+  planOptionFootnote: { ...type.caption, color: c.inkMuted },
   planOptionPrice: { alignItems: 'flex-end' },
   planPriceStacked: { alignItems: 'flex-start' },
-  planPrice: { ...type.amount, color: color.ink },
-  planPriceActive: { color: color.accent },
-  planCadence: { ...type.caption, color: color.inkMuted },
+  planPrice: { ...type.amount, color: c.ink },
+  planPriceActive: { color: c.accent },
+  planCadence: { ...type.caption, color: c.inkMuted },
 
   demoStrip: {
-    backgroundColor: color.flagBg,
+    backgroundColor: c.flagBg,
     borderRadius: radius.md,
     padding: space.md,
     marginTop: space.md,
   },
-  demoText: { ...type.caption, color: color.flag },
-});
+  demoText: { ...type.caption, color: c.flag },
+}));

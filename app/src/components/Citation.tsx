@@ -24,8 +24,10 @@
  * document. See `app/src/requirements.ts`.
  */
 
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import { TAP_TARGET, color, radius, space, stroke, type } from '../theme';
+import { Linking, Pressable, Text, View } from 'react-native';
+import { TAP_TARGET, radius, space, stroke, type } from '../theme';
+import { useStyles } from '../ThemeProvider';
+import { themed } from '../styles/themed';
 import { Requirement } from '../routes';
 import { Status, statusLabel } from '../requirements';
 
@@ -75,6 +77,7 @@ export function Citation({
   requirement: Requirement;
   status: Status;
 }) {
+  const styles = useStyles(sheets);
   const effective = formatEffective(requirement.effective_date);
 
   return (
@@ -113,21 +116,21 @@ export function Citation({
   );
 }
 
-const styles = StyleSheet.create({
+const sheets = themed((c) => ({
   wrap: {
     borderTopWidth: stroke.hairline,
-    borderTopColor: color.line,
+    borderTopColor: c.line,
     marginTop: space.md,
     paddingTop: space.md,
   },
 
-  status: { ...type.captionStrong, color: color.flag },
-  summary: { ...type.caption, color: color.ink, marginTop: space.xs },
+  status: { ...type.captionStrong, color: c.flag },
+  summary: { ...type.caption, color: c.ink, marginTop: space.xs },
 
   // Inset on the canvas tint so the payer's words sit visibly apart from ours
   // on a white card, without a border competing with the card's own edge.
   quoteBlock: {
-    backgroundColor: color.canvas,
+    backgroundColor: c.canvas,
     borderRadius: radius.sm,
     padding: space.md,
     marginTop: space.sm,
@@ -135,19 +138,19 @@ const styles = StyleSheet.create({
   },
   // Body size, not caption. This is the sentence the whole screen is evidence
   // for; setting it at 13px alongside our own paraphrase said the opposite.
-  quote: { ...type.body, color: color.ink },
+  quote: { ...type.body, color: c.ink },
 
-  docTitle: { ...type.captionStrong, color: color.ink, marginTop: space.xs },
-  docMeta: { ...type.caption, color: color.inkMuted },
+  docTitle: { ...type.captionStrong, color: c.ink, marginTop: space.xs },
+  docMeta: { ...type.caption, color: c.inkMuted },
 
   link: {
     minHeight: TAP_TARGET,
     justifyContent: 'center',
   },
   linkPressed: { opacity: 0.6 },
-  // `accentDeep`, not `accent`: this is 13px, where WCAG wants 4.5:1 rather
+  // `accentText`, not `accent`: this is 13px, where WCAG wants 4.5:1 rather
   // than the 3:1 large text is allowed. See the token comments in theme.ts.
-  linkText: { ...type.captionStrong, color: color.accentDeep },
+  linkText: { ...type.captionStrong, color: c.accentText },
 
-  hedge: { ...type.caption, color: color.inkMuted, marginBottom: space.sm },
-});
+  hedge: { ...type.caption, color: c.inkMuted, marginBottom: space.sm },
+}));

@@ -1,5 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { TAP_TARGET, color, radius, space, stroke, textScale, type } from '../theme';
+import { Pressable, Text, View } from 'react-native';
+import { TAP_TARGET, radius, space, stroke, textScale, type } from '../theme';
+import { useStyles } from '../ThemeProvider';
+import { themed } from '../styles/themed';
 import { Money } from '../Money';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { data } from '../appData';
@@ -135,6 +137,8 @@ export function LandingStep({
   onScenario: (scenario: DemoScenario) => void;
   onMethod: () => void;
 }) {
+  const styles = useStyles(sheets);
+
   return (
     <>
       {/* Two lines at 32px on the narrowest screen. The previous headline ran
@@ -223,12 +227,12 @@ export function LandingStep({
   );
 }
 
-const styles = StyleSheet.create({
+const sheets = themed((c) => ({
   // The screen's own top margin, which used to live on a wrapper View that did
   // nothing else. One less element for one style property.
   landingHeadline: {
     ...type.display,
-    color: color.ink,
+    color: c.ink,
     marginTop: space.xl,
     marginBottom: space.xl,
   },
@@ -239,9 +243,9 @@ const styles = StyleSheet.create({
   proof: {
     marginTop: space.lg,
     borderWidth: stroke.hairline,
-    borderColor: color.line,
+    borderColor: c.line,
     borderRadius: radius.lg,
-    backgroundColor: color.surface,
+    backgroundColor: c.surface,
     paddingHorizontal: space.md,
     paddingTop: space.md,
     paddingBottom: space.md,
@@ -249,18 +253,18 @@ const styles = StyleSheet.create({
   proofRow: { paddingVertical: space.sm },
   // The divider sits between the two scenarios because the inversion between
   // them is the point. It separates two readings of one case, not two items.
-  proofRowDivided: { borderTopWidth: stroke.hairline, borderTopColor: color.line },
-  proofLine: { ...type.caption, color: color.ink, marginBottom: space.xs },
+  proofRowDivided: { borderTopWidth: stroke.hairline, borderTopColor: c.line },
+  proofLine: { ...type.caption, color: c.ink, marginBottom: space.xs },
   proofSource: {
     ...type.caption,
-    color: color.inkMuted,
+    color: c.inkMuted,
     borderTopWidth: stroke.hairline,
-    borderTopColor: color.line,
+    borderTopColor: c.line,
     paddingTop: space.sm,
     marginTop: space.sm,
   },
   proofPressed: { opacity: 0.7 },
-  proofOpen: { ...type.label, color: color.accent, marginTop: space.sm },
+  proofOpen: { ...type.label, color: c.accent, marginTop: space.sm },
 
   // Cards would compete with the two buttons above for the same attention;
   // these are one line each because the title is the whole message.
@@ -269,10 +273,10 @@ const styles = StyleSheet.create({
     minHeight: TAP_TARGET,
     justifyContent: 'center',
     borderBottomWidth: stroke.hairline,
-    borderBottomColor: color.line,
+    borderBottomColor: c.line,
   },
   morePressed: { opacity: 0.6 },
-  moreText: { ...type.body, color: color.ink },
+  moreText: { ...type.body, color: c.ink },
 
   method: {
     alignItems: 'center',
@@ -281,5 +285,5 @@ const styles = StyleSheet.create({
     minHeight: TAP_TARGET,
   },
   methodPressed: { opacity: 0.6 },
-  methodText: { ...type.caption, color: color.inkMuted },
-});
+  methodText: { ...type.caption, color: c.inkMuted },
+}));

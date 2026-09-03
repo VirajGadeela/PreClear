@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text } from 'react-native';
-import { TAP_TARGET, color, space, type } from '../theme';
+import { Pressable, Text } from 'react-native';
+import { TAP_TARGET, space, type } from '../theme';
+import { useStyles, useTheme } from '../ThemeProvider';
+import { themed } from '../styles/themed';
 
 /**
  * The one back control in the app.
@@ -17,6 +19,9 @@ import { TAP_TARGET, color, space, type } from '../theme';
  * font's own punctuation character does not.
  */
 export function BackLink({ label, onPress }: { label: string; onPress: () => void }) {
+  const styles = useStyles(sheets);
+  const { c } = useTheme();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -25,13 +30,13 @@ export function BackLink({ label, onPress }: { label: string; onPress: () => voi
       onPress={onPress}
       style={({ pressed }) => [styles.backLink, pressed && styles.backLinkPressed]}
     >
-      <Ionicons name="chevron-back" size={20} color={color.inkMuted} />
+      <Ionicons name="chevron-back" size={20} color={c.inkMuted} />
       <Text style={styles.backLinkText}>{label}</Text>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const sheets = themed((c) => ({
   backLink: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -40,5 +45,5 @@ const styles = StyleSheet.create({
     minHeight: TAP_TARGET,
   },
   backLinkPressed: { opacity: 0.6 },
-  backLinkText: { ...type.label, color: color.inkMuted },
-});
+  backLinkText: { ...type.label, color: c.inkMuted },
+}));

@@ -10,14 +10,15 @@
  * about the engine changed — `buildRoutes` and `rankRoutes` are called with the
  * same inputs, and the parity scripts still cover them.
  *
- * `Headline` is duplicated from `RoutesStep` for now, and only its markup is:
- * both read `summarize()` from `src/share.ts`, so the *finding* has one
- * definition and cannot drift while the two coexist. RoutesStep goes when the
- * tab navigation lands; until then it stays on disk so this is revertible.
+ * `Headline` was duplicated from `RoutesStep` while both existed, and only its
+ * markup ever was: both read `summarize()` from `src/share.ts`, so the
+ * *finding* had one definition throughout and could not drift. RoutesStep,
+ * ScanStep and CoverageStep are gone as of the theme migration — nothing had
+ * imported them since the tab navigation landed.
  */
 
 import { memo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Citation, publisher } from '../components/Citation';
 import { Money } from '../Money';
@@ -29,8 +30,10 @@ import { Procedure } from '../appData';
 import { QuerySource, ScreenerQuery } from '../screener';
 import { ScreenerFilters } from './ScreenerFilters';
 import { summarize } from '../share';
-import { shared } from '../styles/shared';
-import { TAP_TARGET, color, radius, space, stroke, textScale, type } from '../theme';
+import { sharedSheets } from '../styles/shared';
+import { TAP_TARGET, radius, space, stroke, textScale, type } from '../theme';
+import { useStyles } from '../ThemeProvider';
+import { themed } from '../styles/themed';
 
 type Finding = { requirement: Requirement; status: string };
 
@@ -73,6 +76,7 @@ function tiedTotals(routes: Route[]): Set<number> {
  * because the shared card has to say the same thing.
  */
 function Headline({ routes }: { routes: Route[] }) {
+  const styles = useStyles(sheets);
   const summary = summarize(routes);
   if (!summary) return null;
 
@@ -144,6 +148,8 @@ const RouteRow = memo(function RouteRow({
   findings: Finding[];
   onToggle: () => void;
 }) {
+  const styles = useStyles(sheets);
+  const shared = useStyles(sharedSheets);
   const statusFor = (key: string) =>
     (findings.find((finding) => finding.requirement.key === key)?.status ??
       'unmet') as Status;
@@ -271,6 +277,8 @@ export function ScreenerScreen({
   onShare: () => void;
   onMethod: () => void;
 }) {
+  const styles = useStyles(sheets);
+  const shared = useStyles(sharedSheets);
   const tied = tiedTotals(routes);
 
   return (
@@ -363,7 +371,7 @@ export function ScreenerScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const sheets = themed((c) => ({
   hero: { marginBottom: space.lg },
   // `body`, not `title`, and the figures at `large` rather than `hero`.
   //
@@ -371,28 +379,28 @@ const styles = StyleSheet.create({
   // ran to five lines and pushed the top-ranked route below the fold — which
   // defeats the one thing results-first is for. The number carries the emphasis;
   // the words around it do not need to compete.
-  heroLead: { ...type.body, color: color.ink, marginVertical: space.xs },
-  heroWhy: { ...type.caption, color: color.inkMuted, marginTop: space.sm },
+  heroLead: { ...type.body, color: c.ink, marginVertical: space.xs },
+  heroWhy: { ...type.caption, color: c.inkMuted, marginTop: space.sm },
 
   columnHead: {
     ...type.label,
-    color: color.inkMuted,
+    color: c.inkMuted,
     paddingBottom: space.sm,
     borderBottomWidth: stroke.hairline,
-    borderBottomColor: color.line,
+    borderBottomColor: c.line,
   },
 
   // A row, not a card: separated by a hairline rather than bounded by a border,
   // so the list reads as one ranked sequence.
   row: {
     borderBottomWidth: stroke.hairline,
-    borderBottomColor: color.line,
+    borderBottomColor: c.line,
   },
   // The one accent in the app, and the recommended route is what it is for.
   rowRecommended: {
-    backgroundColor: color.accentSoft,
+    backgroundColor: c.accentSoft,
     borderLeftWidth: stroke.control,
-    borderLeftColor: color.accent,
+    borderLeftColor: c.accent,
   },
   rowHead: {
     flexDirection: 'row',
@@ -405,25 +413,25 @@ const styles = StyleSheet.create({
   // Tabular so the numerals sit on one axis down the list.
   rank: {
     ...type.label,
-    color: color.inkMuted,
+    color: c.inkMuted,
     fontVariant: ['tabular-nums'],
     minWidth: space.md,
   },
   rowBody: { flex: 1 },
-  routeLabel: { ...type.bodyStrong, color: color.ink, marginBottom: space.xs },
-  meta: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
-  evidence: { ...type.caption, color: color.accentDeep, marginTop: space.xs },
-  chevron: { ...type.label, color: color.accentDeep },
+  routeLabel: { ...type.bodyStrong, color: c.ink, marginBottom: space.xs },
+  meta: { ...type.caption, color: c.inkMuted, marginTop: space.xs },
+  evidence: { ...type.caption, color: c.accentText, marginTop: space.xs },
+  chevron: { ...type.label, color: c.accentText },
 
   details: {
     paddingHorizontal: space.md,
     paddingBottom: space.md,
   },
-  warning: { ...type.caption, color: color.flag, marginTop: space.sm },
+  warning: { ...type.caption, color: c.flag, marginTop: space.sm },
   // Not `flag`. An out-of-pocket cap is the plan working as written, not a
   // problem with the published data, and the brown reserved for data-quality
   // limits would misfile it as one.
-  capped: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
+  capped: { ...type.caption, color: c.inkMuted, marginTop: space.xs },
 
   // Outlined and ink-toned, never accent: sharing is an action performed on a
   // result, not a result.
@@ -434,8 +442,8 @@ const styles = StyleSheet.create({
     minHeight: TAP_TARGET,
     borderRadius: radius.md,
     borderWidth: stroke.hairline,
-    borderColor: color.border,
+    borderColor: c.border,
     paddingHorizontal: space.md,
   },
-  shareText: { ...type.body, fontWeight: '600', color: color.ink },
-});
+  shareText: { ...type.body, fontWeight: '600', color: c.ink },
+}));

@@ -1,6 +1,8 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { color, space, type } from '../theme';
+import { Text, View } from 'react-native';
+import { space, type } from '../theme';
+import { useStyles } from '../ThemeProvider';
+import { themed } from '../styles/themed';
 import { PrimaryButton } from './PrimaryButton';
 
 type Props = {
@@ -46,23 +48,37 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.error) {
-      return (
-        <View style={styles.wrap}>
-          <Text style={styles.title}>Something went wrong on this screen.</Text>
-          <Text style={styles.body}>
-            Nothing you entered was saved or sent anywhere, so starting over is
-            safe.
-          </Text>
-          <PrimaryButton label="Start over" onPress={this.handleReset} tone="accent" />
-        </View>
-      );
+      return <ErrorFallback onReset={this.handleReset} />;
     }
     return this.props.children;
   }
 }
 
-const styles = StyleSheet.create({
+/**
+ * The fallback, split out as a function component.
+ *
+ * Not a style decision — a mechanical one. Themed stylesheets are read through
+ * `useStyles`, and a class component cannot call a hook. The alternative was
+ * `static contextType`, which works but ties the boundary to one context and
+ * reads worse than the split.
+ */
+function ErrorFallback({ onReset }: { onReset: () => void }) {
+  const styles = useStyles(sheets);
+
+  return (
+    <View style={styles.wrap}>
+      <Text style={styles.title}>Something went wrong on this screen.</Text>
+      <Text style={styles.body}>
+        Nothing you entered was saved or sent anywhere, so starting over is
+        safe.
+      </Text>
+      <PrimaryButton label="Start over" onPress={onReset} tone="accent" />
+    </View>
+  );
+}
+
+const sheets = themed((c) => ({
   wrap: { marginTop: space.xl },
-  title: { ...type.title, color: color.ink, marginBottom: space.sm },
-  body: { ...type.body, color: color.inkMuted, marginBottom: space.md },
-});
+  title: { ...type.title, color: c.ink, marginBottom: space.sm },
+  body: { ...type.body, color: c.inkMuted, marginBottom: space.md },
+}));

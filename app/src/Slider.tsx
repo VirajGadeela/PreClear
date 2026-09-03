@@ -16,12 +16,13 @@ import {
   LayoutChangeEvent,
   PanResponder,
   Pressable,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
 
-import { TAP_TARGET, color, radius, space, stroke, type as typography } from './theme';
+import { TAP_TARGET, radius, space, stroke, type as typography } from './theme';
+import { useStyles } from './ThemeProvider';
+import { themed } from './styles/themed';
 
 export type Preset = { label: string; value: number };
 
@@ -61,6 +62,7 @@ export function Slider({
   rangeLabels,
   presets,
 }: Props) {
+  const styles = useStyles(sheets);
   const [width, setWidth] = useState(0);
   // The responder closes over these, so they have to be refs rather than state.
   const widthRef = useRef(0);
@@ -192,7 +194,7 @@ export function Slider({
   );
 }
 
-const styles = StyleSheet.create({
+const sheets = themed((c) => ({
   wrapper: {
     marginBottom: space.lg,
   },
@@ -204,13 +206,13 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.label,
-    color: color.ink,
+    color: c.ink,
     flexShrink: 1,
     paddingRight: space.md,
   },
   value: {
     ...typography.label,
-    color: color.ink,
+    color: c.ink,
     // No fontWeight. `label` is Manrope-SemiBold, a static weight file, so
     // fontWeight is not read for this role (see `font` in theme.ts) — the
     // '700' that used to sit here never rendered.
@@ -226,7 +228,7 @@ const styles = StyleSheet.create({
     // Was 1px. A preset is a Pressable, so it takes the control weight the
     // Step 1 chips use — it had been drawn as if it were a divider.
     borderWidth: stroke.control,
-    borderColor: color.border,
+    borderColor: c.border,
     paddingHorizontal: space.sm,
     minHeight: TAP_TARGET,
     justifyContent: 'center',
@@ -237,7 +239,7 @@ const styles = StyleSheet.create({
   // not an explanatory caption.
   presetText: {
     ...typography.label,
-    color: color.ink,
+    color: c.ink,
   },
   // 44pt of touchable height around a 30pt thumb. The visual weight is
   // unchanged; only the area that accepts a finger grew.
@@ -251,30 +253,30 @@ const styles = StyleSheet.create({
     right: 0,
     height: TRACK,
     borderRadius: TRACK / 2,
-    // `line` measures 1.2:1 against the canvas — the track was effectively
+    // `line` measures 1.19:1 against the canvas — the track was effectively
     // invisible until it was filled.
-    backgroundColor: color.border,
+    backgroundColor: c.border,
   },
   fill: {
     position: 'absolute',
     height: TRACK,
     borderRadius: TRACK / 2,
-    backgroundColor: color.slate,
+    backgroundColor: c.slate,
   },
   thumb: {
     position: 'absolute',
     width: THUMB,
     height: THUMB,
     borderRadius: THUMB / 2,
-    backgroundColor: color.surface,
+    backgroundColor: c.surface,
     borderWidth: stroke.thumb,
-    borderColor: color.slate,
+    borderColor: c.slate,
   },
   // Held. The ring thickens and takes the accent rather than the thumb growing:
   // a thumb that changes size while it tracks a finger reads as the value
   // jumping, and this control's whole job is that the number under the finger
   // is the number being set.
-  thumbDragging: { borderWidth: stroke.thumbHeld, borderColor: color.accent },
+  thumbDragging: { borderWidth: stroke.thumbHeld, borderColor: c.accent },
   rangeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -285,14 +287,14 @@ const styles = StyleSheet.create({
   // thing this pass is trying to stop people skimming past.
   rangeText: {
     ...typography.caption,
-    color: color.ink,
+    color: c.ink,
   },
   // Promoted to the slider's own body size and full ink, not caption-muted:
   // this is the one sentence that changes what value someone enters, so it
   // reads as part of the control, not an annotation trailing under it.
   help: {
     ...typography.body,
-    color: color.ink,
+    color: c.ink,
     marginTop: space.xs,
   },
-});
+}));

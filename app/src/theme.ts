@@ -25,44 +25,151 @@
  * re-measured before it lands.
  */
 
-export const color = {
-  ink: '#161B22',        // primary text, 16.0:1 on canvas, 17.6:1 on surface
-  inkMuted: '#565F6B',   // secondary text, 5.97:1 on canvas, 6.53:1 on surface
-  canvas: '#F4F6F8',     // off-white with a faint cool tint, not stark white
-  surface: '#FFFFFF',    // cards lift off the canvas
-  line: '#DEE3E7',       // decorative hairlines and card edges only
+export type Scheme = 'light' | 'dark';
 
-  // Reserved for the recommended route and nothing else. A muted steel/cobalt
-  // rather than a bright primary blue — the generic "SaaS blue" is as much a
-  // default-AI tell as the clay/oxblood this replaced.
-  accent: '#215A8C',     // 6.67:1 on canvas, 7.23:1 on surface
-  accentInk: '#FFFFFF',  // on accent, 7.23:1
-  accentSoft: '#E4EDF5', // accent-tinted surface for the recommended card
+/**
+ * The role names every stylesheet is written against.
+ *
+ * A palette is a set of *roles*, not a set of colours, and that is what makes a
+ * second scheme possible at all. Nothing below is named for what it looks like
+ * — there is no `grey900` or `blue500` — so `surface` can sit above `canvas` in
+ * light and below it in dark while every call site stays the same sentence:
+ * "cards lift off the canvas."
+ */
+export type Palette = {
+  ink: string;
+  inkMuted: string;
+  canvas: string;
+  surface: string;
+  line: string;
+  accent: string;
+  accentInk: string;
+  accentSoft: string;
+  accentText: string;
+  border: string;
+  slate: string;
+  slateInk: string;
+  flag: string;
+  flagBg: string;
+};
 
-  // The same blue, darkened, for accent text below 18px — where WCAG wants
-  // 4.5:1 rather than the 3:1 large text is allowed. `accent` already clears
-  // that (6.10:1 on accentSoft), so this exists for the darkest small-text
-  // case rather than out of necessity — 9.20:1 on accentSoft, 10.06:1 on
-  // canvas, 10.89:1 on surface.
-  accentDeep: '#173F63',
+/**
+ * Two schemes. Only colour varies between them — `space`, `radius`, `stroke`,
+ * `type`, `TAP_TARGET`, `size` and `textScale` are invariant, which is why
+ * `themed()` in `styles/themed.ts` builds each stylesheet twice and nothing
+ * else in this file is duplicated.
+ *
+ * Every ratio in the comments below is measured by `scripts/check-contrast.py`,
+ * which asserts them on both schemes. That script is the source of truth: if a
+ * comment and the script disagree, the comment is stale. A few of these were —
+ * they were written by hand before anything checked them, and the drift was
+ * small (17.6 for ink on surface, actually 17.3) but it is exactly the drift
+ * that makes a documented ratio worthless. Change a hex, run the script.
+ */
+export const palettes: Record<Scheme, Palette> = {
+  light: {
+    ink: '#161B22',        // primary text, 15.97:1 on canvas, 17.30:1 on surface
+    inkMuted: '#565F6B',   // secondary text, 5.97:1 on canvas, 6.47:1 on surface
+    canvas: '#F4F6F8',     // off-white with a faint cool tint, not stark white
+    surface: '#FFFFFF',    // cards lift off the canvas
+    line: '#DEE3E7',       // decorative hairlines and card edges only
 
-  // Control outlines — chips, text inputs, the slider track. WCAG 1.4.11 wants
-  // 3:1 for the boundary of an interactive element, and `line` measures 1.05:1,
-  // which is invisible. An unselected chip is white on near-white canvas, so
-  // this border is the only thing that says a control is there.
-  // 3.15:1 on canvas, 3.40:1 on surface.
-  border: '#828C97',
+    // Reserved for the recommended route and nothing else. A muted steel/cobalt
+    // rather than a bright primary blue — the generic "SaaS blue" is as much a
+    // default-AI tell as the clay/oxblood this replaced.
+    accent: '#215A8C',     // 6.67:1 on canvas, 7.23:1 on surface
+    accentInk: '#FFFFFF',  // on accent, 7.23:1
+    accentSoft: '#E4EDF5', // accent-tinted surface for the recommended card
 
-  // Every non-recommended route uses this, at equal weight. A cash route that
-  // ranks second must look exactly like an in-network route that ranks second.
-  // Kept as a cool slate rather than a second blue, so it reads as neutral
-  // next to the one blue that means "recommended."
-  slate: '#3B4652',      // white on slate, 9.62:1; on canvas, 8.88:1
+    // The same blue, darkened, for accent text below 18px — where WCAG wants
+    // 4.5:1 rather than the 3:1 large text is allowed. `accent` already clears
+    // that (6.10:1 on accentSoft), so this exists for the darkest small-text
+    // case rather than out of necessity — 9.20:1 on accentSoft, 10.06:1 on
+    // canvas, 10.89:1 on surface.
+    accentText: '#173F63',
 
-  flag: '#6B5A2E',       // data-quality warnings; muted olive-brown, not alarm red
-  flagBg: '#EFECE1',     // flag on flagBg, 5.68:1
-} as const;
+    // Control outlines — chips, text inputs, the slider track. WCAG 1.4.11 wants
+    // 3:1 for the boundary of an interactive element, and `line` measures 1.19:1,
+    // which is invisible. An unselected chip is white on near-white canvas, so
+    // this border is the only thing that says a control is there.
+    // 3.15:1 on canvas, 3.42:1 on surface.
+    border: '#828C97',
 
+    // Every non-recommended route uses this, at equal weight. A cash route that
+    // ranks second must look exactly like an in-network route that ranks second.
+    // Kept as a cool slate rather than a second blue, so it reads as neutral
+    // next to the one blue that means "recommended."
+    slate: '#3B4652',      // 8.88:1 on canvas
+    slateInk: '#FFFFFF',   // on slate, 9.62:1
+
+    flag: '#6B5A2E',       // data-quality warnings; muted olive-brown, not alarm red
+    flagBg: '#EFECE1',     // flag on flagBg, 5.68:1
+  },
+
+  /**
+   * Dark is a role inversion, not a second design.
+   *
+   * Three things constrain it beyond the ratios:
+   *
+   *   - `surface` sits *lighter* than `canvas`, the reverse of light. DESIGN.md
+   *     §6 bans shadow, so a value step plus a hairline is the only lift
+   *     mechanism this system has, and a card that went darker than its ground
+   *     would read as a hole rather than as a card.
+   *   - `line` stays near-invisible (1.15:1 on surface). If it were legible it
+   *     would become a second `border`, and the whole point of keeping the two
+   *     apart is that one divides and one is the boundary of something a finger
+   *     operates.
+   *   - `slate` inverts from a dark fill to a light one, which is why `slateInk`
+   *     exists. Four call sites were using `surface` to mean "text on a slate
+   *     fill" — the primary button's label, a selected chip's label and its
+   *     checkmark, the dev tier switch. That pairing does *not* break here, and
+   *     it is worth being exact about why not: `surface` and `slate` invert
+   *     together, so the label lands at 10.16:1 rather than at anything close
+   *     to a failure. The problem is that nothing said they had to invert
+   *     together. Two unrelated roles were tied by a coincidence of value, and
+   *     lightening `surface` to lift cards further off the canvas would have
+   *     quietly walked the button's label toward its own fill with no test and
+   *     no name to catch it. `slateInk` is that name.
+   *
+   * The accent stays the same steel/cobalt family, lifted until it reads as
+   * text on a dark ground. It is still the only hue in the app that means
+   * anything, and it still means exactly one thing.
+   */
+  dark: {
+    ink: '#E8ECF1',        // primary text, 15.18:1 on canvas, 13.36:1 on surface
+    inkMuted: '#A3AEBA',   // secondary text, 7.99:1 on canvas, 7.04:1 on surface
+    canvas: '#12171D',     // near-black with the same faint cool tint as light
+    surface: '#1C232B',    // lighter than canvas — the lift, since §6 bans shadow
+    line: '#262E37',       // 1.15:1 on surface; decorative, and deliberately barely there
+
+    accent: '#6FA8D6',     // 7.07:1 on canvas, 6.23:1 on surface
+    accentInk: '#0E141A',  // on accent, 7.28:1 — dark ink on a light fill now
+    accentSoft: '#18293A', // accent-tinted surface, still lighter than canvas
+
+    // 8.24:1 on accentSoft, 10.01:1 on canvas, 8.81:1 on surface.
+    accentText: '#9FC6E4',
+
+    // 4.02:1 on canvas, 3.54:1 on surface — clears WCAG 1.4.11's 3:1 on both.
+    // Chosen darker than the first candidate so the slider's filled portion
+    // still separates from its unfilled track (2.87:1, against light's 2.81:1).
+    border: '#6E7885',
+
+    slate: '#C7D0DA',      // 11.55:1 on canvas
+    slateInk: '#12171D',   // on slate, 11.55:1
+
+    flag: '#C9B37E',       // the same muted olive, lifted; 8.78:1 on canvas
+    flagBg: '#2A2822',     // flag on flagBg, 7.18:1
+  },
+};
+
+/**
+ * The light palette, under the name every un-migrated stylesheet still imports.
+ *
+ * Kept so the theme migration could land file by file with a runnable app after
+ * each step rather than as one 148-reference commit. Delete it once nothing
+ * imports it; `grep -rn "color\." app/src` is the check.
+ */
+export const color = palettes.light;
 /**
  * An 8px grid, with a single 4px half-step.
  *
@@ -97,7 +204,7 @@ export const radius = {
  *
  * The distinction is not decoration. WCAG 1.4.11 asks 3:1 for the boundary of
  * an interactive element, which is why `control` pairs with `color.border`
- * (3.15:1 on canvas) and never with `color.line` (1.05:1, invisible by
+ * (3.15:1 on canvas) and never with `color.line` (1.19:1, invisible by
  * design). Pairing a weight with the wrong colour is the failure this token
  * exists to make obvious.
  */
