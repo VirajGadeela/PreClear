@@ -111,7 +111,7 @@ export function routeCopy(route: Route, baselineAllowed: number | null): RouteCo
  *
  * `summarize()` in `share.ts` already says whether cash or insurance wins, and
  * that stays the headline figure. This says the same thing as an instruction,
- * because "cash costs $367.93 more this year" is a fact and "staying in-network
+ * because "cash costs $62.18 more this year" is a fact and "staying in-network
  * is your cheaper route" is an answer, and a member asked for the second.
  */
 export function verdict(routes: Route[]): string | null {

@@ -422,6 +422,19 @@ export function ScreenerFilters({
               onChange={(value) => onRefine({ coinsurance: value })}
               format={(value) => `${Math.round(value * 100)}%`}
             />
+            {/* Min tracks the deductible, so the impossible plan is not
+                reachable by dragging. `App.tsx` normalizes the other
+                direction — raising the deductible pushes this up with it. */}
+            <Slider
+              label="Out-of-pocket max remaining"
+              value={query.oopMax}
+              minimum={query.deductible}
+              maximum={20000}
+              step={500}
+              onChange={(value) => onRefine({ oopMax: value })}
+              format={money}
+              helpText="On your card. Everything your plan pays for stops costing you past this."
+            />
             <Slider
               label="Other care you expect this year"
               value={query.expectedOtherSpend}

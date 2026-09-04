@@ -96,7 +96,11 @@ for (const scenario of DEMO_SCENARIOS) {
     benefits: {
       deductibleRemaining: scenario.deductible,
       coinsuranceRate: scenario.coinsurance,
-      oopMaxRemaining: 6000,
+      // Was hardcoded to 6000 here and in App.tsx, while the cash-trap
+      // scenario carries a 6250 deductible. That is not a plan anyone can
+      // hold, and the visible symptom was every insured route reporting the
+      // same total because they all hit the cap.
+      oopMaxRemaining: scenario.oopMax,
       copay: 0,
     },
     expectedOtherAllowedSpend: scenario.expectedOtherSpend,
@@ -126,6 +130,8 @@ for (const scenario of DEMO_SCENARIOS) {
   // Sliders only stop on these steps. A scenario off-step shows a number the
   // member cannot reproduce, and their first drag would change the answer.
   if (scenario.deductible % 250 !== 0) fail(scenario.id, `deductible ${scenario.deductible} is off the 250 step`);
+  if (scenario.oopMax < scenario.deductible) fail(scenario.id, `oopMax ${scenario.oopMax} is below the deductible ${scenario.deductible}`);
+  if (scenario.oopMax % 500 !== 0) fail(scenario.id, `oopMax ${scenario.oopMax} is off the 500 step`);
   if (scenario.expectedOtherSpend % 500 !== 0) fail(scenario.id, `other spend ${scenario.expectedOtherSpend} is off the 500 step`);
   if (Math.round(scenario.coinsurance * 100) % 5 !== 0) fail(scenario.id, `coinsurance ${scenario.coinsurance} is off the 0.05 step`);
 

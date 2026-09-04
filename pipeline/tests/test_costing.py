@@ -103,15 +103,29 @@ class TestPaymentMath(unittest.TestCase):
         self.assertAlmostEqual(estimate.coinsurance_paid, 120.0, places=2)
 
     def test_oop_max_caps_the_payment(self):
-        benefits = PlanBenefits(5000, 0.2, 300)
+        # $300 of deductible left and $300 of ceiling left: a plan with no
+        # coinsurance headroom above the deductible. This used to read
+        # PlanBenefits(5000, 0.2, 300), which is not a plan anyone can hold --
+        # it took a deductible seventeen times the remaining ceiling to make the
+        # cap bind. The invariant now rejects that, and the cap still binds here.
+        benefits = PlanBenefits(300, 0.2, 300)
         estimate = estimate_payment(1000, benefits)
         self.assertAlmostEqual(estimate.patient_pays, 300.0, places=2)
-        self.assertAlmostEqual(estimate.shielded_by_oop_max, 700.0, places=2)
+        # $300 to the deductible plus 20% of the remaining $700 is $440 owed,
+        # against a $300 ceiling.
+        self.assertAlmostEqual(estimate.shielded_by_oop_max, 140.0, places=2)
         self.assertEqual(estimate.benefits_after.oop_max_remaining, 0)
 
     def test_deductible_credit_never_exceeds_amount_paid(self):
-        """With the OOP max binding, the deductible cannot absorb unpaid money."""
-        benefits = PlanBenefits(5000, 0.2, 300)
+        """The deductible cannot absorb money the member never paid.
+
+        With the invariant in place this is structurally true rather than
+        incidentally so: the deductible can never exceed the ceiling, so the
+        amount paid can never fall below the amount credited. The `min` in
+        `estimate_payment` is belt-and-braces now, and this test guards the
+        guarantee rather than the arithmetic.
+        """
+        benefits = PlanBenefits(300, 0.2, 300)
         estimate = estimate_payment(1000, benefits)
         self.assertLessEqual(estimate.applied_to_deductible, estimate.patient_pays)
 
@@ -129,6 +143,24 @@ class TestPaymentMath(unittest.TestCase):
     def test_invalid_coinsurance_rejected(self):
         with self.assertRaises(ValueError):
             PlanBenefits(0, 1.5, 100)
+
+    def test_deductible_above_oop_max_rejected(self):
+        """A deductible larger than the whole remaining ceiling is not a plan.
+
+        This is not a theoretical guard. The app hardcoded a $6,000 ceiling
+        while its deductible slider ran to $10,000, and above $6,000 every
+        insured route hit the cap and reported an identical total. Nothing
+        raised, because nothing checked: the arithmetic is perfectly happy to
+        cap a payment it should never have been asked about, and the failure
+        surfaced as a comparison that looked broken rather than as bad input.
+        """
+        with self.assertRaises(ValueError):
+            PlanBenefits(6250, 0.2, 6000)
+
+    def test_deductible_equal_to_oop_max_allowed(self):
+        """The boundary is legal: a plan with no coinsurance after the deductible."""
+        benefits = PlanBenefits(2000, 0.0, 2000)
+        self.assertEqual(benefits.oop_max_remaining, 2000)
 
 
 class TestTheCoreAsymmetry(unittest.TestCase):

@@ -23,11 +23,17 @@ for candidate in /opt/homebrew/opt/node@26/bin /opt/homebrew/opt/node@24/bin /op
 done
 export PATH
 
+# The out-of-pocket-cap case reads [1000,300,0.2,300,...] rather than
+# [1000,5000,0.2,300,...]. The old figures had a deductible seventeen times the
+# remaining ceiling, which is not a plan anyone can hold — the deductible is a
+# component of the out-of-pocket maximum — and both engines now reject it. The
+# cap still binds at these figures: $300 to the deductible plus 20% of the
+# remaining $700 is $440 owed against a $300 ceiling.
 CASES='[[992.51,2000,0.2,6000,true,0],
         [574.27,2000,0.2,6000,false,0],
         [992.51,2000,0.2,6000,true,8000],
         [574.27,2000,0.2,6000,false,8000],
-        [1000,5000,0.2,300,true,0],
+        [1000,300,0.2,300,true,0],
         [1000,400,0.2,6000,true,2500],
         [360.22,0,0.2,6000,true,1200]]'
 

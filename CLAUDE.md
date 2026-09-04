@@ -776,6 +776,43 @@ to tell apart, and the app named none of them.
   to the budget at the same time — budgeting a screen but not the module feeding
   it prose would leave the obvious hiding place unwatched.
 
+### The out-of-pocket ceiling was invented, and it was wrong (found 2026-09-03)
+
+Found by Rohan asking "i dont get why theyre both 6k" of two route rows.
+
+- **`oopMaxRemaining` was hardcoded to 6000 in `App.tsx`** while the deductible
+  slider ran to 10000. Above $6,000 that is an **impossible plan** — the
+  deductible is a component of the out-of-pocket maximum, so a member cannot owe
+  more deductible than their entire remaining ceiling. The default scenario
+  carries a $6,250 deductible, so the shipped default was already impossible.
+- **The symptom was not an error, which is what made it survive.** Every insured
+  route hit the cap and reported an identical total, so the comparison looked
+  broken rather than mis-fed. Arithmetic is perfectly happy to cap a payment it
+  should never have been asked about.
+- **Neither engine validated it.** `PlanBenefits.__post_init__` checked negatives
+  and the coinsurance range and not this. Both `oop.py` and `costing.ts` now
+  raise, with tests either side.
+- **Two existing tests and the parity fixture were built on the impossible
+  plan** — `PlanBenefits(5000, 0.2, 300)`, a deductible seventeen times the
+  ceiling, used to make the cap bind. Rewritten at `(300, 0.2, 300)`, where the
+  cap still binds legitimately. A guard that breaks your own fixtures is usually
+  telling you the fixtures were the bug.
+- **The flagship demo's headline number was inflated almost sixfold by this.**
+  `cash-trap` claimed cash costs $367.93 more across the year; the correct figure
+  with a coherent $9,000 ceiling is **$62.18**. The thesis survives, the drama
+  does not, and it should not — it was not real. **Do not tune the scenario to
+  get it back.**
+- **There is a structural reason that penalty is modest**, worth knowing before
+  someone tries: `cashIsAppropriate` only offers the cash route when expected
+  other care is *below* the deductible, which is exactly the position where the
+  missing credit costs least. A large year penalty and a visible cash route pull
+  against each other by design.
+- **The ceiling is now a fourth slider in "Your year"**, with its minimum
+  tracking the deductible so the impossible state is unreachable by dragging,
+  and a `normalize` dispatch raising it when the deductible passes it. Adding a
+  control right after a decluttering pass was affordable only because that group
+  is now behind a tap.
+
 Gate definitions, for the record:
 
 - **Gate 1 — MRF usability.** Open one target payer's Transparency in Coverage file, extract negotiated rates for CPT 73721 (knee MRI) and 70450 (head CT) at 10 real facilities in the target metro. These files are gigabytes and frequently malformed — stream-parse, don't load. *Pass = 10 real facility prices in a spreadsheet.*
