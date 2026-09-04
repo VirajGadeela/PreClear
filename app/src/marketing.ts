@@ -53,20 +53,17 @@ export const HOW_IT_WORKS: HowItWorksStep[] = [
   {
     n: 1,
     title: 'Name the scan and the plan',
-    body:
-      'The procedure, your insurer, and the plan type printed on your card. No member ID, no card photo — none of that changes the answer.',
+    body: 'No member ID, no card photo. Neither changes the answer.',
   },
   {
     n: 2,
     title: 'Say what the rest of your year looks like',
-    body:
-      'Deductible left, coinsurance, and the other care you expect. That last one is the number most tools ignore, and it is the one that decides this.',
+    body: 'The other care you expect is the number that decides this.',
   },
   {
     n: 3,
     title: 'Read four routes, ranked by the year',
-    body:
-      'Not by the price on the day. Each route shows the reasoning behind it, and the cheapest payment today is sometimes last.',
+    body: 'Not by the price on the day. The cheapest today is sometimes last.',
   },
 ];
 
@@ -84,31 +81,31 @@ export const FAQ: FaqEntry[] = [
   {
     q: 'Will my claim be denied?',
     a:
-      'This app will never tell you. It reads criteria your insurer has already published and reports which ones your order does not document as met. That is a gap in the paperwork, not a coverage decision, and only your insurer makes the second one.',
+      'This app will never tell you. It reports which published criteria your order does not document as met — a gap in the paperwork, not a coverage decision. Only your insurer makes that one.',
   },
   {
     q: 'Why can paying cash be the more expensive choice?',
     a:
-      'A cash payment earns no deductible credit. If you reach your deductible later in the year anyway, the money you paid in cash did nothing to get you there, and you pay the deductible in full on top of it.',
+      'It earns no deductible credit. If you reach your deductible later anyway, that money did nothing to get you there and you pay the deductible in full on top of it.',
   },
   {
     q: 'Where do the prices come from?',
     a:
-      'Files hospitals and insurers are federally required to publish. Every rate on the comparison traces to one of them, and the Sources tab above names the file, the plan and the code behind each.',
+      'Files hospitals and insurers are federally required to publish. Every rate traces to one, named above with its plan and code.',
   },
   {
     q: 'Is this what I will actually pay?',
     a:
-      'No. Every figure is an estimate built from published rates and the benefit numbers you entered. A hospital can bill differently, and your plan is the only authority on your own benefits.',
+      'No. Every figure is an estimate from published rates and the numbers you entered. Your plan is the only authority on your benefits.',
   },
   {
     q: 'What do you do with what I enter?',
     a:
-      'Nothing. It stays on this device, it is not saved between sessions, and there is no analytics SDK in this app to send it anywhere. That is also why there is no account and no sign-in.',
+      'Nothing. It stays on this device, is not saved between sessions, and there is no analytics SDK here to send it anywhere. That is why there is no sign-in.',
   },
   {
     q: 'Why ask for my plan type instead of my member ID?',
     a:
-      'A member ID identifies you and would only be useful for an eligibility lookup this app does not do. The plan type is the fact on your card that changes the price, and it identifies nobody.',
+      'A member ID identifies you and would only serve an eligibility lookup this app does not do. Plan type is the fact that changes the price, and it identifies nobody.',
   },
 ];

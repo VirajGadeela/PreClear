@@ -21,18 +21,24 @@
  */
 
 import { Linking, Pressable, Text, View } from 'react-native';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { data } from '../appData';
-import { FAQ } from '../marketing';
+import { FAQ, HOW_IT_WORKS } from '../marketing';
+import { Disclosure } from '../components/Disclosure';
 import { Requirement } from '../routes';
 import { sharedSheets } from '../styles/shared';
-import { TAP_TARGET, radius, space, stroke, type } from '../theme';
+import { TAP_TARGET, radius, size, space, stroke, textScale, type } from '../theme';
 import { useStyles } from '../ThemeProvider';
 import { themed } from '../styles/themed';
 
 export function MethodStep() {
   const styles = useStyles(sheets);
+  // One key across the whole screen, so payer groups, individual rules and FAQ
+  // entries all close each other. This screen is ~1,500 words with everything
+  // open; letting two branches open at once is most of that back.
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const toggle = (key: string) => setOpenKey((current) => (current === key ? null : key));
   const shared = useStyles(sharedSheets);
   // Grouped by payer, because a payer with two recorded rules and one with
   // nine are different products to a member, and a flat list of 21 hides that
@@ -62,6 +68,25 @@ export function MethodStep() {
       <Text style={shared.h1}>Where these numbers come from</Text>
       <Text style={shared.body}>{data.disclosure}</Text>
 
+      {/* Moved here off the cover. Three lines, not three paragraphs — the
+          directions a member needs mid-task are the control labels and the
+          button, and an explainer belongs on the screen a sceptic opens rather
+          than on the one they are trying to get past. */}
+      <Text style={shared.h2}>How it works</Text>
+      {HOW_IT_WORKS.map((step) => (
+        <View key={step.n} style={styles.step}>
+          <View style={styles.stepDot}>
+            <Text style={styles.stepNumber} maxFontSizeMultiplier={textScale.badge}>
+              {step.n}
+            </Text>
+          </View>
+          <View style={styles.stepBody}>
+            <Text style={styles.stepText}>{step.title}</Text>
+            <Text style={styles.stepNote}>{step.body}</Text>
+          </View>
+        </View>
+      ))}
+
       <Text style={shared.h2}>Prices</Text>
       <Text style={shared.body}>
         Rates come from {data.generated_from} — the files hospitals and payers
@@ -86,16 +111,28 @@ export function MethodStep() {
         outcome.
       </Text>
 
+      {/* Closed by default, one at a time. Every rule used to render its
+          summary, its verbatim quote, a citation, a reviewer line and a link,
+          all at once — 845 words of payer text on arrival. None of it is gone;
+          it is two taps rather than a scroll, and the quote is still directly
+          under the summary that claims it. */}
       {byPayer.map(([payer, requirements]) => (
-        <View key={payer} style={styles.group}>
-          <Text style={styles.groupPayer}>
-            {payer} · {requirements.length}{' '}
-            {requirements.length === 1 ? 'rule' : 'rules'}
-          </Text>
-          {requirements.map((requirement) => (
-            <View key={requirement.key} style={styles.source}>
-              <Text style={shared.detailSummary}>{requirement.summary}</Text>
-              {/* The payer's own words. The line above is ours, and the
+        <Disclosure
+          key={payer}
+          title={payer}
+          summary={`${requirements.length} ${requirements.length === 1 ? 'rule' : 'rules'}`}
+          open={openKey === payer}
+          onToggle={() => toggle(payer)}
+        >
+          {requirements.map((requirement, index) => (
+            <Disclosure
+              key={requirement.key}
+              title={requirement.summary}
+              open={openKey === requirement.key}
+              onToggle={() => toggle(requirement.key)}
+              last={index === requirements.length - 1}
+            >
+              {/* The payer's own words. The title above is ours, and the
                   difference between the two is what lets a member check us. */}
               <Text style={styles.quote}>“{requirement.quote}”</Text>
               <Text style={shared.citation}>
@@ -118,9 +155,9 @@ export function MethodStep() {
               >
                 <Text style={styles.linkText}>Source document</Text>
               </Pressable>
-            </View>
+            </Disclosure>
           ))}
-        </View>
+        </Disclosure>
       ))}
 
       {/* Underneath the sources, not on a tab of its own. A reader with a
@@ -128,15 +165,23 @@ export function MethodStep() {
           the document it depends on is worth more than the same answer one tap
           further away.
 
-          Written as plain stacked blocks rather than as an accordion: six
-          questions do not need progressive disclosure, and a collapsed answer
-          is an answer somebody does not read. */}
+          These shipped as plain stacked blocks, on the argument that six
+          questions do not need progressive disclosure and a collapsed answer is
+          one nobody reads. That was right about six questions in isolation and
+          wrong about this screen: they sit at the bottom of the longest page in
+          the app, and the question is what a reader scans for. The question is
+          still fully visible — only the answer folds. */}
       <Text style={shared.h2}>Questions</Text>
-      {FAQ.map((entry) => (
-        <View key={entry.q} style={styles.faq}>
-          <Text style={styles.faqQuestion}>{entry.q}</Text>
+      {FAQ.map((entry, index) => (
+        <Disclosure
+          key={entry.q}
+          title={entry.q}
+          open={openKey === entry.q}
+          onToggle={() => toggle(entry.q)}
+          last={index === FAQ.length - 1}
+        >
           <Text style={styles.faqAnswer}>{entry.a}</Text>
-        </View>
+        </Disclosure>
       ))}
 
       <Text style={shared.h2}>What this is not</Text>
@@ -155,28 +200,26 @@ export function MethodStep() {
 }
 
 const sheets = themed((c) => ({
-  faq: { marginBottom: space.lg },
-  faqQuestion: { ...type.bodyStrong, color: c.ink, marginBottom: space.xs },
+  // One line each, numbered. The dot is `slate`, not `accent` — the recommended
+  // route owns that, and a step numeral is not a recommendation.
+  step: { flexDirection: 'row', gap: space.md, marginBottom: space.md },
+  stepDot: {
+    width: size.stepDot,
+    height: size.stepDot,
+    borderRadius: size.stepDot / 2,
+    backgroundColor: c.slate,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNumber: { ...type.label, color: c.slateInk },
+  stepBody: { flex: 1 },
+  stepText: { ...type.bodyStrong, color: c.ink },
+  stepNote: { ...type.caption, color: c.inkMuted },
+
   faqAnswer: { ...type.body, color: c.inkMuted },
 
   procedure: { ...type.caption, color: c.inkMuted, marginBottom: space.xs },
 
-  group: { marginTop: space.lg },
-  groupPayer: {
-    ...type.label,
-    color: c.ink,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: space.sm,
-  },
-  source: {
-    backgroundColor: c.surface,
-    borderRadius: radius.md,
-    borderWidth: stroke.hairline,
-    borderColor: c.line,
-    padding: space.md,
-    marginBottom: space.sm,
-  },
   // Italic behind a rule, so the payer's words are visibly not ours.
   quote: {
     ...type.caption,
