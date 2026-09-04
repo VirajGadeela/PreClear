@@ -8,7 +8,6 @@ import { data } from '../appData';
 import { DEMO_SCENARIOS, DemoScenario } from '../demo';
 import { PlanBenefits } from '../costing';
 import { buildRoutes, rankRoutes } from '../routes';
-import { HOW_IT_WORKS } from '../marketing';
 
 /**
  * The landing screen's proof, and the one thing on this page carrying real
@@ -122,11 +121,6 @@ const HEADLINE_SCENARIO = DEMO_SCENARIOS.find(
   (scenario) => scenario.id === 'cash-trap',
 );
 
-/** Everything the panel is not already showing. */
-const OTHER_SCENARIOS = DEMO_SCENARIOS.filter(
-  (scenario) => scenario.id !== HEADLINE_SCENARIO?.id,
-);
-
 /**
  * The cover, and the only screen outside the tabs.
  *
@@ -135,23 +129,23 @@ const OTHER_SCENARIOS = DEMO_SCENARIOS.filter(
  * once. Everything on it leads into the tabs and nothing leads back except the
  * hardware back gesture, which is the right shape for a cold open.
  *
- * Order is deliberate and departs from the reference this borrowed from, which
- * puts a how-it-works block above its example. The proof panel stays directly
- * under the two buttons because it is the strongest thing this product owns —
- * one real published case where the ranking inverts — and a reader who bounces
- * after four seconds should have seen it. The explanation of the controls is
- * worth less than the demonstration and sits below it.
+ * Four things, and that is the whole screen: a headline, one line explaining
+ * it, one button, and the proof panel. It briefly also carried a second button,
+ * two more worked examples, a link to Sources and a numbered how-it-works
+ * block — every one of which duplicated something the tab bar or the filter
+ * panel already offers, on the screen least able to afford it.
+ *
+ * The proof panel earns its place by being the only thing here that argues
+ * rather than asserts: one real published case where the ranking inverts. A
+ * reader who leaves after four seconds should have seen that, not a paragraph
+ * about the controls.
  */
 export function AboutScreen({
   onNext,
-  onHousehold,
   onScenario,
-  onMethod,
 }: {
   onNext: () => void;
-  onHousehold: () => void;
   onScenario: (scenario: DemoScenario) => void;
-  onMethod: () => void;
 }) {
   const styles = useStyles(sheets);
 
@@ -166,10 +160,14 @@ export function AboutScreen({
       >
         Cash can cost more by year's end.
       </Text>
+      <Text style={styles.landingSub}>
+        Same scan, same plan. The cheaper payment can still lose.
+      </Text>
+
+      {/* One button. There used to be a second, to the household plan, and it
+          is a tab — always on screen, one tap, and it does not need to compete
+          with the only action this screen exists to offer. */}
       <PrimaryButton label="Compare my options" onPress={onNext} tone="accent" />
-      {/* Slate, not accent — this is a second, equally-weighted destination,
-          not competing with the scan comparison for the one accent color. */}
-      <PrimaryButton label="See household plan" onPress={onHousehold} />
 
       {/* The panel had an uppercase label above it reading "THE SAME KNEE MRI,
           TWICE". The two rows below say the same thing by being two readings of
@@ -211,79 +209,14 @@ export function AboutScreen({
         )}
       </Pressable>
 
-      {/* Numbered, and the numerals are the only decoration on this screen.
-          No eyebrow above it: `theme.ts` deleted that role with a note not to
-          reintroduce it, and a screen explaining a product is exactly where the
-          temptation comes back. The heading identifies the group; the dots
-          carry the sequence. */}
-      <Text style={styles.stepsHeading}>How it works</Text>
-      <View style={styles.steps}>
-        {HOW_IT_WORKS.map((step) => (
-          <View key={step.n} style={styles.step}>
-            <View style={styles.stepDot}>
-              <Text style={styles.stepNumber} maxFontSizeMultiplier={textScale.badge}>
-                {step.n}
-              </Text>
-            </View>
-            <View style={styles.stepBody}>
-              <Text style={styles.stepTitle}>{step.title}</Text>
-              <Text style={styles.stepText}>{step.body}</Text>
-            </View>
-          </View>
-        ))}
-      </View>
-
-      {/* The remaining examples, one line each. A title and a two-line teaser
-          apiece was three lines to say what the title already said. */}
-      {OTHER_SCENARIOS.length > 0 && (
-        <View style={styles.more}>
-          {OTHER_SCENARIOS.map((scenario) => (
-            <Pressable
-              key={scenario.id}
-              accessibilityRole="button"
-              accessibilityLabel={`${scenario.title}. ${scenario.teaser}`}
-              onPress={() => onScenario(scenario)}
-              style={({ pressed }) => [styles.moreRow, pressed && styles.morePressed]}
-            >
-              <Text style={styles.moreText}>{scenario.title}</Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
-
-      {/* Quiet, like the restore link elsewhere: a way to check the app, not a
-          call to action competing with the two buttons above. */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Where these numbers come from"
-        onPress={onMethod}
-        style={({ pressed }) => [styles.method, pressed && styles.methodPressed]}
-      >
-        <Text style={styles.methodText}>Where these numbers come from</Text>
-      </Pressable>
     </>
   );
 }
 
 const sheets = themed((c) => ({
-  stepsHeading: { ...type.title, color: c.ink, marginTop: space.xl, marginBottom: space.md },
-  steps: { gap: space.lg },
-  step: { flexDirection: 'row', gap: space.md },
   // A filled circle in `slate`, not `accent`. Accent is the recommended route's
   // and a step numeral is not a recommendation — this screen's one accent is
   // already spent on the primary button and on the winning row of the proof.
-  stepDot: {
-    width: size.stepDot,
-    height: size.stepDot,
-    borderRadius: size.stepDot / 2,
-    backgroundColor: c.slate,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepNumber: { ...type.label, color: c.slateInk },
-  stepBody: { flex: 1 },
-  stepTitle: { ...type.bodyStrong, color: c.ink, marginBottom: space.xs },
-  stepText: { ...type.body, color: c.inkMuted },
 
   // The screen's own top margin, which used to live on a wrapper View that did
   // nothing else. One less element for one style property.
@@ -294,8 +227,12 @@ const sheets = themed((c) => ({
     ...type.display,
     color: c.ink,
     marginTop: space.lg,
-    marginBottom: space.xl,
+    marginBottom: space.md,
   },
+  // One line under the headline, and the only explanation on the screen. The
+  // proof panel below argues it with real numbers, which is a better job than
+  // a second paragraph would do.
+  landingSub: { ...type.body, color: c.inkMuted, marginBottom: space.xl },
 
   // A hairline-bordered panel on the canvas rather than a raised card. Nothing
   // here is interactive, so elevation would be claiming a hierarchy the panel
@@ -328,22 +265,5 @@ const sheets = themed((c) => ({
 
   // Cards would compete with the two buttons above for the same attention;
   // these are one line each because the title is the whole message.
-  more: { marginTop: space.md },
-  moreRow: {
-    minHeight: TAP_TARGET,
-    justifyContent: 'center',
-    borderBottomWidth: stroke.hairline,
-    borderBottomColor: c.line,
-  },
-  morePressed: { opacity: 0.6 },
-  moreText: { ...type.body, color: c.ink },
 
-  method: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: space.md,
-    minHeight: TAP_TARGET,
-  },
-  methodPressed: { opacity: 0.6 },
-  methodText: { ...type.caption, color: c.inkMuted },
 }));

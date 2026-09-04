@@ -28,7 +28,7 @@ import { Status } from '../requirements';
 import { DemoScenario } from '../demo';
 import { Procedure } from '../appData';
 import { QuerySource, ScreenerQuery } from '../screener';
-import { ScreenerFilters } from './ScreenerFilters';
+import { ScreenerFilters, type FilterGroup } from './ScreenerFilters';
 import { summarize } from '../share';
 import { sharedSheets } from '../styles/shared';
 import { TAP_TARGET, radius, space, stroke, textScale, type } from '../theme';
@@ -74,6 +74,15 @@ function tiedTotals(routes: Route[]): Set<number> {
  *
  * Which of the three things the comparison says is decided in `src/share.ts`,
  * because the shared card has to say the same thing.
+ *
+ * Cut three times now, and the count is the useful part. First from title/hero
+ * down to body/large. Then from five stacked blocks to baseline-aligned rows.
+ * Now to one figure and one sentence, with the second figure and the reason
+ * demoted to a caption underneath — the year cost is the finding, and the
+ * amount cash saves today is the seductive number the finding exists to argue
+ * with, so it should not be set at the same size as its own rebuttal.
+ *
+ * A fourth cut here is a signal that something upstream is wrong, not a task.
  */
 function Headline({ routes }: { routes: Route[] }) {
   const styles = useStyles(sheets);
@@ -91,17 +100,13 @@ function Headline({ routes }: { routes: Route[] }) {
     return (
       <View style={styles.hero}>
         <View style={line}>
-          <Text style={styles.heroLead}>Paying cash saves</Text>
-          <Money value={summary.todayGap} size="large" tone="accent" />
-        </View>
-        <View style={line}>
-          <Text style={styles.heroLead}>today, and costs</Text>
+          <Text style={styles.heroLead}>Cash costs</Text>
           <Money value={summary.yearGap} size="large" tone="accent" />
+          <Text style={styles.heroLead}>more this year.</Text>
         </View>
-        <Text style={styles.heroLead}>more by the end of this year.</Text>
         <Text style={styles.heroWhy}>
-          Cash earns no deductible credit, so your later care starts from
-          scratch.
+          It saves <Money value={summary.todayGap} size="small" /> today, but
+          earns no deductible credit.
         </Text>
       </View>
     );
@@ -111,10 +116,10 @@ function Headline({ routes }: { routes: Route[] }) {
     return (
       <View style={styles.hero}>
         <View style={line}>
-          <Text style={styles.heroLead}>Paying cash saves</Text>
+          <Text style={styles.heroLead}>Cash saves</Text>
           <Money value={summary.todayGap} size="large" tone="accent" />
+          <Text style={styles.heroLead}>and stays cheaper.</Text>
         </View>
-        <Text style={styles.heroLead}>today and stays cheaper this year.</Text>
         <Text style={styles.heroWhy}>
           You are not expected to reach your deductible, so the missing credit
           costs you little.
@@ -126,10 +131,10 @@ function Headline({ routes }: { routes: Route[] }) {
   return (
     <View style={styles.hero}>
       <View style={line}>
-        <Text style={styles.heroLead}>Same scan, same coverage.</Text>
         <Money value={summary.spread} size="large" tone="accent" />
+        <Text style={styles.heroLead}>separates best from worst.</Text>
       </View>
-      <Text style={styles.heroLead}>separates your best and worst option.</Text>
+      <Text style={styles.heroWhy}>Same scan, same coverage.</Text>
     </View>
   );
 }
@@ -182,10 +187,13 @@ const RouteRow = memo(function RouteRow({
           {rank}
         </Text>
         <View style={styles.rowBody}>
-          <Text style={styles.routeLabel}>
-            {recommended ? 'Recommended · ' : ''}
-            {route.label}
-          </Text>
+          {/* No "Recommended ·" prefix. Rank 1, the `accentSoft` fill and the
+              `accent` left border already say it, and DESIGN.md §0 names
+              position, number size and the single accent as the carriers of
+              rank — a fourth channel is just a longer label, and on the
+              narrowest screen it was what pushed the most prominent row onto a
+              second line. `accessibilityLabel` still announces the rank. */}
+          <Text style={styles.routeLabel}>{route.label}</Text>
           <Money value={route.estimate.totalThisYear} size="large" tone={recommended ? 'accent' : 'ink'} />
           <Text style={styles.meta} numberOfLines={expanded ? undefined : 2}>
             {route.facilityName} ·{' '}
@@ -193,19 +201,29 @@ const RouteRow = memo(function RouteRow({
               ? 'counts toward your deductible'
               : 'earns no deductible credit'}
           </Text>
+        </View>
+        <Text style={styles.chevron}>{expanded ? 'Hide' : 'Details'}</Text>
+      </Pressable>
+
+      {expanded && (
+        <View style={styles.details}>
           {/* Two rows showing the same total is the correct answer and the
               wrong-looking one. Say why, and give the number that still
-              separates them. */}
+              separates them — `This scan` below is that number.
+
+              This used to sit in the collapsed row, on every capped route at
+              once. It is an explanation of an oddity, not the finding, and four
+              copies of it stacked down the screen is how a ranked list stops
+              reading as one. */}
           {capped && (
             <Text style={styles.capped}>
-              Your out-of-pocket maximum caps the year here. This scan:{' '}
-              <Money value={route.estimate.scan.patientPays} size="small" />
+              Your out-of-pocket maximum caps the year here.
             </Text>
           )}
 
-          {/* Named here rather than only inside the expansion, because an
-              unmet requirement changes what the row means and a collapsed row
-              that hides it reads as a clean recommendation. */}
+          {/* Also moved in from the collapsed row. The expansion is where the
+              citations already are, so the count and the documents it refers to
+              are finally in the same place. */}
           {route.unmetRequirements.length > 0 && (
             <Text style={styles.evidence}>
               {route.unmetRequirements.length === 1
@@ -213,13 +231,7 @@ const RouteRow = memo(function RouteRow({
                 : `${route.unmetRequirements.length} requirements not documented`}
             </Text>
           )}
-        </View>
-        <Text style={styles.chevron}>{expanded ? 'Hide' : 'Details'}</Text>
-      </Pressable>
 
-      {expanded && (
-        <View style={styles.details}>
-          <Row label="Facility" value={<Text style={shared.detailSummary}>{route.facilityName}</Text>} />
           <Row label="This scan" value={<Money value={route.estimate.scan.patientPays} />} />
           <Row
             label="Deductible credit"
@@ -260,11 +272,13 @@ export function ScreenerScreen({
   showTreatment,
   showHeadacheFeature,
   filtersOpen,
+  openGroup,
   openRouteKind,
   requirementsChecked,
   payerLabel,
   note,
   onToggleFilters,
+  onOpenGroup,
   onOpenRoute,
   onRefine,
   onExample,
@@ -281,11 +295,13 @@ export function ScreenerScreen({
   showTreatment: boolean;
   showHeadacheFeature: boolean;
   filtersOpen: boolean;
+  openGroup: FilterGroup | null;
   openRouteKind: string | null;
   requirementsChecked: number;
   payerLabel: string;
   note: string | null;
   onToggleFilters: () => void;
+  onOpenGroup: (group: FilterGroup | null) => void;
   onOpenRoute: (kind: string | null) => void;
   onRefine: (patch: Partial<ScreenerQuery>) => void;
   onExample: (scenario: DemoScenario) => void;
@@ -307,7 +323,9 @@ export function ScreenerScreen({
         showTreatment={showTreatment}
         showHeadacheFeature={showHeadacheFeature}
         open={filtersOpen}
+        openGroup={openGroup}
         onToggle={onToggleFilters}
+        onOpenGroup={onOpenGroup}
         onRefine={onRefine}
         onExample={onExample}
       />

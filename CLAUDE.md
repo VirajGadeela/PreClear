@@ -690,6 +690,48 @@ plan lives at `~/.claude/plans/ok-so-weve-been-reactive-engelbart.md`.
   reader who leaves after four seconds should have seen that rather than an
   explanation of the controls.
 
+### The subtraction pass (2026-09-03), and why it was needed twice
+
+- **"Too cluttered" was said twice, three weeks apart, the second time after a
+  pass that fixed it.** Nothing went wrong in between: every stage added text
+  that was individually correct — the honesty tag, the tied-total explanation,
+  how-it-works, an FAQ — and nothing was removed to pay for it. A screen does
+  not become cluttered in one commit; it becomes cluttered in eleven, each of
+  which looked reasonable. **Trimming without changing that mechanism buys about
+  three weeks.**
+- **`scripts/check-copy-budget.py` is the mechanism change**, and the thing that
+  makes it mean anything is that it counts what is visible *before any tap* — it
+  drops the body of every `<Disclosure>`. A plain word count would have scored
+  the entire pass at roughly nothing. Caps live in the script; raising one is
+  allowed and has to happen in a diff.
+- **`Disclosure` is the app's one collapse**, and its summary line is what makes
+  a collapse free rather than costly. A closed row reading "Coverage — Aetna ·
+  PPO" *is* the answer. A row with no summary has to be opened to be understood,
+  which is worse than not collapsing at all.
+- **The filter panel groups by what the answer is about, and that moved two
+  controls.** Weeks of treatment and the headache question read like coverage
+  questions and are not — they describe what the *order* documents, they exist
+  only because of the chosen indication, and they feed the requirement check
+  rather than the cost math. They live under Scan.
+- **`money()` is why a summary cannot carry three figures.** Hard rule 5 puts
+  "(estimate)" inside every dollar string, so "Your year" would read "$6,250.00
+  (estimate) deductible left · 20% · $8,000.00 (estimate) other care" and
+  truncate. One figure, a percentage, and a worded flag for expected other care.
+  There is a real open question there — the deductible is a number the member
+  typed about their own plan, not a projected cost — but narrowing a hard rule
+  is not a formatting decision and it was left alone.
+- **The deductible-credit clause stays on every route row**, and this was caught
+  on review after the first version of the plan moved it behind a tap. It is not
+  compliance text, it is the thesis: cash earning no deductible credit is the
+  only reason the ranking is ever counterintuitive. A density pass that reaches
+  it has gone too far. What paid for keeping it was the `Recommended · ` prefix,
+  which said what rank 1, the accent fill and the accent border already say.
+- **A word count understates this kind of work by a lot.** File-level copy fell
+  20%, but the visible change is structural: the filter panel went from eight
+  headings and ~40 controls to four lines, Sources from 21 open citation blocks
+  and 845 words of payer text to about a dozen tappable lines, the cover from
+  eight blocks to four. Measure screens, not files.
+
 Gate definitions, for the record:
 
 - **Gate 1 — MRF usability.** Open one target payer's Transparency in Coverage file, extract negotiated rates for CPT 73721 (knee MRI) and 70450 (head CT) at 10 real facilities in the target metro. These files are gigabytes and frequently malformed — stream-parse, don't load. *Pass = 10 real facility prices in a spreadsheet.*

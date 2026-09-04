@@ -177,8 +177,9 @@ Static weight files, so `fontFamily` names the exact weight:
   the width or the dot stops being round; it belonged to `StepBar`, went with
   it, and came back for About's numbered steps.
 - Existing components are the reference implementation:
-  `BackLink` · `Chip` · `Citation` · `PrimaryButton` · `Row` · `TabBar` ·
-  `TopBar` · `ErrorBoundary`. Extend these before inventing a sibling.
+  `BackLink` · `Chip` · `Citation` · `Disclosure` · `PrimaryButton` · `Row` ·
+  `TabBar` · `TopBar` · `ErrorBoundary`. Extend these before inventing a
+  sibling.
   `StepBar` was here until the tab navigation replaced the step chain.
 - Styles used by two or more files live in `app/src/styles/shared.ts`; a style
   used by one screen lives in that screen's own `StyleSheet`.
@@ -212,6 +213,12 @@ gradient, or glow anywhere in this app.
 ## 7. Do's and don'ts
 
 **Do**
+- **Put detail behind `Disclosure`, not on the page.** It is the app's one
+  collapse — a title, a summary of the current value, a chevron. The summary is
+  what makes the collapse free: a closed row reading "Coverage — Aetna · PPO"
+  *is* the answer, and the tap is only needed to change it. A row with no
+  summary has to be opened to be understood, which is the failure the component
+  exists to prevent.
 - Reserve `accent` for the recommended route, exclusively.
 - Draw every non-recommended route at equal weight.
 - Use `tabular-nums` for any number that changes under user input.
@@ -219,6 +226,15 @@ gradient, or glow anywhere in this app.
 - Re-measure contrast when any hex changes.
 
 **Don't**
+- **Don't add a sentence to a screen without deleting one.** Every screen has a
+  word budget in `scripts/check-copy-budget.py`, measured on what is visible
+  *before* any tap. This app was called too wordy twice, three weeks apart, and
+  the second time came after a pass that fixed it — because eleven individually
+  correct additions had landed since and nothing had been removed to pay for
+  them. A screen needing another sentence may raise its cap; it just has to
+  happen in the diff where somebody sees it.
+- **Don't explain a control that its own label already names.** The eight `h2`
+  headings in the filter panel said what the chips under them said.
 - Don't add a green or a red. Don't imply "good deal" with hue.
 - Don't introduce a value outside the 8px scale or the type scale.
 - Don't put `line` on a control or `border` on a divider.

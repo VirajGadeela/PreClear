@@ -55,6 +55,7 @@ import {
   queryReducer,
 } from './src/screener';
 import { ScreenerScreen } from './src/screens/ScreenerScreen';
+import { type FilterGroup } from './src/screens/ScreenerFilters';
 import {
   configure as configurePurchases,
   loadPlans,
@@ -167,6 +168,11 @@ function Preclear() {
   // rather than inside the screen so neither is lost on a trip to another
   // destination and back.
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Which of the filter panel's four groups is open, at most one. Hoisted here
+  // rather than held in `ScreenerFilters` for the same reason `openRouteKind`
+  // is: Screener -> Household -> Screener is a common trip now, and losing the
+  // group you had open every time you take it is a new annoyance.
+  const [openGroup, setOpenGroup] = useState<FilterGroup | null>(null);
   const [openRouteKind, setOpenRouteKind] = useState<string | null>(null);
 
   // Two independent sources of "unlocked", kept apart on purpose.
@@ -558,15 +564,7 @@ function Preclear() {
           {showAbout ? (
             <AboutScreen
               onNext={() => setShowAbout(false)}
-              onHousehold={() => {
-                setShowAbout(false);
-                setTab('household');
-              }}
               onScenario={applyScenario}
-              onMethod={() => {
-                setShowAbout(false);
-                setTab('sources');
-              }}
             />
           ) : (
             <>
@@ -586,11 +584,13 @@ function Preclear() {
                     readsField(finding.requirement.check, 'headache_concerning_feature'),
                   )}
                   filtersOpen={filtersOpen}
+                  openGroup={openGroup}
                   openRouteKind={openRouteKind}
                   requirementsChecked={applicableFindings.length}
                   payerLabel={result.payerLabel}
                   note={note}
                   onToggleFilters={() => setFiltersOpen((open) => !open)}
+                  onOpenGroup={setOpenGroup}
                   onOpenRoute={setOpenRouteKind}
                   onRefine={refine}
                   onExample={applyScenario}
