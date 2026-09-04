@@ -21,13 +21,15 @@
  * call site — an inferred version drifts the first time a default happens to
  * equal an answer.
  *
- * Three actions rather than one setter, for the same reason. A correction the
- * app makes on the member's behalf is not an answer, and neither is loading a
- * worked example — that still opens a ranking, because the member asked for it
- * by name, but it is never their position.
+ * Two actions rather than one setter, for the same reason: a correction the app
+ * makes on the member's behalf is not an answer.
+ *
+ * There was a third, `example`, which loaded a worked scenario and opened a
+ * ranking for a patient who is not you. It went in two steps — first as the
+ * screen's default, then as an option in the filter panel — and both times for
+ * the same reason: on the screen whose job is to say what *you* should do,
+ * somebody else's numbers read as confusing however they are labelled.
  */
-
-import { DemoScenario } from './demo';
 
 export type ScreenerQuery = {
   cpt: string;
@@ -46,6 +48,19 @@ export type ScreenerQuery = {
    * never stored — hard rules 1 and 3.
    */
   planText: string;
+  /**
+   * Where the scan is actually scheduled, as a `facility_key`, or undefined for
+   * "not sure yet".
+   *
+   * The engine has always accepted this and the app never sent it, so
+   * `buildRoutes` fell back to the median-priced facility in the metro and
+   * called it "your order as written". Route 2 is defined against route 1, so
+   * the whole site-of-service saving was measured from a building nobody named
+   * — and once the rows started leading with an instruction, the screen was
+   * asserting a place outright. Undefined is honest and the copy says so;
+   * inventing one was not.
+   */
+  orderedFacility: string | undefined;
   deductible: number;
   coinsurance: number;
   /**
@@ -69,8 +84,8 @@ export type ScreenerQuery = {
   headacheFeature: boolean | undefined;
 };
 
-/** Whose numbers are on screen. */
-export type QuerySource = 'empty' | 'example' | 'mine';
+/** Whose numbers are on screen. Only ever the member's, or nobody's. */
+export type QuerySource = 'empty' | 'mine';
 
 /**
  * Which of the filter groups the member has actually answered.
@@ -92,6 +107,7 @@ export type QueryState = ScreenerQuery & {
 const GROUP_OF: Record<keyof ScreenerQuery, keyof Answered> = {
   cpt: 'scan',
   indication: 'scan',
+  orderedFacility: 'scan',
   treatmentWeeks: 'scan',
   headacheFeature: 'scan',
   payer: 'coverage',
@@ -118,8 +134,6 @@ export function isComplete(answered: Answered): boolean {
 export type QueryAction =
   /** A member moved a control. This is the only action that earns 'mine'. */
   | { type: 'refine'; patch: Partial<ScreenerQuery> }
-  /** A worked example was opened. Still not the member's own position. */
-  | { type: 'example'; scenario: DemoScenario }
   /**
    * A correction this app made to keep the query internally consistent —
    * an indication that does not exist for the newly chosen procedure, a plan
@@ -144,41 +158,38 @@ export function queryReducer(state: QueryState, action: QueryAction): QueryState
     }
     case 'normalize':
       return { ...state, ...action.patch };
-    case 'example':
-      // A worked example is complete by construction — it sets every field —
-      // so it opens a ranking. It is still not the member's own position, and
-      // `source` says so.
-      return {
-        ...fromScenario(action.scenario),
-        source: 'example',
-        answered: ALL_ANSWERED,
-      };
   }
 }
 
 /**
- * A worked example as a query.
+ * Where every control starts.
  *
- * Every field is set, including `headacheFeature`, rather than only the ones
- * the scenario mentions. Leaving one alone would let an answer survive from a
- * previous example — the head CT question would stay answered from an earlier
- * run and quietly change what the requirement check reports.
+ * These are starting *positions*, not answers, and the difference is the whole
+ * design: `answered` is all false until the member touches each group, nothing
+ * ranks until it is complete, and no chip draws selected in a group they have
+ * not answered. A slider still has to put its thumb somewhere, so it puts it
+ * somewhere plausible rather than at zero — an untouched control at its floor
+ * is harder to use and no more honest.
+ *
+ * This used to be `fromScenario(DEMO_SCENARIOS[0])`. The scenarios are gone
+ * entirely; these values are ordinary and belong to nobody.
  */
-export function fromScenario(scenario: DemoScenario): ScreenerQuery {
-  return {
-    cpt: scenario.cpt,
-    indication: scenario.indication,
-    payer: scenario.payer,
-    product: undefined,
-    planText: scenario.planText,
-    deductible: scenario.deductible,
-    coinsurance: scenario.coinsurance,
-    oopMax: scenario.oopMax,
-    expectedOtherSpend: scenario.expectedOtherSpend,
-    treatmentWeeks: scenario.treatmentWeeks,
-    headacheFeature: scenario.headacheFeature,
-  };
-}
+export const INITIAL_QUERY: ScreenerQuery = {
+  cpt: '73721',
+  indication: 'meniscal_tear',
+  payer: 'anthem',
+  product: undefined,
+  planText: '',
+  orderedFacility: undefined,
+  // A mid-range remaining deductible, its ceiling above it as every real plan's
+  // is, and 20% coinsurance — the most common commercial split.
+  deductible: 2000,
+  coinsurance: 0.2,
+  oopMax: 6000,
+  expectedOtherSpend: 0,
+  treatmentWeeks: 0,
+  headacheFeature: undefined,
+};
 
 /**
  * The typed plan name is more specific than the plan type, so it wins when

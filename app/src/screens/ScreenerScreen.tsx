@@ -23,14 +23,13 @@ import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { Citation, publisher } from '../components/Citation';
 import { Money } from '../Money';
 import { Row } from '../components/Row';
-import { Requirement, Route } from '../routes';
+import { FacilityBundle, Requirement, Route } from '../routes';
 import { Status } from '../requirements';
-import { DemoScenario } from '../demo';
-import { Procedure } from '../appData';
-import { Answered, QuerySource, ScreenerQuery, isComplete } from '../screener';
+import { Procedure, data } from '../appData';
+import { Answered, ScreenerQuery, isComplete } from '../screener';
 import { ScreenerFilters, type FilterGroup } from './ScreenerFilters';
 import { summarize } from '../share';
-import { routeCopy, verdict } from '../routeCopy';
+import { RouteContext, routeCopy, verdict } from '../routeCopy';
 import { sharedSheets } from '../styles/shared';
 import { TAP_TARGET, radius, space, stroke, textScale, type } from '../theme';
 import { useStyles } from '../ThemeProvider';
@@ -164,7 +163,7 @@ const RouteRow = memo(function RouteRow({
   recommended,
   expanded,
   capped,
-  baselineAllowed,
+  context,
   findings,
   onToggle,
 }: {
@@ -174,14 +173,13 @@ const RouteRow = memo(function RouteRow({
   expanded: boolean;
   /** This route's year total is shared with another — see `tiedTotals`. */
   capped: boolean;
-  /** The as-ordered rate, so a cheaper site can say what it saves. */
-  baselineAllowed: number | null;
+  context: RouteContext;
   findings: Finding[];
   onToggle: () => void;
 }) {
   const styles = useStyles(sheets);
   const shared = useStyles(sharedSheets);
-  const copy = routeCopy(route, baselineAllowed);
+  const copy = routeCopy(route, context);
   const statusFor = (key: string) =>
     (findings.find((finding) => finding.requirement.key === key)?.status ??
       'unmet') as Status;
@@ -279,8 +277,8 @@ export function ScreenerScreen({
   routes,
   findings,
   query,
-  source,
   procedure,
+  facilities,
   productOptions,
   planMatch,
   showTreatment,
@@ -296,15 +294,14 @@ export function ScreenerScreen({
   onOpenGroup,
   onOpenRoute,
   onRefine,
-  onExample,
   onShare,
   onMethod,
 }: {
   routes: Route[];
   findings: Finding[];
   query: ScreenerQuery;
-  source: QuerySource;
   procedure: Procedure;
+  facilities: FacilityBundle[];
   productOptions: string[];
   planMatch: { matched: number; total: number } | null;
   showTreatment: boolean;
@@ -320,7 +317,6 @@ export function ScreenerScreen({
   onOpenGroup: (group: FilterGroup | null) => void;
   onOpenRoute: (kind: string | null) => void;
   onRefine: (patch: Partial<ScreenerQuery>) => void;
-  onExample: (scenario: DemoScenario) => void;
   onShare: () => void;
   onMethod: () => void;
 }) {
@@ -330,15 +326,20 @@ export function ScreenerScreen({
   const tied = tiedTotals(routes);
   // The as-ordered rate, so the cheaper-site row can name what it saves. Read
   // off the route the engine already built rather than recomputed.
-  const baselineAllowed =
-    routes.find((route) => route.kind === 'in_network_as_written')?.allowedAmount ?? null;
+  const context: RouteContext = {
+    baselineAllowed:
+      routes.find((route) => route.kind === 'in_network_as_written')?.allowedAmount ?? null,
+    orderedFacilityName:
+      facilities.find((facility) => facility.facility_key === query.orderedFacility)
+        ?.facility_name ?? null,
+  };
 
   return (
     <>
       <ScreenerFilters
         query={query}
-        source={source}
         procedure={procedure}
+        facilities={facilities}
         productOptions={productOptions}
         planMatch={planMatch}
         showTreatment={showTreatment}
@@ -349,7 +350,6 @@ export function ScreenerScreen({
         onToggle={onToggleFilters}
         onOpenGroup={onOpenGroup}
         onRefine={onRefine}
-        onExample={onExample}
       />
 
       {/* Nothing ranks until all three groups are answered.
@@ -404,6 +404,14 @@ export function ScreenerScreen({
               actually asked for. */}
           {verdict(routes) && <Text style={styles.verdict}>{verdict(routes)}</Text>}
           <Text style={styles.columnHead}>Ranked by total cost this year</Text>
+          {/* Says the metro out loud. The app has never asked where a member
+              lives and cannot know — it holds one metro's published files, and
+              showing Indianapolis facility names without saying so invites
+              exactly the question it got: "how does it know where I live". */}
+          <Text style={styles.scope}>
+            {facilities.length} {payerLabel} {facilities.length === 1 ? 'facility' : 'facilities'}{' '}
+            in {data.metro} · this build covers one metro
+          </Text>
 
           {routes.map((route, index) => (
             <RouteRow
@@ -413,7 +421,7 @@ export function ScreenerScreen({
               recommended={index === 0}
               expanded={openRouteKind === route.kind}
               capped={tied.has(Math.round(route.estimate.totalThisYear * 100))}
-              baselineAllowed={baselineAllowed}
+              context={context}
               findings={findings}
               onToggle={() => onOpenRoute(openRouteKind === route.kind ? null : route.kind)}
             />
@@ -496,6 +504,7 @@ const sheets = themed((c) => ({
   prompt: { marginBottom: space.lg },
   todo: { ...type.body, color: c.inkMuted, marginTop: space.sm },
   verdict: { ...type.title, color: c.ink, marginBottom: space.sm },
+  scope: { ...type.caption, color: c.inkMuted, marginTop: space.sm },
   columnHead: {
     ...type.label,
     color: c.inkMuted,

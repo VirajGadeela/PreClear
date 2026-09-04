@@ -813,6 +813,41 @@ Found by Rohan asking "i dont get why theyre both 6k" of two route rows.
   control right after a decluttering pass was affordable only because that group
   is now behind a tap.
 
+### The app was naming a facility nobody gave it (found 2026-09-03)
+
+Found by Rohan asking "idk how it knows where i lived or where the scan was
+originally ordered." It did not know either.
+
+- **`buildRoutes` has always accepted `orderedFacilityKey` and the app never
+  passed it**, so the baseline fell through to
+  `sorted[Math.floor(sorted.length / 2)]` — the median-priced facility in the
+  metro — and the screen called that "your order as written". Route 2 is defined
+  *against* route 1, so the entire site-of-service saving was measured from a
+  building nobody named.
+- **Leading rows with an instruction turned a quiet weakness into a false
+  claim.** "Same order, same facility" was vague enough to get away with it;
+  "Go ahead as ordered, at IU Health West" asserts a fact. That regression came
+  from the same change that fixed the clarity complaint — worth remembering that
+  making copy more specific makes its wrongness more specific too.
+- **`orderedFacility` is now asked in the Scan group, with "Not sure yet" as a
+  real answer.** When it is null, `routeCopy` changes rather than naming a
+  place: route 1 becomes "A typical price for this scan" and route 2 becomes
+  "Cheapest in-network option", both saying what would improve the answer.
+- **The key needs normalizing, not just setting.** The facility list changes
+  with the procedure *and* the payer, so a stale key silently stops matching and
+  the baseline reverts to the median with nothing on screen — the same bug
+  returning by a side door. `App.tsx` clears it via `normalize`.
+- **The Compare tab now states the metro.** The bundle holds one metro's files,
+  and showing Indianapolis facility names without saying so invites exactly the
+  question it got. It was documented on Sources, which is not where the reader
+  was.
+- **The example machinery is gone entirely** — `src/demo.ts` and
+  `scripts/check-demo-scenarios.sh` deleted, the `example` reducer action and
+  `'example'` source removed, the "Start from an example" group removed, and the
+  cover's proof panel is no longer a link into a scenario. Defaults live in
+  `INITIAL_QUERY` and belong to nobody. Asked for twice, three days apart, and
+  the second time was "completely scrap".
+
 Gate definitions, for the record:
 
 - **Gate 1 — MRF usability.** Open one target payer's Transparency in Coverage file, extract negotiated rates for CPT 73721 (knee MRI) and 70450 (head CT) at 10 real facilities in the target metro. These files are gigabytes and frequently malformed — stream-parse, don't load. *Pass = 10 real facility prices in a spreadsheet.*

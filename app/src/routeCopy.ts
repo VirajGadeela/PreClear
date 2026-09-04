@@ -44,7 +44,23 @@ export type RouteCopy = {
   reason: string;
 };
 
-export function routeCopy(route: Route, baselineAllowed: number | null): RouteCopy {
+export type RouteContext = {
+  /** The as-ordered rate, so a cheaper site can say what it saves. */
+  baselineAllowed: number | null;
+  /**
+   * Where the member said the scan is booked, or null for "not sure yet".
+   *
+   * When it is null the baseline route is the median-priced facility in the
+   * metro, which is a reasonable stand-in and is nobody's actual order. Every
+   * string below that would otherwise name a place changes rather than
+   * asserting one — the app knowing where your scan is booked and the app
+   * guessing are different claims, and only one of them is true.
+   */
+  orderedFacilityName: string | null;
+};
+
+export function routeCopy(route: Route, context: RouteContext): RouteCopy {
+  const { baselineAllowed, orderedFacilityName } = context;
   const credit = route.estimate.scan.countsTowardDeductible;
 
   switch (route.kind) {
@@ -54,19 +70,33 @@ export function routeCopy(route: Route, baselineAllowed: number | null): RouteCo
       // total under an out-of-pocket cap and still differ here by hundreds.
       const saving =
         baselineAllowed !== null ? baselineAllowed - route.allowedAmount : null;
-      const savingClause =
-        saving !== null && saving > 1
-          ? ` This facility charges ${money(saving)} less for the scan itself,`
-          : ' This facility charges less,';
+      const amount = saving !== null && saving > 1 ? money(saving) : null;
+
+      if (!orderedFacilityName) {
+        return {
+          action: `Cheapest in-network option: ${route.facilityName}`,
+          reason: `The lowest published rate we hold for this scan and insurer.${
+            amount ? ` It is ${amount} under the middle of that range.` : ''
+          } Say where your scan is booked and this compares against it instead.`,
+        };
+      }
       return {
         action: `Ask for this scan at ${route.facilityName}`,
-        reason: `Same coverage as your order.${savingClause} and every dollar still counts toward your deductible.`,
+        reason: `Same coverage as your order at ${orderedFacilityName}.${
+          amount ? ` It charges ${amount} less for the scan itself,` : ' It charges less,'
+        } and every dollar still counts toward your deductible.`,
       };
     }
 
     case 'in_network_as_written':
+      if (!orderedFacilityName) {
+        return {
+          action: 'A typical price for this scan',
+          reason: `The middle of the published rates we hold. Not necessarily where your scan is booked — say where and this becomes your own order.`,
+        };
+      }
       return {
-        action: `Go ahead as ordered, at ${route.facilityName}`,
+        action: `Go ahead as ordered, at ${orderedFacilityName}`,
         reason:
           'Your order exactly as written. It counts toward your deductible, and nothing needs to change.',
       };
