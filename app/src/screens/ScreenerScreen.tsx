@@ -27,15 +27,23 @@ import { Requirement, Route } from '../routes';
 import { Status } from '../requirements';
 import { DemoScenario } from '../demo';
 import { Procedure } from '../appData';
-import { QuerySource, ScreenerQuery } from '../screener';
+import { Answered, QuerySource, ScreenerQuery, isComplete } from '../screener';
 import { ScreenerFilters, type FilterGroup } from './ScreenerFilters';
 import { summarize } from '../share';
+import { routeCopy, verdict } from '../routeCopy';
 import { sharedSheets } from '../styles/shared';
 import { TAP_TARGET, radius, space, stroke, textScale, type } from '../theme';
 import { useStyles } from '../ThemeProvider';
 import { themed } from '../styles/themed';
 
 type Finding = { requirement: Requirement; status: string };
+
+/** What each unanswered group is still waiting for. */
+const PROMPTS = {
+  scan: 'Which scan, and why it was ordered',
+  coverage: 'Who insures you',
+  year: 'Where you are on your deductible',
+} as const;
 
 /**
  * Year totals that more than one route shares.
@@ -156,6 +164,7 @@ const RouteRow = memo(function RouteRow({
   recommended,
   expanded,
   capped,
+  baselineAllowed,
   findings,
   onToggle,
 }: {
@@ -165,11 +174,14 @@ const RouteRow = memo(function RouteRow({
   expanded: boolean;
   /** This route's year total is shared with another — see `tiedTotals`. */
   capped: boolean;
+  /** The as-ordered rate, so a cheaper site can say what it saves. */
+  baselineAllowed: number | null;
   findings: Finding[];
   onToggle: () => void;
 }) {
   const styles = useStyles(sheets);
   const shared = useStyles(sharedSheets);
+  const copy = routeCopy(route, baselineAllowed);
   const statusFor = (key: string) =>
     (findings.find((finding) => finding.requirement.key === key)?.status ??
       'unmet') as Status;
@@ -179,7 +191,7 @@ const RouteRow = memo(function RouteRow({
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded }}
-        accessibilityLabel={`Rank ${rank}. ${route.label} at ${route.facilityName}. Tap for the breakdown.`}
+        accessibilityLabel={`Rank ${rank}. ${copy.action}. ${copy.reason} Tap for the breakdown.`}
         onPress={onToggle}
         style={({ pressed }) => [styles.rowHead, pressed && shared.cardPressed]}
       >
@@ -187,20 +199,22 @@ const RouteRow = memo(function RouteRow({
           {rank}
         </Text>
         <View style={styles.rowBody}>
-          {/* No "Recommended ·" prefix. Rank 1, the `accentSoft` fill and the
-              `accent` left border already say it, and DESIGN.md §0 names
-              position, number size and the single accent as the carriers of
-              rank — a fourth channel is just a longer label, and on the
-              narrowest screen it was what pushed the most prominent row onto a
-              second line. `accessibilityLabel` still announces the rank. */}
-          <Text style={styles.routeLabel}>{route.label}</Text>
+          {/* The instruction, not the category. "Same coverage, cheaper
+              facility" describes a kind of route; "Ask for this scan at
+              Franciscan Indianapolis" tells a member what to do about it, and
+              names their situation in the process.
+
+              No "Recommended ·" prefix either. Rank 1, the `accentSoft` fill
+              and the `accent` left border already say it three times, and
+              DESIGN.md §0 names position, number size and the single accent as
+              the carriers of rank. `accessibilityLabel` still announces it. */}
+          <Text style={styles.routeLabel}>{copy.action}</Text>
           <Money value={route.estimate.totalThisYear} size="large" tone={recommended ? 'accent' : 'ink'} />
-          <Text style={styles.meta} numberOfLines={expanded ? undefined : 2}>
-            {route.facilityName} ·{' '}
-            {route.estimate.scan.countsTowardDeductible
-              ? 'counts toward your deductible'
-              : 'earns no deductible credit'}
-          </Text>
+          {/* `type.body` at `ink`, not a caption at `inkMuted`. This is the
+              reasoning, and it was previously the least readable text on the
+              row — which is the same mistake `<Money>` made with the word
+              "estimate" and CLAUDE.md already records once. */}
+          <Text style={styles.reason}>{copy.reason}</Text>
         </View>
         <Text style={styles.chevron}>{expanded ? 'Hide' : 'Details'}</Text>
       </Pressable>
@@ -271,6 +285,7 @@ export function ScreenerScreen({
   planMatch,
   showTreatment,
   showHeadacheFeature,
+  answered,
   filtersOpen,
   openGroup,
   openRouteKind,
@@ -294,6 +309,7 @@ export function ScreenerScreen({
   planMatch: { matched: number; total: number } | null;
   showTreatment: boolean;
   showHeadacheFeature: boolean;
+  answered: Answered;
   filtersOpen: boolean;
   openGroup: FilterGroup | null;
   openRouteKind: string | null;
@@ -310,7 +326,12 @@ export function ScreenerScreen({
 }) {
   const styles = useStyles(sheets);
   const shared = useStyles(sharedSheets);
+  const complete = isComplete(answered);
   const tied = tiedTotals(routes);
+  // The as-ordered rate, so the cheaper-site row can name what it saves. Read
+  // off the route the engine already built rather than recomputed.
+  const baselineAllowed =
+    routes.find((route) => route.kind === 'in_network_as_written')?.allowedAmount ?? null;
 
   return (
     <>
@@ -322,6 +343,7 @@ export function ScreenerScreen({
         planMatch={planMatch}
         showTreatment={showTreatment}
         showHeadacheFeature={showHeadacheFeature}
+        answered={answered}
         open={filtersOpen}
         openGroup={openGroup}
         onToggle={onToggleFilters}
@@ -330,7 +352,32 @@ export function ScreenerScreen({
         onExample={onExample}
       />
 
-      {routes.length === 0 ? (
+      {/* Nothing ranks until all three groups are answered.
+
+          This replaces an example ranking that was labelled as one and read as
+          confusing anyway — four dollar figures for a patient who is not you,
+          on the screen whose whole job is to say what *you* should do. A prompt
+          that names what is still missing is a worse demo and a better product,
+          and the cover's proof panel already does the demonstrating on real
+          published numbers that never claim to be anybody's.
+
+          The three remaining lines are the direction, not decoration: at any
+          moment the screen says exactly what it still needs. */}
+      {!complete ? (
+        <View style={styles.prompt}>
+          <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>
+            Let's price your scan.
+          </Text>
+          <Text style={shared.body}>
+            Three questions above, then your options appear here.
+          </Text>
+          {(['scan', 'coverage', 'year'] as const).map((group) => (
+            <Text key={group} style={styles.todo}>
+              {answered[group] ? '✓' : '•'} {PROMPTS[group]}
+            </Text>
+          ))}
+        </View>
+      ) : routes.length === 0 ? (
         <View>
           <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>
             No routes to compare
@@ -351,6 +398,11 @@ export function ScreenerScreen({
               columns were tried and break mid-word on a 375pt screen. The word
               "estimate" is deliberately absent: hard rule 5 puts it inside the
               figure, and <Money> owns that. */}
+          {/* The answer as an instruction, above the list. `summarize()` gives
+              the finding as a figure — "cash costs $367.93 more this year" —
+              which is a fact. This is what to do about it, which is what was
+              actually asked for. */}
+          {verdict(routes) && <Text style={styles.verdict}>{verdict(routes)}</Text>}
           <Text style={styles.columnHead}>Ranked by total cost this year</Text>
 
           {routes.map((route, index) => (
@@ -361,6 +413,7 @@ export function ScreenerScreen({
               recommended={index === 0}
               expanded={openRouteKind === route.kind}
               capped={tied.has(Math.round(route.estimate.totalThisYear * 100))}
+              baselineAllowed={baselineAllowed}
               findings={findings}
               onToggle={() => onOpenRoute(openRouteKind === route.kind ? null : route.kind)}
             />
@@ -379,8 +432,12 @@ export function ScreenerScreen({
 
       {/* Route 3 is missing whenever nothing is unmet, but "nothing is unmet"
           and "nothing is recorded" are different answers and the patient cannot
-          tell them apart. Saying so is the honest output. */}
-      {requirementsChecked === 0 && (
+          tell them apart. Saying so is the honest output.
+
+          Gated on `complete` with everything else: before a member has said who
+          insures them, a note about that insurer's rule coverage is an answer to
+          a question nobody asked. */}
+      {complete && requirementsChecked === 0 && (
         <View style={shared.coverageGap}>
           <Text style={shared.coverageGapText}>
             No published requirements are recorded for {payerLabel} for this
@@ -390,6 +447,7 @@ export function ScreenerScreen({
         </View>
       )}
 
+      {complete && (
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Where these numbers come from"
@@ -398,6 +456,7 @@ export function ScreenerScreen({
       >
         <Text style={shared.restoreText}>Where these numbers come from</Text>
       </Pressable>
+      )}
 
       {note ? <Text style={shared.note}>{note}</Text> : null}
     </>
@@ -434,6 +493,9 @@ const sheets = themed((c) => ({
   heroLead: { ...type.body, color: c.ink, marginVertical: space.xs },
   heroWhy: { ...type.caption, color: c.inkMuted, marginTop: space.sm },
 
+  prompt: { marginBottom: space.lg },
+  todo: { ...type.body, color: c.inkMuted, marginTop: space.sm },
+  verdict: { ...type.title, color: c.ink, marginBottom: space.sm },
   columnHead: {
     ...type.label,
     color: c.inkMuted,
@@ -471,7 +533,7 @@ const sheets = themed((c) => ({
   },
   rowBody: { flex: 1 },
   routeLabel: { ...type.bodyStrong, color: c.ink, marginBottom: space.xs },
-  meta: { ...type.caption, color: c.inkMuted, marginTop: space.xs },
+  reason: { ...type.body, color: c.ink, marginTop: space.sm },
   evidence: { ...type.caption, color: c.accentText, marginTop: space.xs },
   chevron: { ...type.label, color: c.accentText },
 

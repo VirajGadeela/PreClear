@@ -732,6 +732,50 @@ plan lives at `~/.claude/plans/ok-so-weve-been-reactive-engelbart.md`.
   and 845 words of payer text to about a dozen tappable lines, the cover from
   eight blocks to four. Measure screens, not files.
 
+### Naming the situation, and the end of the example ranking (2026-09-03)
+
+The complaint that mattered most this session: *"i still have no idea whether i
+have a not publishable document, cheaper to pay out of pocket or in network bc
+im close to my deductible."* Those are the three situations the product exists
+to tell apart, and the app named none of them.
+
+- **A route row leads with an instruction now, not a category.** `ROUTE_LABELS`
+  gives "Same coverage, cheaper facility", which describes a kind of route;
+  `app/src/routeCopy.ts` gives "Ask for this scan at Franciscan Indianapolis",
+  which tells a member what to do and names their situation by doing it. The
+  reason follows in `type.body` at `ink` — it was `type.caption` at `inkMuted`,
+  which made the reasoning the least readable text on the row. That is the same
+  mistake `<Money>` made with the word "estimate", already on record here once.
+- **`routeCopy.ts` is presentation and has no parity script, deliberately.**
+  Every value in it is read off a `Route` the engine already produced; nothing
+  is recomputed, so there is no second implementation to drift. If something in
+  there ever starts *deciding* rather than describing, it belongs in `routes.ts`
+  and it needs a parity test.
+- **The example ranking is gone.** It opened the app on a result for a patient
+  who is not you, carrying a label doing more work than a label can. Nothing
+  ranks until `answered.scan && answered.coverage && answered.year`, tracked in
+  the reducer where the state changes rather than inferred at a call site — an
+  inferred version drifts the first time a default happens to equal an answer.
+  `QuerySource` gained `'empty'`.
+- **Two groups would have been faster and were rejected.** Scan and coverage
+  decide which rates exist, but the year figures decide *which route wins*, and
+  a ranking driven by a deductible nobody entered is the thing being removed,
+  not a smaller version of it.
+- **A chip in an unanswered group must draw unselected.** The fields still hold
+  seeded values, so without this the Scan group rendered "Not set yet" directly
+  above a checked "Knee MRI" chip — the screen contradicting itself in adjacent
+  lines. Sliders are the honest exception: a thumb has to be somewhere and no
+  position means "unanswered", which is why the group summary is the thing that
+  must never lie.
+- **The filter panel now opens expanded, on the Scan group.** A collapsed strip
+  above an empty screen gives a member nothing to do; the point of removing the
+  example was to be clearer, not emptier.
+- **The budget script did its job on its first real test.** `ScreenerScreen` hit
+  140/140 exactly while this landed. The cap was raised to 175 on purpose and
+  the reason is in the diff, which is the whole design. `routeCopy.ts` was added
+  to the budget at the same time — budgeting a screen but not the module feeding
+  it prose would leave the obvious hiding place unwatched.
+
 Gate definitions, for the record:
 
 - **Gate 1 — MRF usability.** Open one target payer's Transparency in Coverage file, extract negotiated rates for CPT 73721 (knee MRI) and 70450 (head CT) at 10 real facilities in the target metro. These files are gigabytes and frequently malformed — stream-parse, don't load. *Pass = 10 real facility prices in a spreadsheet.*
