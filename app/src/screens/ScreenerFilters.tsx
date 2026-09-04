@@ -33,7 +33,7 @@ import { Slider } from '../Slider';
 import { money } from '../costing';
 import { DEMO_SCENARIOS, DemoScenario } from '../demo';
 import { PAYER_CHIP_LABELS, PAYER_LABELS, Procedure, data } from '../appData';
-import { QuerySource, ScreenerQuery } from '../screener';
+import { Answered, QuerySource, ScreenerQuery } from '../screener';
 import { sharedSheets } from '../styles/shared';
 import { TAP_TARGET, radius, space, stroke, type } from '../theme';
 import { useStyles, useTheme } from '../ThemeProvider';
@@ -54,9 +54,39 @@ export type FilterGroup = 'example' | 'scan' | 'coverage' | 'year';
  * belong on its most compact surface, and the figure is one tap away in the
  * panel that owns it.
  */
-function summarise(query: ScreenerQuery, procedureLabel: string): string {
-  return [procedureLabel, PAYER_CHIP_LABELS[query.payer] ?? query.payer].join(' · ');
+function summarise(
+  query: ScreenerQuery,
+  procedureLabel: string,
+  answered: Answered,
+): string {
+  // Before anything is answered the fields still hold seeded values, and
+  // reporting them here would be the example ranking's dishonesty in miniature:
+  // a line stating a scan and an insurer the member never chose.
+  if (!answered.scan && !answered.coverage) return 'Nothing entered yet';
+  return [
+    answered.scan ? procedureLabel : null,
+    answered.coverage ? PAYER_CHIP_LABELS[query.payer] ?? query.payer : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
+
+/** What an unanswered group's row says instead of its values. */
+const UNSET = 'Not set yet';
+
+/**
+ * Chips in an unanswered group draw as unselected, even though the underlying
+ * field holds a seeded value.
+ *
+ * Without this the Scan group read "Not set yet" above a chip with a checkmark
+ * on it — the screen contradicting itself in two adjacent lines, which is a
+ * sharper version of the problem that removing the example ranking was for.
+ *
+ * The sliders are the honest exception and stay as they are. A chip can be
+ * unselected; a slider thumb has to be somewhere, and there is no position that
+ * means "unanswered". Its group summary carries that instead, which is why the
+ * summary is the thing that must never lie.
+ */
 
 /**
  * The three group summaries.
@@ -112,6 +142,7 @@ export function ScreenerFilters({
   planMatch,
   showTreatment,
   showHeadacheFeature,
+  answered,
   open,
   openGroup,
   onToggle,
@@ -126,6 +157,7 @@ export function ScreenerFilters({
   planMatch: { matched: number; total: number } | null;
   showTreatment: boolean;
   showHeadacheFeature: boolean;
+  answered: Answered;
   open: boolean;
   openGroup: FilterGroup | null;
   onToggle: () => void;
@@ -150,7 +182,7 @@ export function ScreenerFilters({
         accessibilityLabel={
           open
             ? 'Hide the filters'
-            : `Refine. Currently ${summarise(query, procedure.label)}`
+            : `Refine. Currently ${summarise(query, procedure.label, answered)}`
         }
         onPress={onToggle}
         style={({ pressed }) => [styles.head, pressed && shared.cardPressed]}
@@ -181,7 +213,7 @@ export function ScreenerFilters({
             </Text>
           )}
           <Text style={styles.summary} numberOfLines={2}>
-            {summarise(query, procedure.label)}
+            {summarise(query, procedure.label, answered)}
           </Text>
         </View>
         <Text style={styles.toggle}>{open ? 'Done' : 'Refine'}</Text>
@@ -213,7 +245,7 @@ export function ScreenerFilters({
 
           <Disclosure
             title="Scan"
-            summary={summariseScan(query, procedure)}
+            summary={answered.scan ? summariseScan(query, procedure) : UNSET}
             open={openGroup === 'scan'}
             onToggle={() => toggleGroup('scan')}
           >
@@ -221,7 +253,7 @@ export function ScreenerFilters({
               {data.procedures.map((item) => (
                 <Chip
                   key={item.cpt}
-                  selected={item.cpt === query.cpt}
+                  selected={answered.scan && item.cpt === query.cpt}
                   label={item.label}
                   onPress={() => onRefine({ cpt: item.cpt })}
                 />
@@ -235,7 +267,7 @@ export function ScreenerFilters({
                   {procedure.indications.map((option) => (
                     <Chip
                       key={option.key}
-                      selected={option.key === query.indication}
+                      selected={answered.scan && option.key === query.indication}
                       label={option.label}
                       block
                       onPress={() => onRefine({ indication: option.key })}
@@ -293,7 +325,7 @@ export function ScreenerFilters({
 
           <Disclosure
             title="Coverage"
-            summary={summariseCoverage(query)}
+            summary={answered.coverage ? summariseCoverage(query) : UNSET}
             open={openGroup === 'coverage'}
             onToggle={() => toggleGroup('coverage')}
           >
@@ -301,7 +333,7 @@ export function ScreenerFilters({
               {Object.keys(PAYER_LABELS).map((key) => (
                 <Chip
                   key={key}
-                  selected={key === query.payer}
+                  selected={answered.coverage && key === query.payer}
                   label={PAYER_CHIP_LABELS[key]}
                   spoken={PAYER_LABELS[key]}
                   onPress={() => onRefine({ payer: key })}
@@ -320,7 +352,7 @@ export function ScreenerFilters({
                   {[...productOptions, undefined].map((option) => (
                     <Chip
                       key={option ?? 'unsure'}
-                      selected={option === query.product}
+                      selected={answered.coverage && option === query.product}
                       label={option ? option.toUpperCase() : 'Not sure'}
                       onPress={() =>
                         onRefine({ product: option === query.product ? undefined : option })
@@ -360,7 +392,7 @@ export function ScreenerFilters({
 
           <Disclosure
             title="Your year"
-            summary={summariseYear(query)}
+            summary={answered.year ? summariseYear(query) : UNSET}
             open={openGroup === 'year'}
             onToggle={() => toggleGroup('year')}
             last

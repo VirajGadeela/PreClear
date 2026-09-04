@@ -49,8 +49,10 @@ import { PlanBenefits } from './src/costing';
 import { DEMO_SCENARIOS, DemoScenario } from './src/demo';
 import { shareText } from './src/share';
 import {
+  NOTHING_ANSWERED,
   ScreenerQuery,
   fromScenario,
+  isComplete,
   memberPlanOf,
   queryReducer,
 } from './src/screener';
@@ -132,15 +134,19 @@ function Preclear() {
 
   /**
    * Everything the screener asks, in one object — see `src/screener.ts` for
-   * why it is a reducer and what `source` guards.
+   * why it is a reducer and what `answered` guards.
    *
-   * Seeded from the first worked example rather than from blank defaults,
-   * because a results-first screen has to open on a result. `source` starts at
-   * 'example' and only a member moving a control changes it.
+   * The field values are seeded from the first worked example, but `answered`
+   * is all-false, so nothing ranks until the member has been through the three
+   * groups. Seeding the *values* rather than zeroing them keeps every control
+   * showing a plausible position the moment it is opened — a slider at zero and
+   * a payer at none would make the first tap harder, not more honest, since
+   * nothing is displayed as an answer until it is one.
    */
   const [query, dispatch] = useReducer(queryReducer, undefined, () => ({
     ...fromScenario(DEMO_SCENARIOS[0]),
-    source: 'example' as const,
+    source: 'empty' as const,
+    answered: NOTHING_ANSWERED,
   }));
 
   /**
@@ -167,12 +173,16 @@ function Preclear() {
   // Which route is expanded, and whether the filter strip is open. Held here
   // rather than inside the screen so neither is lost on a trip to another
   // destination and back.
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  // Open, with the first group expanded, because the screener now opens on a
+  // question rather than on an answer. A collapsed strip above an empty screen
+  // gives a member nothing to do; the point of removing the example ranking was
+  // to be clearer, not emptier.
+  const [filtersOpen, setFiltersOpen] = useState(true);
   // Which of the filter panel's four groups is open, at most one. Hoisted here
   // rather than held in `ScreenerFilters` for the same reason `openRouteKind`
   // is: Screener -> Household -> Screener is a common trip now, and losing the
   // group you had open every time you take it is a new annoyance.
-  const [openGroup, setOpenGroup] = useState<FilterGroup | null>(null);
+  const [openGroup, setOpenGroup] = useState<FilterGroup | null>('scan');
   const [openRouteKind, setOpenRouteKind] = useState<string | null>(null);
 
   // Two independent sources of "unlocked", kept apart on purpose.
@@ -583,6 +593,7 @@ function Preclear() {
                   showHeadacheFeature={applicableFindings.some((finding) =>
                     readsField(finding.requirement.check, 'headache_concerning_feature'),
                   )}
+                  answered={deferredQuery.answered}
                   filtersOpen={filtersOpen}
                   openGroup={openGroup}
                   openRouteKind={openRouteKind}

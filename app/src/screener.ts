@@ -8,20 +8,23 @@
  * is dragging reads the live one, which is what lets results sit on the same
  * screen as the filters without the thumb stuttering.
  *
- * `source` is the honesty flag, and it is the reason this is a reducer rather
+ * `answered` is the honesty flag, and it is the reason this is a reducer rather
  * than a plain setter.
  *
- * A results-first screen shows a ranking before the member has entered
- * anything. That is the whole point of it, and it is also the one guarantee the
- * old step flow gave up: the step bar locked forward steps precisely so a route
- * could never rank before the coverage questions were answered. Nothing on
- * screen may imply an untouched ranking is the member's own, so the screen has
- * to know which it is looking at — and the only way that stays true is if the
- * distinction is made where the state changes, not remembered at each call
- * site.
+ * The app used to open on a ranking built from an example scenario, labelled as
+ * one. It read as confusing rather than as helpful: four dollar figures for a
+ * patient who is not you, on the screen whose entire job is to tell you what
+ * *you* should do. The label was doing more work than a label can.
  *
- * Hence three actions rather than one setter. A machine correction is not a
- * member's answer, and neither is opening a worked example.
+ * So no ranking exists until the member has answered all three groups. The
+ * three flags are set here, where the state changes, rather than inferred at a
+ * call site — an inferred version drifts the first time a default happens to
+ * equal an answer.
+ *
+ * Three actions rather than one setter, for the same reason. A correction the
+ * app makes on the member's behalf is not an answer, and neither is loading a
+ * worked example — that still opens a ranking, because the member asked for it
+ * by name, but it is never their position.
  */
 
 import { DemoScenario } from './demo';
@@ -55,9 +58,49 @@ export type ScreenerQuery = {
 };
 
 /** Whose numbers are on screen. */
-export type QuerySource = 'example' | 'mine';
+export type QuerySource = 'empty' | 'example' | 'mine';
 
-export type QueryState = ScreenerQuery & { source: QuerySource };
+/**
+ * Which of the filter groups the member has actually answered.
+ *
+ * All three have to be true before a ranking appears, and that is the whole
+ * mechanism replacing the example. Two would be faster — scan and coverage
+ * decide which rates exist — but the year figures are the ones that decide
+ * *which route wins*, and showing a ranking driven by a deductible nobody
+ * entered is the thing being removed, not a smaller version of it.
+ */
+export type Answered = { scan: boolean; coverage: boolean; year: boolean };
+
+export type QueryState = ScreenerQuery & {
+  source: QuerySource;
+  answered: Answered;
+};
+
+/** Which group a field belongs to. Drives `answered` from a patch. */
+const GROUP_OF: Record<keyof ScreenerQuery, keyof Answered> = {
+  cpt: 'scan',
+  indication: 'scan',
+  treatmentWeeks: 'scan',
+  headacheFeature: 'scan',
+  payer: 'coverage',
+  product: 'coverage',
+  planText: 'coverage',
+  deductible: 'year',
+  coinsurance: 'year',
+  expectedOtherSpend: 'year',
+};
+
+export const NOTHING_ANSWERED: Answered = {
+  scan: false,
+  coverage: false,
+  year: false,
+};
+
+export const ALL_ANSWERED: Answered = { scan: true, coverage: true, year: true };
+
+export function isComplete(answered: Answered): boolean {
+  return answered.scan && answered.coverage && answered.year;
+}
 
 export type QueryAction =
   /** A member moved a control. This is the only action that earns 'mine'. */
@@ -76,12 +119,27 @@ export type QueryAction =
 
 export function queryReducer(state: QueryState, action: QueryAction): QueryState {
   switch (action.type) {
-    case 'refine':
-      return { ...state, ...action.patch, source: 'mine' };
+    case 'refine': {
+      // Any field in a group marks that group answered. Touching one control
+      // in "Your year" counts for all three sliders in it: the member has seen
+      // the group, and the other two are visible beside the one they moved.
+      const answered = { ...state.answered };
+      for (const key of Object.keys(action.patch) as (keyof ScreenerQuery)[]) {
+        answered[GROUP_OF[key]] = true;
+      }
+      return { ...state, ...action.patch, source: 'mine', answered };
+    }
     case 'normalize':
       return { ...state, ...action.patch };
     case 'example':
-      return { ...fromScenario(action.scenario), source: 'example' };
+      // A worked example is complete by construction — it sets every field —
+      // so it opens a ranking. It is still not the member's own position, and
+      // `source` says so.
+      return {
+        ...fromScenario(action.scenario),
+        source: 'example',
+        answered: ALL_ANSWERED,
+      };
   }
 }
 

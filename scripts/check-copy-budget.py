@@ -46,11 +46,22 @@ APP = Path(__file__).resolve().parent.parent / "app"
 # that an honest addition does not trip it and a regression does.
 BUDGETS = [
     ("src/screens/AboutScreen.tsx", 60, "the cover: headline, one line, one button, the proof"),
-    ("src/screens/ScreenerScreen.tsx", 140, "the ranking, its headline, and the route rows"),
+    # Raised from 140 on 2026-09-03, deliberately and on the first real test of
+    # this script. The screener gained a verdict line, a three-item prompt for
+    # the unanswered groups, and a body-text reason on every route row -- all of
+    # it the answer to "the reasoning needs to be super obvious, not small
+    # unreadable text". That is more words buying more clarity, which is the
+    # trade this budget is meant to permit; what it is meant to stop is more
+    # words buying nothing. 140 was the old ceiling and it was hit exactly.
+    ("src/screens/ScreenerScreen.tsx", 175, "the ranking, its verdict, the prompt, and the route rows"),
     ("src/screens/ScreenerFilters.tsx", 90, "four collapsed groups of controls"),
     ("src/screens/HouseholdStep.tsx", 160, "the paid tier and its demo disclosures"),
     ("src/screens/MethodStep.tsx", 95, "provenance; the FAQ answers live in marketing.ts"),
     ("src/marketing.ts", 330, "how-it-works and FAQ copy, all of it prose"),
+    # Not a screen, but it is now a significant source of on-screen prose: every
+    # route's instruction and its reason. Budgeting the screen and not the module
+    # feeding it would leave the obvious place to hide growth unwatched.
+    ("src/routeCopy.ts", 110, "what to do about each route, and why"),
 ]
 
 # String props whose value a member reads on screen. `accessibilityLabel`,
