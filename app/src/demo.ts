@@ -44,6 +44,8 @@ export type DemoScenario = {
 
   deductible: number;
   coinsurance: number;
+  /** Must be at least `deductible` — see `PlanBenefits` for why. */
+  oopMax: number;
   expectedOtherSpend: number;
   treatmentWeeks: number;
   headacheFeature?: boolean;
@@ -51,9 +53,21 @@ export type DemoScenario = {
 
 export const DEMO_SCENARIOS: DemoScenario[] = [
   {
-    // Verified: cash is $160.82 cheaper on the day and $367.93 more expensive
-    // across the year — the penalty is 2.3x the apparent saving. This is the
-    // whole thesis of the product in one screen, which is why it is first.
+    // Verified: cash is $160.82 cheaper on the day and $62.18 more expensive
+    // across the year. This is the whole thesis of the product in one screen,
+    // which is why it is first.
+    //
+    // The year penalty read $367.93 until 2026-09-03, and that figure was an
+    // artefact. The app hardcoded a $6,000 out-of-pocket ceiling against this
+    // scenario's $6,250 deductible — an impossible plan — which capped the
+    // insured route early and inflated the gap almost sixfold. The thesis
+    // survives at the corrected figure; the drama does not, and it should not,
+    // because it was not real. Do not tune these numbers to get it back.
+    //
+    // Note the structural limit while reading it: the cash route is only
+    // offered when expected other care is *below* the deductible, which is
+    // exactly the position where the missing credit costs least. A large year
+    // penalty and a visible cash route pull against each other by design.
     //
     // A high-deductible plan barely touched, with real care still to come: the
     // exact position where a cash discount is most tempting and most costly.
@@ -67,6 +81,10 @@ export const DEMO_SCENARIOS: DemoScenario[] = [
     planText: '',
     deductible: 6250,
     coinsurance: 0.2,
+    // Above the deductible, as every real plan's is. It was effectively 6000
+    // for every scenario — below this one's deductible — which capped all four
+    // routes at the same total and made the comparison look broken.
+    oopMax: 9000,
     expectedOtherSpend: 6000,
     // Past Aetna's three-week threshold, so no requirement is unmet and the
     // headline is about the money alone. Mixing an order problem into this one
@@ -90,6 +108,7 @@ export const DEMO_SCENARIOS: DemoScenario[] = [
     planText: '',
     deductible: 2000,
     coinsurance: 0.2,
+    oopMax: 6000,
     expectedOtherSpend: 3000,
     treatmentWeeks: 2,
   },
@@ -107,6 +126,7 @@ export const DEMO_SCENARIOS: DemoScenario[] = [
     planText: '',
     deductible: 3500,
     coinsurance: 0.2,
+    oopMax: 8000,
     expectedOtherSpend: 3500,
     treatmentWeeks: 6,
   },

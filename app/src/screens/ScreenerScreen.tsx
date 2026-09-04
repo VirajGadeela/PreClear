@@ -399,7 +399,7 @@ export function ScreenerScreen({
               "estimate" is deliberately absent: hard rule 5 puts it inside the
               figure, and <Money> owns that. */}
           {/* The answer as an instruction, above the list. `summarize()` gives
-              the finding as a figure — "cash costs $367.93 more this year" —
+              the finding as a figure — "cash costs $62.18 more this year" —
               which is a fact. This is what to do about it, which is what was
               actually asked for. */}
           {verdict(routes) && <Text style={styles.verdict}>{verdict(routes)}</Text>}

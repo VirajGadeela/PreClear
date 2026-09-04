@@ -41,6 +41,19 @@ class PlanBenefits:
         for field in ("deductible_remaining", "oop_max_remaining", "copay"):
             if getattr(self, field) < 0:
                 raise ValueError(f"{field} cannot be negative")
+        # The deductible is a component of the out-of-pocket maximum, so a
+        # member cannot owe more deductible than their whole remaining ceiling.
+        # Nothing checked this, and the app shipped for a while with the ceiling
+        # hardcoded at 6000 while its deductible slider ran to 10000. The result
+        # was not an error: every insured route hit the cap and reported the
+        # same total, which reads as a broken comparison rather than as bad
+        # input. An impossible plan should fail loudly, not quietly agree.
+        if self.deductible_remaining > self.oop_max_remaining:
+            raise ValueError(
+                f"deductible_remaining ({self.deductible_remaining}) cannot exceed "
+                f"oop_max_remaining ({self.oop_max_remaining}): the deductible is "
+                "part of the out-of-pocket maximum"
+            )
 
 
 @dataclass(frozen=True)

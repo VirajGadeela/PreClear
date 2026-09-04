@@ -270,6 +270,25 @@ function Preclear() {
     [facilities],
   );
 
+  /**
+   * The out-of-pocket ceiling can never sit below the deductible.
+   *
+   * It is an invariant of every real plan — the deductible is a component of
+   * the out-of-pocket maximum, so owing $6,250 of deductible with a $6,000
+   * ceiling left is not a plan anyone can hold. Both engines now reject it, so
+   * without this a member dragging the deductible past the ceiling would throw
+   * rather than get an answer.
+   *
+   * `normalize`, not `refine`: raising the ceiling to keep the pair coherent is
+   * a correction this app makes on the member's behalf, and it must not count
+   * as them having answered the group.
+   */
+  useEffect(() => {
+    if (query.oopMax < query.deductible) {
+      dispatch({ type: 'normalize', patch: { oopMax: query.deductible } });
+    }
+  }, [query.oopMax, query.deductible]);
+
   // Keep the indication valid when the procedure changes. A correction, not an
   // answer — hence `normalize`, which leaves `source` alone. Dispatching
   // `refine` here would let simply changing procedure relabel an untouched
@@ -324,7 +343,7 @@ function Preclear() {
     const benefits: PlanBenefits = {
       deductibleRemaining: q.deductible,
       coinsuranceRate: q.coinsurance,
-      oopMaxRemaining: 6000,
+      oopMaxRemaining: q.oopMax,
       copay: 0,
     };
 

@@ -48,6 +48,18 @@ export type ScreenerQuery = {
   planText: string;
   deductible: number;
   coinsurance: number;
+  /**
+   * What is left of the out-of-pocket maximum this year.
+   *
+   * Asked for rather than assumed. It was hardcoded to 6000 in `App.tsx` while
+   * the deductible slider ran to 10000, which made every position above $6,000
+   * an impossible plan — you cannot owe more deductible than your whole ceiling
+   * — and the visible symptom was every insured route reporting the same total,
+   * because they all hit the cap. It is also the figure that decides the answer
+   * outright whenever heavy care is expected, which is too much weight for a
+   * number nobody entered.
+   */
+  oopMax: number;
   expectedOtherSpend: number;
   treatmentWeeks: number;
   /**
@@ -87,6 +99,7 @@ const GROUP_OF: Record<keyof ScreenerQuery, keyof Answered> = {
   planText: 'coverage',
   deductible: 'year',
   coinsurance: 'year',
+  oopMax: 'year',
   expectedOtherSpend: 'year',
 };
 
@@ -160,6 +173,7 @@ export function fromScenario(scenario: DemoScenario): ScreenerQuery {
     planText: scenario.planText,
     deductible: scenario.deductible,
     coinsurance: scenario.coinsurance,
+    oopMax: scenario.oopMax,
     expectedOtherSpend: scenario.expectedOtherSpend,
     treatmentWeeks: scenario.treatmentWeeks,
     headacheFeature: scenario.headacheFeature,

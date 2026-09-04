@@ -44,6 +44,17 @@ export function estimatePayment(
   if (allowedAmount < 0) {
     throw new Error('allowedAmount cannot be negative');
   }
+  // The deductible is a component of the out-of-pocket maximum, so a member
+  // cannot owe more deductible than their whole remaining ceiling. Mirrors
+  // `PlanBenefits.__post_init__` in `pipeline/costing/oop.py`; see the comment
+  // there for what shipped while nothing checked it.
+  if (benefits.deductibleRemaining > benefits.oopMaxRemaining) {
+    throw new Error(
+      `deductibleRemaining (${benefits.deductibleRemaining}) cannot exceed ` +
+        `oopMaxRemaining (${benefits.oopMaxRemaining}): the deductible is part ` +
+        'of the out-of-pocket maximum',
+    );
+  }
 
   // A cash payment at a non-contracted facility earns no credit: the patient
   // pays the full price and the benefit year is untouched.
