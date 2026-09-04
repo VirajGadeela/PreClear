@@ -11,12 +11,16 @@
  * — because a results-first screen ranks routes before anyone has entered
  * anything, and the collapsed strip is the only place that can admit it.
  *
- * Open, it is four `Disclosure` rows and one of them at a time. It used to be
+ * Open, it is three `Disclosure` rows and one of them at a time. It used to be
  * one flat scroll: eight headings, about eighteen chips, three or four sliders
  * carrying six preset chips between them, and a text field — the densest
  * surface in the app by a wide margin, and the thing that got it called
- * overwhelming twice. Four lines that each name their own current value replace
- * it, and nothing is more than one tap away.
+ * overwhelming twice. Three lines that each name their own current value
+ * replace it, and nothing is more than one tap away.
+ *
+ * There was a fourth, "Start from an example", offering worked scenarios. It is
+ * gone with the rest of the example machinery: this screen answers for the
+ * member or it answers for nobody.
  *
  * The grouping is by *what the answer is about*, which moved two controls.
  * Weeks of treatment and the headache question read like coverage questions and
@@ -31,16 +35,16 @@ import { Chip } from '../components/Chip';
 import { Disclosure } from '../components/Disclosure';
 import { Slider } from '../Slider';
 import { money } from '../costing';
-import { DEMO_SCENARIOS, DemoScenario } from '../demo';
 import { PAYER_CHIP_LABELS, PAYER_LABELS, Procedure, data } from '../appData';
-import { Answered, QuerySource, ScreenerQuery } from '../screener';
+import { FacilityBundle } from '../routes';
+import { Answered, ScreenerQuery } from '../screener';
 import { sharedSheets } from '../styles/shared';
 import { TAP_TARGET, radius, space, stroke, type } from '../theme';
 import { useStyles, useTheme } from '../ThemeProvider';
 import { themed } from '../styles/themed';
 
 /** Which group is open. `null` is all four closed, which is the default. */
-export type FilterGroup = 'example' | 'scan' | 'coverage' | 'year';
+export type FilterGroup = 'scan' | 'coverage' | 'year';
 
 /**
  * The collapsed line.
@@ -113,9 +117,18 @@ const UNSET = 'Not set yet';
  * echoed inputs — but hard rule 5 says every dollar figure, and narrowing a
  * hard rule is not a formatting decision. Left alone deliberately.
  */
-function summariseScan(query: ScreenerQuery, procedure: Procedure): string {
+function summariseScan(
+  query: ScreenerQuery,
+  procedure: Procedure,
+  facilities: FacilityBundle[],
+): string {
   const indication = procedure.indications.find((item) => item.key === query.indication);
-  return [procedure.label, indication?.label].filter(Boolean).join(' · ');
+  const where = facilities.find(
+    (facility) => facility.facility_key === query.orderedFacility,
+  );
+  return [procedure.label, indication?.label, where?.facility_name]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 function summariseCoverage(query: ScreenerQuery): string {
@@ -136,8 +149,8 @@ function summariseYear(query: ScreenerQuery): string {
 
 export function ScreenerFilters({
   query,
-  source,
   procedure,
+  facilities,
   productOptions,
   planMatch,
   showTreatment,
@@ -148,11 +161,10 @@ export function ScreenerFilters({
   onToggle,
   onOpenGroup,
   onRefine,
-  onExample,
 }: {
   query: ScreenerQuery;
-  source: QuerySource;
   procedure: Procedure;
+  facilities: FacilityBundle[];
   productOptions: string[];
   planMatch: { matched: number; total: number } | null;
   showTreatment: boolean;
@@ -163,7 +175,6 @@ export function ScreenerFilters({
   onToggle: () => void;
   onOpenGroup: (group: FilterGroup | null) => void;
   onRefine: (patch: Partial<ScreenerQuery>) => void;
-  onExample: (scenario: DemoScenario) => void;
 }) {
   const styles = useStyles(sheets);
   const shared = useStyles(sharedSheets);
@@ -188,30 +199,6 @@ export function ScreenerFilters({
         style={({ pressed }) => [styles.head, pressed && shared.cardPressed]}
       >
         <View style={styles.headText}>
-          {/*
-            The only thing standing between a results-first screen and a claim
-            it has not earned.
-
-            Until a member moves a control the ranking below is built from
-            inputs nobody entered, and the step flow this replaced locked its
-            forward steps precisely so that could not happen. So the line does
-            two jobs in one breath: it denies the claim, then offers it. Denial
-            first, because a member who reads only the first half must still
-            come away right.
-
-            "Not your numbers" rather than "not real numbers" — the rates are
-            real and published, and the facilities are named. What is
-            hypothetical is the patient, and saying otherwise would undersell
-            the one thing this app can defend.
-
-            Disappears the moment `source` becomes 'mine', which is the only
-            moment it stops being true.
-          */}
-          {source === 'example' && (
-            <Text style={styles.exampleTag}>
-              An example, not your numbers. Refine for yours.
-            </Text>
-          )}
           <Text style={styles.summary} numberOfLines={2}>
             {summarise(query, procedure.label, answered)}
           </Text>
@@ -221,31 +208,9 @@ export function ScreenerFilters({
 
       {open && (
         <View style={styles.body}>
-          {/* First, because it is the fastest route to a real answer for
-              someone who has not got their own figures to hand. No summary
-              line: there is no current value to report, only three ways in. */}
-          <Disclosure
-            title="Start from an example"
-            open={openGroup === 'example'}
-            onToggle={() => toggleGroup('example')}
-          >
-            <View style={shared.chipWrap}>
-              {DEMO_SCENARIOS.map((scenario) => (
-                <Chip
-                  key={scenario.id}
-                  selected={false}
-                  label={scenario.title}
-                  spoken={`${scenario.title}. ${scenario.teaser}`}
-                  block
-                  onPress={() => onExample(scenario)}
-                />
-              ))}
-            </View>
-          </Disclosure>
-
           <Disclosure
             title="Scan"
-            summary={answered.scan ? summariseScan(query, procedure) : UNSET}
+            summary={answered.scan ? summariseScan(query, procedure, facilities) : UNSET}
             open={openGroup === 'scan'}
             onToggle={() => toggleGroup('scan')}
           >
@@ -273,6 +238,41 @@ export function ScreenerFilters({
                       onPress={() => onRefine({ indication: option.key })}
                     />
                   ))}
+                </View>
+              </View>
+            )}
+
+            {/* Where it is actually booked. Without this the engine falls back
+                to the median-priced facility and the screen calls that "your
+                order" — see `orderedFacility` in `screener.ts`. "Not sure yet"
+                is a real answer and the route copy changes to match rather than
+                naming a building the member never gave. */}
+            {facilities.length > 0 && (
+              <View style={styles.field}>
+                <Text style={shared.rowLabel}>Where is it scheduled?</Text>
+                <View style={shared.chipWrap}>
+                  {facilities.map((facility) => (
+                    <Chip
+                      key={facility.facility_key}
+                      selected={answered.scan && facility.facility_key === query.orderedFacility}
+                      label={facility.facility_name}
+                      block
+                      onPress={() =>
+                        onRefine({
+                          orderedFacility:
+                            facility.facility_key === query.orderedFacility
+                              ? undefined
+                              : facility.facility_key,
+                        })
+                      }
+                    />
+                  ))}
+                  <Chip
+                    selected={answered.scan && query.orderedFacility === undefined}
+                    label="Not sure yet"
+                    block
+                    onPress={() => onRefine({ orderedFacility: undefined })}
+                  />
                 </View>
               </View>
             )}
@@ -475,10 +475,6 @@ const sheets = themed((c) => ({
     paddingVertical: space.sm,
   },
   headText: { flex: 1 },
-  // Not `flag`. A worked example is not a data-quality problem — it is the app
-  // being honest about whose numbers these are, and the brown reserved for
-  // published-data limits would misfile it as one.
-  exampleTag: { ...type.label, color: c.inkMuted, marginBottom: space.xs },
   summary: { ...type.body, color: c.ink },
   toggle: { ...type.label, color: c.accentText },
   body: {

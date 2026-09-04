@@ -46,12 +46,11 @@ import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { TabBar, Tab } from './src/components/TabBar';
 import { TopBar } from './src/components/TopBar';
 import { PlanBenefits } from './src/costing';
-import { DEMO_SCENARIOS, DemoScenario } from './src/demo';
 import { shareText } from './src/share';
 import {
+  INITIAL_QUERY,
   NOTHING_ANSWERED,
   ScreenerQuery,
-  fromScenario,
   isComplete,
   memberPlanOf,
   queryReducer,
@@ -144,7 +143,7 @@ function Preclear() {
    * nothing is displayed as an answer until it is one.
    */
   const [query, dispatch] = useReducer(queryReducer, undefined, () => ({
-    ...fromScenario(DEMO_SCENARIOS[0]),
+    ...INITIAL_QUERY,
     source: 'empty' as const,
     answered: NOTHING_ANSWERED,
   }));
@@ -283,6 +282,24 @@ function Preclear() {
    * a correction this app makes on the member's behalf, and it must not count
    * as them having answered the group.
    */
+  /**
+   * Drop the scheduled facility when it is not one of the ones on offer.
+   *
+   * The list changes with both the procedure and the payer, so a facility
+   * chosen under Anthem for a knee MRI may publish nothing for a head CT. A
+   * stale key would silently stop matching and the baseline would fall back to
+   * the median with no sign on screen — which is the bug this input exists to
+   * fix, returning by a side door.
+   */
+  useEffect(() => {
+    if (
+      query.orderedFacility !== undefined &&
+      !facilities.some((facility) => facility.facility_key === query.orderedFacility)
+    ) {
+      dispatch({ type: 'normalize', patch: { orderedFacility: undefined } });
+    }
+  }, [facilities, query.orderedFacility]);
+
   useEffect(() => {
     if (query.oopMax < query.deductible) {
       dispatch({ type: 'normalize', patch: { oopMax: query.deductible } });
@@ -353,6 +370,9 @@ function Preclear() {
         benefits,
         expectedOtherAllowedSpend: q.expectedOtherSpend,
         memberPlan: memberPlanOf(q),
+        // The engine has accepted this from the start and the app never sent
+        // it, so the baseline silently became the median-priced facility.
+        orderedFacilityKey: q.orderedFacility,
         unmetRequirements: unmet.map((finding) => finding.requirement),
         // Surfaced when the deductible is unlikely to be met, which is when the
         // missing credit costs the patient least.
@@ -400,21 +420,6 @@ function Preclear() {
    * first — the head CT question would otherwise stay answered from a previous
    * run and quietly change what the requirement check reports.
    */
-  /**
-   * Open a worked example.
-   *
-   * One dispatch rather than ten setters, and it deliberately does not mark the
-   * query as the member's own — an example is still an example after it is
-   * opened. `fromScenario` sets every field including the ones the scenario
-   * does not mention, so an answer cannot survive from a previous example.
-   */
-  const applyScenario = useCallback((scenario: DemoScenario) => {
-    dispatch({ type: 'example', scenario });
-    setNote(null);
-    setOpenRouteKind(null);
-    setShowAbout(false);
-    setTab('screener');
-  }, []);
 
   /**
    * Hand the comparison to the system share sheet.
@@ -591,9 +596,7 @@ function Preclear() {
           }}
         >
           {showAbout ? (
-            <AboutScreen
-              onNext={() => setShowAbout(false)}
-              onScenario={applyScenario}
+            <AboutScreen onNext={() => setShowAbout(false)}
             />
           ) : (
             <>
@@ -602,8 +605,8 @@ function Preclear() {
                   routes={routes}
                   findings={findings}
                   query={query}
-                  source={query.source}
                   procedure={procedure}
+                  facilities={facilities}
                   productOptions={productOptions}
                   planMatch={planMatch}
                   showTreatment={applicableFindings.some((finding) =>
@@ -623,7 +626,6 @@ function Preclear() {
                   onOpenGroup={setOpenGroup}
                   onOpenRoute={setOpenRouteKind}
                   onRefine={refine}
-                  onExample={applyScenario}
                   onShare={shareComparison}
                   onMethod={() => setTab('sources')}
                 />

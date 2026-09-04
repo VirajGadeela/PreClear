@@ -1,11 +1,10 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { TAP_TARGET, radius, size, space, stroke, textScale, type } from '../theme';
 import { useStyles } from '../ThemeProvider';
 import { themed } from '../styles/themed';
 import { Money } from '../Money';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { data } from '../appData';
-import { DEMO_SCENARIOS, DemoScenario } from '../demo';
 import { PlanBenefits } from '../costing';
 import { buildRoutes, rankRoutes } from '../routes';
 
@@ -111,17 +110,6 @@ const FLIP = [
 ].filter((row): row is FlipRow => row !== null);
 
 /**
- * The example the panel above is already demonstrating.
- *
- * The panel proves the claim on one case and then stops. Making it the way into
- * the full comparison means the screen does not need a second card repeating
- * the same finding with a different set of numbers.
- */
-const HEADLINE_SCENARIO = DEMO_SCENARIOS.find(
-  (scenario) => scenario.id === 'cash-trap',
-);
-
-/**
  * The cover, and the only screen outside the tabs.
  *
  * It was `LandingStep` while navigation was a chain, and the rename is not
@@ -140,13 +128,7 @@ const HEADLINE_SCENARIO = DEMO_SCENARIOS.find(
  * reader who leaves after four seconds should have seen that, not a paragraph
  * about the controls.
  */
-export function AboutScreen({
-  onNext,
-  onScenario,
-}: {
-  onNext: () => void;
-  onScenario: (scenario: DemoScenario) => void;
-}) {
+export function AboutScreen({ onNext }: { onNext: () => void }) {
   const styles = useStyles(sheets);
 
   return (
@@ -172,13 +154,11 @@ export function AboutScreen({
       {/* The panel had an uppercase label above it reading "THE SAME KNEE MRI,
           TWICE". The two rows below say the same thing by being two readings of
           one case, and the border already says where the panel starts. */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="The same knee MRI, twice. Open the full comparison."
-        disabled={!HEADLINE_SCENARIO}
-        onPress={() => HEADLINE_SCENARIO && onScenario(HEADLINE_SCENARIO)}
-        style={({ pressed }) => [styles.proof, pressed && styles.proofPressed]}
-      >
+      {/* A panel, not a button. It used to open the same case in the screener,
+          which is exactly the example machinery that has now gone: tapping it
+          landed a member on a ranking belonging to somebody else. It proves the
+          claim and stops there, which is all a proof has to do. */}
+      <View style={styles.proof}>
         {FLIP.map((row, index) => (
           <View
             key={row.key}
@@ -204,10 +184,7 @@ export function AboutScreen({
           Franciscan Health Carmel, one Anthem plan. Yours will differ.
         </Text>
 
-        {HEADLINE_SCENARIO && (
-          <Text style={styles.proofOpen}>See the full comparison</Text>
-        )}
-      </Pressable>
+      </View>
 
     </>
   );
@@ -260,8 +237,6 @@ const sheets = themed((c) => ({
     paddingTop: space.sm,
     marginTop: space.sm,
   },
-  proofPressed: { opacity: 0.7 },
-  proofOpen: { ...type.label, color: c.accent, marginTop: space.sm },
 
   // Cards would compete with the two buttons above for the same attention;
   // these are one line each because the title is the whole message.
