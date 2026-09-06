@@ -78,8 +78,16 @@ export function Slider({
   // The responder is created once, so it closes over the first render's props.
   // Anything the gesture arithmetic reads has to arrive through a ref, the
   // same way `width` and `onChange` already do.
-  const boundsRef = useRef({ minimum, maximum });
-  boundsRef.current = { minimum, maximum };
+  //
+  // `step` is in here for the same reason the bounds are, and `emit` reads all
+  // three from here rather than from its own closure. `emit` is a useCallback
+  // that correctly lists them as dependencies, but the responder captured the
+  // *first* one and keeps calling it forever, so those dependencies never
+  // reach the gesture. That was invisible for as long as every slider's range
+  // was a constant, and it stopped being invisible the moment one range
+  // started tracking another control -- see the note on stepping below.
+  const boundsRef = useRef({ minimum, maximum, step });
+  boundsRef.current = { minimum, maximum, step };
 
   // The distance between the finger and the centre of the thumb at the moment
   // the thumb was grabbed. Zero when the touch landed on bare track.
@@ -91,20 +99,31 @@ export function Slider({
     setWidth(measured);
   }, []);
 
-  const emit = useCallback(
-    (x: number) => {
-      const track = widthRef.current - THUMB;
-      if (track <= 0) return;
-      const ratio = Math.min(Math.max((x - THUMB / 2) / track, 0), 1);
-      const raw = minimum + ratio * (maximum - minimum);
-      const stepped = Math.round(raw / step) * step;
-      const next = Math.min(Math.max(stepped, minimum), maximum);
-      if (next === lastRef.current) return;
-      lastRef.current = next;
-      onChangeRef.current(next);
-    },
-    [maximum, minimum, step],
-  );
+  const emit = useCallback((x: number) => {
+    // Live bounds, not the ones this closure was born with. The
+    // out-of-pocket-maximum slider takes its minimum from the deductible, so
+    // a stale minimum mapped the finger onto a range the member had already
+    // moved: the value could be dragged below the deductible, and the guard
+    // in App.tsx then pushed it straight back up. The thumb fought the drag.
+    const { minimum: lo, maximum: hi, step: increment } = boundsRef.current;
+
+    const track = widthRef.current - THUMB;
+    if (track <= 0) return;
+    const ratio = Math.min(Math.max((x - THUMB / 2) / track, 0), 1);
+    const raw = lo + ratio * (hi - lo);
+
+    // Steps are counted from the minimum, not from zero, which is the rule an
+    // <input type="range"> follows and the one this had wrong. Counting from
+    // zero puts the grid at multiples of `step` regardless of where the track
+    // starts, so a minimum that is not itself a multiple is unreachable: with
+    // the deductible at $2,250 the out-of-pocket slider bottomed out at
+    // $2,500 and could never be dragged to its own left end.
+    const stepped = lo + Math.round((raw - lo) / increment) * increment;
+    const next = Math.min(Math.max(stepped, lo), hi);
+    if (next === lastRef.current) return;
+    lastRef.current = next;
+    onChangeRef.current(next);
+  }, []);
 
   // On a touch device the pressed state is the focus state — there is no hover
   // and no keyboard ring. Every other control in this app answers a finger;
