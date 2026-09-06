@@ -65,7 +65,17 @@ export function Disclosure({
       >
         <View style={styles.headText}>
           <Text style={styles.title}>{title}</Text>
-          {summary ? (
+          {/* Closed only, for two reasons that turn out to be one.
+              Redundancy: open, this line restates the controls directly under
+              it, and a summary is only worth its space while it stands in for
+              something off screen.
+              Layout: it carries a `money()` figure a slider is driving, so
+              "$2,000.00 (estimate) left" becomes "$10,000.00 (estimate) left"
+              mid-drag, wraps onto a second line, and changes the head's height
+              while a finger is on the track. Every row below jumped. Reserving
+              a fixed height would have hidden that; not rendering a value the
+              member is watching a control display fixes it. */}
+          {!open && summary ? (
             <Text style={styles.summary} numberOfLines={2}>
               {summary}
             </Text>
