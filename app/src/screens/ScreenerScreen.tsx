@@ -487,9 +487,17 @@ export function ScreenerScreen({
                 </Text>
               </View>
             ) : (
+              // Two ways to reach the same gate and they are not the same
+              // sentence. `cashIsWorthOffering` is false both when a member
+              // expects to meet their deductible and when they have already
+              // met it, and telling someone who tapped "Met it" that they
+              // "expect to meet" it describes a future they are already past.
               <Text style={styles.cashNote}>
-                Paying cash is not listed. You expect to meet your deductible,
-                so it would earn no credit toward it.
+                Paying cash is not listed.{' '}
+                {query.deductible === 0
+                  ? 'Your deductible is already met'
+                  : 'You expect to meet your deductible'}
+                , so a cash payment would earn no credit.
               </Text>
             ))}
 
@@ -575,9 +583,15 @@ const sheets = themed((c) => ({
   cashNote: { ...type.body, color: c.inkMuted, marginTop: space.md },
   verdict: { ...type.title, color: c.ink, marginBottom: space.sm },
   scope: { ...type.caption, color: c.inkMuted, marginTop: space.sm },
+  // `body` at `ink`, not `label` at `inkMuted`. This sentence defines what
+  // every figure underneath it means, and it was set at 13px in the muted
+  // colour: the most load-bearing line on the screen rendered as its quietest.
+  // That is the same mistake CLAUDE.md records twice already, once for the
+  // word "estimate" inside `<Money>` and once for the reason on a route row.
+  // Still below `verdict` at 22px, so the hierarchy holds.
   columnHead: {
-    ...type.label,
-    color: c.inkMuted,
+    ...type.body,
+    color: c.ink,
     paddingBottom: space.sm,
     borderBottomWidth: stroke.hairline,
     borderBottomColor: c.line,
