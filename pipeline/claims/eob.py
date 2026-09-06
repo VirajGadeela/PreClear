@@ -144,7 +144,7 @@ def denial_carries_appeal_rights(eob):
         member=eob.member,
         summary=(
             f"Denied as {eob.denial_code}"
-            + (f" — {eob.denial_reason}." if eob.denial_reason else ".")
+            + (f". {eob.denial_reason}." if eob.denial_reason else ".")
         ),
         amount=None,
         action=(

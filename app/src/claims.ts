@@ -92,7 +92,7 @@ function denialAppealRight(eob: Eob): Finding | null {
     member: eob.member,
     summary:
       `Denied as ${eob.denial_code}` +
-      (eob.denial_reason ? ` — ${eob.denial_reason}.` : '.'),
+      (eob.denial_reason ? `. ${eob.denial_reason}.` : '.'),
     // Unpriced on purpose: a number here would imply a predicted recovery.
     amount: null,
     action:

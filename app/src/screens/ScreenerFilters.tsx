@@ -198,10 +198,19 @@ export function ScreenerFilters({
         onPress={onToggle}
         style={({ pressed }) => [styles.head, pressed && shared.cardPressed]}
       >
+        {/* Only while closed. Open, this line restates the rows directly
+            underneath it: "Nothing entered yet" sat on top of three rows each
+            reading "Not set yet", and once answered it read "Knee MRI ·
+            Anthem" above a Scan row and a Coverage row saying the same thing.
+            A summary earns its place by standing in for content that is not on
+            screen, which is exactly what stops being true when the panel
+            opens. */}
         <View style={styles.headText}>
-          <Text style={styles.summary} numberOfLines={2}>
-            {summarise(query, procedure.label, answered)}
-          </Text>
+          {!open && (
+            <Text style={styles.summary} numberOfLines={2}>
+              {summarise(query, procedure.label, answered)}
+            </Text>
+          )}
         </View>
         <Text style={styles.toggle}>{open ? 'Done' : 'Refine'}</Text>
       </Pressable>

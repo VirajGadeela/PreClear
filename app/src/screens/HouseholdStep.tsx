@@ -291,7 +291,7 @@ export function HouseholdStep({
         <View style={styles.demoStrip}>
           <Text style={styles.demoText}>
             Demo pricing. Nothing is charged, no purchase is made and no payment
-            details are collected — this unlocks the paid tier on this device so
+            details are collected. This unlocks the paid tier on this device so
             it can be seen working.
           </Text>
         </View>
