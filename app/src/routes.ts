@@ -55,7 +55,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   in_network_as_written: 'Same order, same facility',
   in_network_cheaper_site: 'Same coverage, cheaper facility',
   in_network_order_corrected: 'Same price, requires provider action',
-  cash_non_contracted: 'Cash pay — no deductible credit',
+  cash_non_contracted: 'Cash pay, no deductible credit',
 };
 
 export type Route = {
@@ -81,12 +81,12 @@ function warningsFor(rate: number, grossCharge: number | null): string[] {
   const warnings: string[] = [];
   if (grossCharge && rate > grossCharge) {
     warnings.push(
-      'The published rate is above this hospital’s gross charge, which usually means a percent-of-charge row rather than a real price.',
+      "The published rate is above this hospital's gross charge, which usually means a percent-of-charge row rather than a real price.",
     );
   }
   if (grossCharge && rate < 0.05 * grossCharge) {
     warnings.push(
-      'The published rate is under 5% of this hospital’s gross charge, which is characteristic of a carve-out row.',
+      "The published rate is under 5% of this hospital's gross charge, which is characteristic of a carve-out row.",
     );
   }
   return warnings;
@@ -388,13 +388,13 @@ export function describeRecommendation(routes: Route[]): string | null {
 
   if (!recommendedIsCash) {
     if (todayDelta > 0.01) {
-      return `${money(todayDelta)} more than paying cash today — but it earns your deductible credit, which is what saves ${money(yearDelta)} by the end of the year.`;
+      return `${money(todayDelta)} more than paying cash today, but it earns your deductible credit, which is what saves ${money(yearDelta)} by the end of the year.`;
     }
-    return `Also cheaper than cash today, and it earns your deductible credit — ${money(yearDelta)} less than cash by the end of the year.`;
+    return `Also cheaper than cash today, and it earns your deductible credit, ${money(yearDelta)} less than cash by the end of the year.`;
   }
 
   if (todayDelta < -0.01) {
-    return `${money(-todayDelta)} less than billing insurance today, and still ${money(yearDelta)} ahead this year — you are not expected to reach your deductible, so the missing credit costs little.`;
+    return `${money(-todayDelta)} less than billing insurance today, and still ${money(yearDelta)} ahead this year. You are not expected to reach your deductible, so the missing credit costs little.`;
   }
   return `${money(yearDelta)} less than billing insurance this year, even without a deductible credit.`;
 }

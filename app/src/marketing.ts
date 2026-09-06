@@ -81,7 +81,7 @@ export const FAQ: FaqEntry[] = [
   {
     q: 'Will my claim be denied?',
     a:
-      'This app will never tell you. It reports which published criteria your order does not document as met — a gap in the paperwork, not a coverage decision. Only your insurer makes that one.',
+      'This app will never tell you. It reports which published criteria your order does not document as met. That is a gap in the paperwork, not a coverage decision. Only your insurer makes that one.',
   },
   {
     q: 'Why can paying cash be the more expensive choice?',

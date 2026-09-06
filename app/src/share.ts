@@ -104,14 +104,14 @@ export function shareText({
     );
   } else if (summary?.kind === 'spread') {
     lines.push(
-      `Same scan, same coverage — ${money(summary.spread)} between the best and worst option.`,
+      `Same scan, same coverage. ${money(summary.spread)} between the best and worst option.`,
     );
   }
 
   lines.push('', 'Ranked by what the whole year costs:');
   routes.forEach((route, index) => {
     lines.push(
-      `${index + 1}. ${route.label} — ${route.facilityName}: ${money(
+      `${index + 1}. ${route.label} (${route.facilityName}): ${money(
         route.estimate.totalThisYear,
       )}`,
     );

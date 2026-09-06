@@ -92,7 +92,7 @@ export function routeCopy(route: Route, context: RouteContext): RouteCopy {
       if (!orderedFacilityName) {
         return {
           action: 'A typical price for this scan',
-          reason: `The middle of the published rates we hold. Not necessarily where your scan is booked — say where and this becomes your own order.`,
+          reason: `The middle of the published rates we hold. Not necessarily where your scan is booked. Say where and this becomes your own order.`,
         };
       }
       return {
@@ -114,7 +114,7 @@ export function routeCopy(route: Route, context: RouteContext): RouteCopy {
             ? 'Ask your doctor to document one more thing first'
             : `Ask your doctor to document ${count} more things first`,
         reason: first
-          ? `${who} publishes a criterion your order does not record yet: ${first.summary} Same price either way — this is paperwork, not coverage.`
+          ? `${who} publishes a criterion your order does not record yet: ${first.summary} Same price either way. This is paperwork, not coverage.`
           : 'Same price either way. This is paperwork, not coverage.',
       };
     }
@@ -123,7 +123,7 @@ export function routeCopy(route: Route, context: RouteContext): RouteCopy {
       return {
         action: `Pay cash at ${route.facilityName}`,
         reason:
-          'Cheapest to pay on the day, and it earns no deductible credit — so later care this year starts from scratch.',
+          'Cheapest to pay on the day. It earns no deductible credit, so later care this year starts from scratch.',
       };
 
     default:

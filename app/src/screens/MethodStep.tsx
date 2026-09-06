@@ -91,7 +91,7 @@ export function MethodStep() {
 
       <Text style={shared.h2}>Prices</Text>
       <Text style={shared.body}>
-        Rates come from {data.generated_from} — the files hospitals and payers
+        Rates come from {data.generated_from}, the files hospitals and payers
         are federally required to publish. This build covers {facilityCount}{' '}
         {facilityCount === 1 ? 'facility' : 'facilities'} in {data.metro} across{' '}
         {data.procedures.length}{' '}
@@ -192,7 +192,7 @@ export function MethodStep() {
           the most damage. */}
       <Text style={shared.body}>
         These are estimates, not quotes. Nothing here predicts whether a claim
-        will be paid or denied — it reports which published criteria an order
+        will be paid or denied. It reports which published criteria an order
         does not document as met. Nothing here recommends a different scan or a
         different treatment. Your benefit figures are the ones you entered, and
         they are never stored or sent anywhere.

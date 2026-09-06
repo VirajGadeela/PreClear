@@ -403,7 +403,17 @@ export function ScreenerScreen({
               which is a fact. This is what to do about it, which is what was
               actually asked for. */}
           {verdict(routes) && <Text style={styles.verdict}>{verdict(routes)}</Text>}
-          <Text style={styles.columnHead}>Ranked by total cost this year</Text>
+          {/* Says what the big number is, which nothing did. It is
+              `totalThisYear`: what the member pays for the scan plus what they
+              pay for the other care they said to expect, so it is the year and
+              not the scan's price. That distinction is the product's whole
+              finding, and reading these figures as scan prices makes the
+              ranking look wrong rather than surprising. "Ranked by" stays
+              because it is also the only line saying the list is ordered. */}
+          <Text style={styles.columnHead}>
+            Ranked by what you pay all year: this scan plus the other care you
+            expect.
+          </Text>
           {/* Says the metro out loud. The app has never asked where a member
               lives and cannot know — it holds one metro's published files, and
               showing Indianapolis facility names without saying so invites
