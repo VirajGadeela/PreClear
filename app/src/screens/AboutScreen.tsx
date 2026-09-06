@@ -186,6 +186,17 @@ export function AboutScreen({ onNext }: { onNext: () => void }) {
 
       </View>
 
+      {/* The two facts a sceptic actually wants, and the stat band under it
+          is the evidence for the first. Both are checkable rather than
+          reassuring: "must publish" is the federal requirement these files
+          exist under, and "saved" is the claim that survives -- an earlier
+          draft read "leaves this phone", which `shareComparison` makes false
+          the moment a member taps Share. */}
+      <Text style={styles.trust}>
+        Prices come from files hospitals must publish. Nothing you enter is
+        saved.
+      </Text>
+
       {/* What the comparison is built on. The reference this came from puts
           a stat band in this position; the difference is that each of these is
           counted from the bundle at render, so none of them can drift from the
@@ -258,6 +269,16 @@ const sheets = themed((c) => ({
     paddingTop: space.lg,
     paddingBottom: space.lg,
   },
+  // Same treatment as `landingSub`: body size, muted, so it reads as a quiet
+  // statement of fact rather than as a second headline. It introduces the stat
+  // band, so the gap below it is smaller than the gap above.
+  trust: {
+    ...type.body,
+    color: c.inkMuted,
+    marginTop: space.xl,
+    marginBottom: space.sm,
+  },
+
   // A row per stat rather than a three-across band: the labels here are
   // sentences, not single words, and three of them across a phone would break
   // mid-word the way the indication chips once did.
