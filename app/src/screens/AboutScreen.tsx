@@ -151,6 +151,32 @@ export function AboutScreen({ onNext }: { onNext: () => void }) {
           with the only action this screen exists to offer. */}
       <PrimaryButton label="Compare my options" onPress={onNext} tone="accent" />
 
+      {/* The two facts a sceptic actually wants, and the counts under them are
+          the evidence for the first. Both are checkable rather than
+          reassuring: "must publish" is the federal requirement these files
+          exist under, and "saved" is the claim that survives. An earlier draft
+          read "leaves this phone", which `shareComparison` makes false the
+          moment a member taps Share. */}
+      <Text style={styles.trust}>
+        Prices come from files hospitals must publish. Nothing you enter is
+        saved.
+      </Text>
+
+      {/* Above the proof panel now, and one line rather than three rows. Both
+          changes are for the same reason: the panel is tall enough that a
+          three-row band below it started past the fold, and nothing on a
+          phone tells a reader there is more underneath. Counted from the
+          bundle at render either way, so no figure here can outlive its data.
+
+          One `Text` rather than a flex row is deliberate. Three columns break
+          mid-word at accessibility text sizes, which DESIGN.md §8 already
+          records happening to the indication chips. A sentence reflows.
+
+          What the band lost is the qualifier on each count. The line directly
+          above supplies it for prices, and "citable" survives as the one word
+          carrying a claim. */}
+      <Text style={styles.stats}>{corpusStats().join(' · ')}</Text>
+
       {/* The panel had an uppercase label above it reading "THE SAME KNEE MRI,
           TWICE". The two rows below say the same thing by being two readings of
           one case, and the border already says where the panel starts. */}
@@ -186,31 +212,6 @@ export function AboutScreen({ onNext }: { onNext: () => void }) {
 
       </View>
 
-      {/* The two facts a sceptic actually wants, and the stat band under it
-          is the evidence for the first. Both are checkable rather than
-          reassuring: "must publish" is the federal requirement these files
-          exist under, and "saved" is the claim that survives -- an earlier
-          draft read "leaves this phone", which `shareComparison` makes false
-          the moment a member taps Share. */}
-      <Text style={styles.trust}>
-        Prices come from files hospitals must publish. Nothing you enter is
-        saved.
-      </Text>
-
-      {/* What the comparison is built on. The reference this came from puts
-          a stat band in this position; the difference is that each of these is
-          counted from the bundle at render, so none of them can drift from the
-          data they describe. */}
-      <View style={styles.stats}>
-        {corpusStats().map((stat) => (
-          <View key={stat.label} style={styles.stat}>
-            <Text style={styles.statValue} maxFontSizeMultiplier={textScale.display}>
-              {stat.value}
-            </Text>
-            <Text style={styles.statLabel}>{stat.label}</Text>
-          </View>
-        ))}
-      </View>
     </>
   );
 }
@@ -233,9 +234,9 @@ function corpusStats() {
     }
   }
   return [
-    { value: String(facilities.size), label: 'Indianapolis hospitals, real published prices' },
-    { value: String(data.requirements.length), label: 'payer requirement rules, each one citable' },
-    { value: String(payers.size), label: 'insurers, with prices for every one' },
+    `${facilities.size} Indianapolis hospitals`,
+    `${data.requirements.length} citable payer rules`,
+    `${payers.size} insurers`,
   ];
 }
 
@@ -279,24 +280,17 @@ const sheets = themed((c) => ({
     marginBottom: space.sm,
   },
 
-  // A row per stat rather than a three-across band: the labels here are
-  // sentences, not single words, and three of them across a phone would break
-  // mid-word the way the indication chips once did.
-  stats: { marginTop: space.lg, gap: space.md },
-  stat: { flexDirection: 'row', alignItems: 'baseline', gap: space.md },
-  // The sans, not the serif, and for a specific reason: Instrument Serif's
-  // figure one is a plain vertical stroke, so "11" rendered as "ll". The
-  // reference sets its stat numerals in the geometric sans for the same reason.
+  // The numerals sit in the sans, which they get for free as body text now.
+  // That was load-bearing while they were set large: Instrument Serif's figure
+  // one is a plain vertical stroke, so "11" rendered as "ll".
   //
-  // `ink`, not `accent`, which is a deliberate departure from the commit these
-  // stats came from. This screen already spends accent twice — on the primary
-  // button, and on whichever route wins each row of the proof panel. That
-  // second one is load-bearing: the accent moves between cash and in-network
-  // across the two rows, and that inversion is the entire argument the cover
-  // makes. Three large blue numerals above it compete with it for the same
-  // meaning while carrying none. Size already ranks these.
-  statValue: { ...type.display, color: c.ink, minWidth: 56 },
-  statLabel: { ...type.caption, color: c.inkMuted, flex: 1 },
+  // They are also no longer in `accent`, which was a deliberate departure from
+  // the commit they came from. This screen spends accent twice already, on the
+  // primary button and on whichever route wins each row of the proof panel,
+  // and that second one is load-bearing: the accent moves between cash and
+  // in-network across the two rows, and that inversion is the argument the
+  // cover makes.
+  stats: { ...type.caption, color: c.inkMuted, marginTop: space.sm },
 
   proofRow: { paddingVertical: space.sm },
   // The divider sits between the two scenarios because the inversion between

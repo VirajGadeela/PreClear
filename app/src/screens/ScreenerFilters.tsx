@@ -187,33 +187,33 @@ export function ScreenerFilters({
 
   return (
     <View style={styles.strip}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
-        accessibilityLabel={
-          open
-            ? 'Hide the filters'
-            : `Refine. Currently ${summarise(query, procedure.label, answered)}`
-        }
-        onPress={onToggle}
-        style={({ pressed }) => [styles.head, pressed && shared.cardPressed]}
-      >
-        {/* Only while closed. Open, this line restates the rows directly
-            underneath it: "Nothing entered yet" sat on top of three rows each
-            reading "Not set yet", and once answered it read "Knee MRI ·
-            Anthem" above a Scan row and a Coverage row saying the same thing.
-            A summary earns its place by standing in for content that is not on
-            screen, which is exactly what stops being true when the panel
-            opens. */}
-        <View style={styles.headText}>
-          {!open && (
+      {/* The header exists only while the panel is closed, and its whole job
+          is the summary. Open, that line restated the rows directly beneath
+          it: "Nothing entered yet" above three rows each reading "Not set
+          yet", and once answered "Knee MRI · Anthem" above a Scan row and a
+          Coverage row saying the same. A summary stands in for content that
+          is not on screen, which stops being true the moment the panel opens.
+
+          Hiding just the text left the close control alone in a 44pt row
+          against nothing, which read as a mistake. So the whole row goes and
+          the control moves to the foot of the panel, which is where a member
+          arrives when they have finished answering anyway. */}
+      {!open && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: false }}
+          accessibilityLabel={`Refine. Currently ${summarise(query, procedure.label, answered)}`}
+          onPress={onToggle}
+          style={({ pressed }) => [styles.head, pressed && shared.cardPressed]}
+        >
+          <View style={styles.headText}>
             <Text style={styles.summary} numberOfLines={2}>
               {summarise(query, procedure.label, answered)}
             </Text>
-          )}
-        </View>
-        <Text style={styles.toggle}>{open ? 'Done' : 'Refine'}</Text>
-      </Pressable>
+          </View>
+          <Text style={styles.toggle}>Refine</Text>
+        </Pressable>
+      )}
 
       {open && (
         <View style={styles.body}>
@@ -461,6 +461,18 @@ export function ScreenerFilters({
           </Disclosure>
         </View>
       )}
+
+      {open && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: true }}
+          accessibilityLabel="Done. Hides these questions"
+          onPress={onToggle}
+          style={({ pressed }) => [styles.foot, pressed && shared.cardPressed]}
+        >
+          <Text style={styles.toggle}>Done</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -486,10 +498,18 @@ const sheets = themed((c) => ({
   headText: { flex: 1 },
   summary: { ...type.body, color: c.ink },
   toggle: { ...type.label, color: c.accentText },
-  body: {
+  body: { paddingHorizontal: space.md },
+  // The close control, at the foot rather than the head. Right-aligned to sit
+  // where the header's "Refine" was, so the same control stays in the same
+  // column of the card whichever state it is in.
+  foot: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
     borderTopWidth: stroke.hairline,
     borderTopColor: c.line,
     paddingHorizontal: space.md,
+    minHeight: TAP_TARGET,
   },
   // A labelled control inside an open group. The group title is the heading
   // now, so these are `rowLabel` rather than `h2` — a second heading level

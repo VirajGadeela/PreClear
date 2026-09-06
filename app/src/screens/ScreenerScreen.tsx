@@ -200,6 +200,13 @@ const RouteRow = memo(function RouteRow({
               DESIGN.md §0 names position, number size and the single accent as
               the carriers of rank. `accessibilityLabel` still announces it. */}
           <Text style={styles.routeLabel}>{copy.action}</Text>
+          {/* The figure names itself. A column header above the list said this
+              once, and it did not work: the eye goes to the big number, the
+              header is 13px four rows away, and it scrolls off while the
+              numbers stay. Asked three times what this amount was, which is
+              the answer. Repeated on every row on purpose. A label a reader
+              has to remember from elsewhere is a label they will not have. */}
+          <Text style={styles.figureLabel}>What you pay this year</Text>
           <Money value={route.estimate.totalThisYear} size="large" tone={recommended ? 'accent' : 'ink'} />
           {/* `type.body` at `ink`, not a caption at `inkMuted`. This is the
               reasoning, and it was previously the least readable text on the
@@ -550,6 +557,12 @@ const sheets = themed((c) => ({
     minWidth: space.md,
   },
   rowBody: { flex: 1 },
+  // Muted and small against the figure it names, which is the correct
+  // hierarchy here rather than the mistake CLAUDE.md records with the word
+  // "estimate": that word is the claim, this is a caption on four identical
+  // rows, and setting it at full weight four times would compete with the
+  // amounts the row exists to compare.
+  figureLabel: { ...type.caption, color: c.inkMuted, marginTop: space.xs },
   routeLabel: { ...type.bodyStrong, color: c.ink, marginBottom: space.xs },
   reason: { ...type.body, color: c.ink, marginTop: space.sm },
   evidence: { ...type.caption, color: c.accentText, marginTop: space.xs },
