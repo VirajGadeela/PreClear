@@ -336,36 +336,6 @@ export function ScreenerScreen({
 
   return (
     <>
-      {/* Direction sits above the controls it points at, and only direction
-          does. The ranking stays below the panel: questions above, answer
-          below, which is the shape the whole results-first rewrite is built
-          on. Moving this whole branch would have carried the ranking up with
-          it and inverted that.
-
-          This replaces an example ranking that was labelled as one and read as
-          confusing anyway: four dollar figures for a patient who is not you,
-          on the screen whose whole job is to say what *you* should do. A
-          prompt that names what is still missing is a worse demo and a better
-          product, and the cover's proof panel already does the demonstrating
-          on real published numbers that never claim to be anybody's.
-
-          There is no checklist here any more. There was one, naming each
-          group and marking it off, and once the groups below started closed it
-          was three lines restating three rows that sit directly underneath and
-          already say "Not set yet". A closed `Disclosure` carrying its own
-          value is the whole reason the panel can collapse at all; a checklist
-          above it is that idea written twice. */}
-      {!complete && (
-        <View style={styles.prompt}>
-          <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>
-            Let's price your scan.
-          </Text>
-          <Text style={shared.body}>
-            Three questions below. Your options appear once they're answered.
-          </Text>
-        </View>
-      )}
-
       <ScreenerFilters
         query={query}
         procedure={procedure}
@@ -382,9 +352,46 @@ export function ScreenerScreen({
         onRefine={onRefine}
       />
 
-      {/* Nothing ranks until all three groups are answered. The prompt that
-          says so is above the panel; this is what replaces it. */}
-      {!complete ? null : routes.length === 0 ? (
+      {/* Nothing ranks until all three groups are answered, and the prompt
+          that says so occupies the slot the ranking will take. That placement
+          is the fix for a bug, not a preference.
+
+          It sat above the panel for two commits. Answering the third group
+          unmounts it, a slider drag is what answers the third group, and
+          removing ninety points of content from *above* the scroll position
+          moves everything the member is looking at upward. It reads exactly
+          like the app scrolling down on its own, which is how it was reported.
+          Below the panel, the same swap happens under the anchor and nothing
+          moves.
+
+          What made this affordable is the previous commit: the groups start
+          closed, so the panel is short enough that a prompt underneath it is
+          on screen anyway. Moving the prompt up was never what fixed the
+          below-the-fold problem. Collapsing the groups was.
+
+          The copy is also true now rather than merely accurate: the options
+          really do appear here, in this slot.
+
+          This replaces an example ranking that was labelled as one and read as
+          confusing anyway: four dollar figures for a patient who is not you,
+          on the screen whose whole job is to say what *you* should do. A
+          prompt that names what is still missing is a worse demo and a better
+          product, and the cover's proof panel already does the demonstrating
+          on real published numbers that never claim to be anybody's.
+
+          There is no checklist here. There was one, naming each group and
+          marking it off, and once the groups started closed it restated three
+          rows that already say "Not set yet". */}
+      {!complete ? (
+        <View style={styles.prompt}>
+          <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>
+            Let's price your scan.
+          </Text>
+          <Text style={shared.body}>
+            Three questions above. Your options appear here.
+          </Text>
+        </View>
+      ) : routes.length === 0 ? (
         <View>
           <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>
             No routes to compare
