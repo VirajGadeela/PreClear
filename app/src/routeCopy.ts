@@ -113,9 +113,13 @@ export function routeCopy(route: Route, context: RouteContext): RouteCopy {
           count === 1
             ? 'Ask your doctor to document one more thing first'
             : `Ask your doctor to document ${count} more things first`,
+        // Leads with the price, because the list is ranked by price and this
+        // route does not change it. Ranked second or third with the same total
+        // as going ahead as ordered, it reads as a cheaper option that is not
+        // cheaper until something says why it is here at all.
         reason: first
-          ? `${who} publishes a criterion your order does not record yet: ${first.summary} Same price either way. This is paperwork, not coverage.`
-          : 'Same price either way. This is paperwork, not coverage.',
+          ? `Same price as going ahead as ordered. It is here because ${who} publishes a criterion your order does not record yet: ${first.summary}`
+          : 'Same price as going ahead as ordered. It is here because your order is missing a published criterion. Paperwork, not coverage.',
       };
     }
 

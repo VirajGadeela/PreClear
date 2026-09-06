@@ -128,13 +128,22 @@ function Headline({ routes }: { routes: Route[] }) {
     );
   }
 
+  // Words first, then the figure, which the two branches above already do.
+  // This one opened with a bare `<Money>` and named the quantity afterwards as
+  // "separates best from worst", so the largest number on the screen arrived
+  // before anything said what it was. Three kinds of figure appear on this
+  // tab: a spread here, a total on every route row, and the differences in the
+  // cover's proof panel. Only one of them can afford to be unlabelled, and the
+  // answer is none of them.
   return (
     <View style={styles.hero}>
       <View style={line}>
+        <Text style={styles.heroLead}>Your options differ by</Text>
         <Money value={summary.spread} size="large" tone="accent" />
-        <Text style={styles.heroLead}>separates best from worst.</Text>
       </View>
-      <Text style={styles.heroWhy}>Same scan, same coverage.</Text>
+      <Text style={styles.heroWhy}>
+        Over the whole year. Same scan, same coverage.
+      </Text>
     </View>
   );
 }

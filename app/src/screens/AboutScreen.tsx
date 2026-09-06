@@ -142,8 +142,27 @@ export function AboutScreen({ onNext }: { onNext: () => void }) {
       >
         Cash can cost more by year's end.
       </Text>
+      {/* Names the situation the app is for, which nothing on this screen did.
+          The headline states the finding and the proof panel demonstrates it,
+          but a reader arriving cold could not tell what the app *does*: that
+          it is for a scan you have not had yet, that the scans are MRI and CT,
+          and that the comparison is over a year rather than a visit.
+
+          It replaces "Same scan, same plan. The cheaper payment can still
+          lose." That line was the proof panel's control statement, written
+          when the two were adjacent. They are not any more: the button, the
+          trust line and the stat band sit between them, so it had stopped
+          reading as a caption on anything. The panel labels its own rows
+          "Only care this year" and "With $8,000 more care", which is the
+          control, stated where it applies.
+
+          "Scheduled" is doing compliance work, not filling space. CLAUDE.md's
+          permanent hard limit is never emergency and never inpatient, and a
+          cover that implied otherwise would invite exactly the use this
+          product must not serve. */}
       <Text style={styles.landingSub}>
-        Same scan, same plan. The cheaper payment can still lose.
+        Before a scheduled MRI or CT, see which option costs you least this
+        year.
       </Text>
 
       {/* One button. There used to be a second, to the household plan, and it

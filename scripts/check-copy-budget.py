@@ -45,7 +45,13 @@ APP = Path(__file__).resolve().parent.parent / "app"
 # 2026-09-03 subtraction pass, rounded up with roughly 25% headroom -- enough
 # that an honest addition does not trip it and a regression does.
 BUDGETS = [
-    ("src/screens/AboutScreen.tsx", 60, "the cover: headline, one line, one button, the proof"),
+    # Raised from 60 on 2026-09-06. The cover stated its finding and proved it
+    # but never said what the app was for, so a reader arriving cold could not
+    # tell it was for a scan they had not had yet. The supporting line now names
+    # the situation, which is three words more than the line it replaced. More
+    # words buying an answer to "what is this" is the trade this budget exists
+    # to permit; what it stops is more words buying nothing.
+    ("src/screens/AboutScreen.tsx", 70, "the cover: headline, one line, one button, the proof"),
     # Raised from 140 on 2026-09-03, deliberately and on the first real test of
     # this script. The screener gained a verdict line, a three-item prompt for
     # the unanswered groups, and a body-text reason on every route row -- all of
