@@ -294,3 +294,33 @@ recorded rather than fixed.
 
 Skills that do not apply: anything web-first — `ui-styling` (Tailwind/shadcn),
 `gpt-taste` (GSAP), `imagegen-frontend-web`, `slides`, `banner-design`.
+
+`apple-design` (fluid motion, gestures, materials, type) was run against the app
+on 2026-09-06. It is **half applicable, and the half that isn't is the loud
+half.** Its §12 "Materials & depth" wants translucent `backdrop-filter` chrome,
+elevation-scaled shadows and glass that scales and blurs on entry — §6 and §7
+above forbid all of it, and that stands. Its springs/velocity-handoff/momentum
+chapters (§4–6) describe flick-dismissible sheets and cards; this app has no
+fling gesture, so they are not a gap, they are unbuilt surface. Its §15
+typography rules were already met: tracking here is size-specific and negative
+on the large roles, which is what it asks for.
+
+Two real findings, both fixed:
+
+- **The slider jumped on touch-down.** `onPanResponderGrant` emitted the raw
+  touch x, so grabbing the thumb anywhere but its exact centre moved the value
+  before the drag started — up to half a thumb of deductible from a touch the
+  member would call picking it up. Now a touch landing on the thumb records its
+  offset and holds the value still; a touch on bare track still jumps, because
+  pointing at a value is a different intent from grabbing one. iOS's own
+  UISlider behaves this way.
+- **Three `Pressable`s had no pressed state** — the "Source document" link on
+  Sources and both `DevTierSwitch` chips. The link is the worst case in the app:
+  it hands off to the browser, so the tap looked ignored for the length of an
+  app switch.
+
+Recorded, not fixed: a step-crossing haptic on the slider is the textbook case
+for its §13, and `expo-haptics` is a native module, so it costs the rebuild this
+project has a standing rule against. Its §15 also wants slightly *positive*
+tracking on small text; the 13px roles sit at 0, and changing them would move
+every chip and badge width that `textScale` was measured against.

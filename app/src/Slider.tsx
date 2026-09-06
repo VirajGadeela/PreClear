@@ -75,6 +75,16 @@ export function Slider({
   const lastRef = useRef(value);
   lastRef.current = value;
 
+  // The responder is created once, so it closes over the first render's props.
+  // Anything the gesture arithmetic reads has to arrive through a ref, the
+  // same way `width` and `onChange` already do.
+  const boundsRef = useRef({ minimum, maximum });
+  boundsRef.current = { minimum, maximum };
+
+  // The distance between the finger and the centre of the thumb at the moment
+  // the thumb was grabbed. Zero when the touch landed on bare track.
+  const grabRef = useRef(0);
+
   const onLayout = useCallback((event: LayoutChangeEvent) => {
     const measured = event.nativeEvent.layout.width;
     widthRef.current = measured;
@@ -119,11 +129,33 @@ export function Slider({
       // It is not survivable on a screen you can scroll.
       onStartShouldSetPanResponderCapture: () => true,
       onMoveShouldSetPanResponderCapture: () => true,
+      // Two different gestures start here, and they must not behave the same.
+      //
+      // Grabbing the *thumb* is a drag: the value must not change until the
+      // finger moves, and the thumb has to stay under the part of it that was
+      // grabbed. Emitting on grant snapped the thumb's centre to the finger,
+      // so catching it anywhere but dead centre jumped the value before the
+      // drag began — up to half a thumb of deductible, from a touch the member
+      // would call "picking it up". Apple's rule is that touch and content move
+      // together, and iOS's own UISlider does not jump on touch-down either.
+      //
+      // Touching *bare track* is a different intent: the member is pointing at
+      // a value, so jump to it and then track 1:1 from there.
       onPanResponderGrant: (event) => {
         setDragging(true);
-        emit(event.nativeEvent.locationX);
+        const { minimum: lo, maximum: hi } = boundsRef.current;
+        const travel = Math.max(widthRef.current - THUMB, 0);
+        const ratio = hi > lo ? (lastRef.current - lo) / (hi - lo) : 0;
+        const thumbCentre = ratio * travel + THUMB / 2;
+        const x = event.nativeEvent.locationX;
+        if (Math.abs(x - thumbCentre) <= THUMB / 2) {
+          grabRef.current = x - thumbCentre;
+          return;
+        }
+        grabRef.current = 0;
+        emit(x);
       },
-      onPanResponderMove: (event) => emit(event.nativeEvent.locationX),
+      onPanResponderMove: (event) => emit(event.nativeEvent.locationX - grabRef.current),
       onPanResponderRelease: () => setDragging(false),
       onPanResponderTerminate: () => setDragging(false),
     }),
