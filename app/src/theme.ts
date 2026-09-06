@@ -189,6 +189,12 @@ export const radius = {
   sm: 8,
   md: 12,
   lg: 16,
+  /**
+   * Card corners. The reference this was drawn from rounds panels far more
+   * than controls, which is what separates a surface from a button — at one
+   * shared radius everything reads as the same kind of object.
+   */
+  xl: 24,
 } as const;
 
 /**
@@ -239,6 +245,15 @@ export const stroke = {
  * `fontWeight` directly (harmless, and RN ignores a redundant match).
  */
 export const font = {
+  /**
+   * The display serif, used only for the headline on a screen.
+   *
+   * A serif against a geometric sans is the pairing this app was missing: the
+   * two faces do different jobs, so the headline reads as a statement rather
+   * than as larger body text. Reserved for `serif` below — a serif at 13px in
+   * a chip would be costume rather than hierarchy.
+   */
+  serif: 'InstrumentSerif-Regular',
   bold: 'Manrope-Bold',
   extraBold: 'Manrope-ExtraBold',
   semiBold: 'Manrope-SemiBold',
@@ -263,6 +278,21 @@ export const type = {
     fontFamily: font.extraBold,
     letterSpacing: -0.5,
   },
+  /**
+   * The serif headline. Larger and more open than `display`, because a serif
+   * at the same size reads smaller and needs the leading — 38/44 rather than
+   * 32/40. `fontWeight` is deliberately absent: this is a single-weight face,
+   * and asking React Native to synthesise a bold from it produces a smeared
+   * outline rather than a heavier cut.
+   */
+  serifDisplay: {
+    fontSize: 32,
+    lineHeight: 40,
+    fontFamily: font.serif,
+    letterSpacing: -0.5,
+  },
+  /** The opening clause of a bold-lead paragraph. Same size as body. */
+  lead: { fontSize: 16, lineHeight: 24, fontWeight: '700' as const, fontFamily: font.bold },
   amount: {
     fontSize: 26,
     lineHeight: 32,
