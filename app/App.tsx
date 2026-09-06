@@ -181,11 +181,20 @@ function Preclear() {
   // gives a member nothing to do; the point of removing the example ranking was
   // to be clearer, not emptier.
   const [filtersOpen, setFiltersOpen] = useState(true);
-  // Which of the filter panel's four groups is open, at most one. Hoisted here
+  // Which of the filter panel's three groups is open, at most one. Hoisted here
   // rather than held in `ScreenerFilters` for the same reason `openRouteKind`
   // is: Screener -> Household -> Screener is a common trip now, and losing the
   // group you had open every time you take it is a new annoyance.
-  const [openGroup, setOpenGroup] = useState<FilterGroup | null>('scan');
+  //
+  // Starts closed. It opened on `scan` so the tab would not be a collapsed
+  // strip above an empty screen, and adding the facility chips made that group
+  // taller than a phone: the prompt naming the three questions sat below the
+  // fold, so a member arriving met a form and none of the direction written
+  // for that exact moment. The prompt is above the panel now and carries the
+  // screen on its own, which is what makes closed the better default rather
+  // than merely the shorter one. Three named rows also read as three things to
+  // do, where one open group reads as one long form.
+  const [openGroup, setOpenGroup] = useState<FilterGroup | null>(null);
   const [openRouteKind, setOpenRouteKind] = useState<string | null>(null);
 
   // Two independent sources of "unlocked", kept apart on purpose.

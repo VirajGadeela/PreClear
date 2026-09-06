@@ -37,13 +37,6 @@ import { themed } from '../styles/themed';
 
 type Finding = { requirement: Requirement; status: string };
 
-/** What each unanswered group is still waiting for. */
-const PROMPTS = {
-  scan: 'Which scan, and why it was ordered',
-  coverage: 'Who insures you',
-  year: 'Where you are on your deductible',
-} as const;
-
 /**
  * Year totals that more than one route shares.
  *
@@ -336,6 +329,36 @@ export function ScreenerScreen({
 
   return (
     <>
+      {/* Direction sits above the controls it points at, and only direction
+          does. The ranking stays below the panel: questions above, answer
+          below, which is the shape the whole results-first rewrite is built
+          on. Moving this whole branch would have carried the ranking up with
+          it and inverted that.
+
+          This replaces an example ranking that was labelled as one and read as
+          confusing anyway: four dollar figures for a patient who is not you,
+          on the screen whose whole job is to say what *you* should do. A
+          prompt that names what is still missing is a worse demo and a better
+          product, and the cover's proof panel already does the demonstrating
+          on real published numbers that never claim to be anybody's.
+
+          There is no checklist here any more. There was one, naming each
+          group and marking it off, and once the groups below started closed it
+          was three lines restating three rows that sit directly underneath and
+          already say "Not set yet". A closed `Disclosure` carrying its own
+          value is the whole reason the panel can collapse at all; a checklist
+          above it is that idea written twice. */}
+      {!complete && (
+        <View style={styles.prompt}>
+          <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>
+            Let's price your scan.
+          </Text>
+          <Text style={shared.body}>
+            Three questions below. Your options appear once they're answered.
+          </Text>
+        </View>
+      )}
+
       <ScreenerFilters
         query={query}
         procedure={procedure}
@@ -352,32 +375,9 @@ export function ScreenerScreen({
         onRefine={onRefine}
       />
 
-      {/* Nothing ranks until all three groups are answered.
-
-          This replaces an example ranking that was labelled as one and read as
-          confusing anyway — four dollar figures for a patient who is not you,
-          on the screen whose whole job is to say what *you* should do. A prompt
-          that names what is still missing is a worse demo and a better product,
-          and the cover's proof panel already does the demonstrating on real
-          published numbers that never claim to be anybody's.
-
-          The three remaining lines are the direction, not decoration: at any
-          moment the screen says exactly what it still needs. */}
-      {!complete ? (
-        <View style={styles.prompt}>
-          <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>
-            Let's price your scan.
-          </Text>
-          <Text style={shared.body}>
-            Three questions above, then your options appear here.
-          </Text>
-          {(['scan', 'coverage', 'year'] as const).map((group) => (
-            <Text key={group} style={styles.todo}>
-              {answered[group] ? '✓' : '•'} {PROMPTS[group]}
-            </Text>
-          ))}
-        </View>
-      ) : routes.length === 0 ? (
+      {/* Nothing ranks until all three groups are answered. The prompt that
+          says so is above the panel; this is what replaces it. */}
+      {!complete ? null : routes.length === 0 ? (
         <View>
           <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>
             No routes to compare
@@ -502,7 +502,6 @@ const sheets = themed((c) => ({
   heroWhy: { ...type.caption, color: c.inkMuted, marginTop: space.sm },
 
   prompt: { marginBottom: space.lg },
-  todo: { ...type.body, color: c.inkMuted, marginTop: space.sm },
   verdict: { ...type.title, color: c.ink, marginBottom: space.sm },
   scope: { ...type.caption, color: c.inkMuted, marginTop: space.sm },
   columnHead: {
