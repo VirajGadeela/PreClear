@@ -1,5 +1,5 @@
 import { Text, View } from 'react-native';
-import { TAP_TARGET, radius, size, space, stroke, textScale, type } from '../theme';
+import { radius, space, stroke, textScale, type } from '../theme';
 import { useStyles } from '../ThemeProvider';
 import { themed } from '../styles/themed';
 import { Money } from '../Money';
@@ -186,22 +186,56 @@ export function AboutScreen({ onNext }: { onNext: () => void }) {
 
       </View>
 
+      {/* What the comparison is built on. The reference this came from puts
+          a stat band in this position; the difference is that each of these is
+          counted from the bundle at render, so none of them can drift from the
+          data they describe. */}
+      <View style={styles.stats}>
+        {corpusStats().map((stat) => (
+          <View key={stat.label} style={styles.stat}>
+            <Text style={styles.statValue} maxFontSizeMultiplier={textScale.display}>
+              {stat.value}
+            </Text>
+            <Text style={styles.statLabel}>{stat.label}</Text>
+          </View>
+        ))}
+      </View>
     </>
   );
 }
 
-const sheets = themed((c) => ({
-  // A filled circle in `slate`, not `accent`. Accent is the recommended route's
-  // and a step numeral is not a recommendation — this screen's one accent is
-  // already spent on the primary button and on the winning row of the proof.
+/**
+ * What the comparison is actually built on, counted from the bundle.
+ *
+ * Read rather than written down, so a figure here cannot outlive the data it
+ * describes — the facility count changed twice this month. The reference this
+ * borrows from puts unverifiable stats in this position ("95% accuracy"); every
+ * number below is a length of something in `preclear-data.json`.
+ */
+function corpusStats() {
+  const facilities = new Set<string>();
+  const payers = new Set<string>();
+  for (const procedure of data.procedures) {
+    for (const [payer, list] of Object.entries(procedure.payers)) {
+      payers.add(payer);
+      for (const facility of list) facilities.add(facility.facility_key);
+    }
+  }
+  return [
+    { value: String(facilities.size), label: 'Indianapolis hospitals, real published prices' },
+    { value: String(data.requirements.length), label: 'payer requirement rules, each one citable' },
+    { value: String(payers.size), label: 'insurers, with prices for every one' },
+  ];
+}
 
+const sheets = themed((c) => ({
   // The screen's own top margin, which used to live on a wrapper View that did
   // nothing else. One less element for one style property.
   // `lg` above, not `xl`. The wordmark now sits above this heading on the cover
   // as it does everywhere else, and stacking a 32pt gap under the bar put the
   // headline a third of the way down the screen.
   landingHeadline: {
-    ...type.display,
+    ...type.serifDisplay,
     color: c.ink,
     marginTop: space.lg,
     marginBottom: space.md,
@@ -218,12 +252,31 @@ const sheets = themed((c) => ({
     marginTop: space.lg,
     borderWidth: stroke.hairline,
     borderColor: c.line,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     backgroundColor: c.surface,
-    paddingHorizontal: space.md,
-    paddingTop: space.md,
-    paddingBottom: space.md,
+    paddingHorizontal: space.lg,
+    paddingTop: space.lg,
+    paddingBottom: space.lg,
   },
+  // A row per stat rather than a three-across band: the labels here are
+  // sentences, not single words, and three of them across a phone would break
+  // mid-word the way the indication chips once did.
+  stats: { marginTop: space.lg, gap: space.md },
+  stat: { flexDirection: 'row', alignItems: 'baseline', gap: space.md },
+  // The sans, not the serif, and for a specific reason: Instrument Serif's
+  // figure one is a plain vertical stroke, so "11" rendered as "ll". The
+  // reference sets its stat numerals in the geometric sans for the same reason.
+  //
+  // `ink`, not `accent`, which is a deliberate departure from the commit these
+  // stats came from. This screen already spends accent twice — on the primary
+  // button, and on whichever route wins each row of the proof panel. That
+  // second one is load-bearing: the accent moves between cash and in-network
+  // across the two rows, and that inversion is the entire argument the cover
+  // makes. Three large blue numerals above it compete with it for the same
+  // meaning while carrying none. Size already ranks these.
+  statValue: { ...type.display, color: c.ink, minWidth: 56 },
+  statLabel: { ...type.caption, color: c.inkMuted, flex: 1 },
+
   proofRow: { paddingVertical: space.sm },
   // The divider sits between the two scenarios because the inversion between
   // them is the point. It separates two readings of one case, not two items.
@@ -237,8 +290,5 @@ const sheets = themed((c) => ({
     paddingTop: space.sm,
     marginTop: space.sm,
   },
-
-  // Cards would compete with the two buttons above for the same attention;
-  // these are one line each because the title is the whole message.
 
 }));
