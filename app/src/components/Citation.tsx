@@ -83,6 +83,16 @@ export function Citation({
   return (
     <View style={styles.wrap}>
       <Text style={styles.status}>{statusLabel(status)}</Text>
+      {/* The limit of what the app saw, next to the judgement it made.
+          Every status here is derived from the member's own answers, and the
+          app has no access to the order or the chart, so a criterion shown as
+          unmet may already be recorded and this may be nothing to raise. Said
+          on every citation rather than once elsewhere, because this is the
+          screen where a member decides whether to phone their doctor. */}
+      <Text style={styles.provenance}>
+        Judged from your answers, not from your chart. The office may already
+        have this recorded.
+      </Text>
       <Text style={styles.summary}>{requirement.summary}</Text>
 
       {/* The verbatim text. Quotation marks rather than italics: they say
@@ -125,6 +135,10 @@ const sheets = themed((c) => ({
   },
 
   status: { ...type.captionStrong, color: c.flag },
+  // Muted, not `flag`. The status above it is the finding; this is the caveat
+  // on the finding, and giving it the warning colour too would read as a
+  // second problem rather than as the limit of the first.
+  provenance: { ...type.caption, color: c.inkMuted, marginTop: space.xs },
   summary: { ...type.caption, color: c.ink, marginTop: space.xs },
 
   // Inset on the canvas tint so the payer's words sit visibly apart from ours

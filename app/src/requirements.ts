@@ -164,12 +164,33 @@ export function unmetFindings(findings: Finding[]): Finding[] {
 }
 
 /**
- * Names who acts on this, not just what state it's in. A patient reading
- * "documented as not met" has no way to act on that; a patient reading
- * "your doctor's office" knows exactly who the next call is to.
+ * Attributes the judgement to the only thing the app has actually seen.
+ *
+ * These read "Your doctor's office documented this as not met" and "Your
+ * doctor's office hasn't documented this yet", and both were claims this app
+ * cannot support. It has never seen a chart. The whole input is a slider
+ * labelled "Weeks of treatment so far" that the *member* dragged, so `'unmet'`
+ * means their own answer came in under a published threshold and nothing more.
+ * Rendering that as a documentation act by a named third party asserts
+ * something about a real person's office on the strength of a patient's
+ * recollection, and it is wrong in an ordinary case: a member thinking about
+ * this episode answers "2" while the chart carries eight weeks from the last
+ * one.
+ *
+ * It also broke the rule the rest of the product is built on. Every price
+ * traces to a published file and every criterion to a published document; this
+ * was the one screen making an unsourced claim, and the subject of it was the
+ * clinician the member has to go and talk to.
+ *
+ * The `Status` values are unchanged, so `check-requirements-parity.sh` still
+ * compares the same four states against Python. Only the sentence moved.
+ *
+ * Who acts is not lost: the route's own action line says "Ask your doctor to
+ * document one more thing first", and `Citation` carries the hedge about the
+ * chart.
  */
 export function statusLabel(status: Status): string {
   return status === 'unmet'
-    ? "Your doctor's office documented this as not met"
-    : "Your doctor's office hasn't documented this yet";
+    ? 'What you entered does not meet this yet'
+    : 'You have not entered anything for this yet';
 }
