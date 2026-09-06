@@ -848,6 +848,40 @@ originally ordered." It did not know either.
   `INITIAL_QUERY` and belong to nobody. Asked for twice, three days apart, and
   the second time was "completely scrap".
 
+### Merging a parallel branch into the overhaul (2026-09-06)
+
+Dhanvanth's `cd6703f` and this branch's eleven commits both landed on the
+cover. Only one file needed hand resolution and the reason is worth knowing.
+
+- **git followed the rename.** `LandingStep.tsx` became `AboutScreen.tsx` here
+  while he was restyling it there, and rename detection meant one content
+  conflict rather than a delete/modify pair. `App.tsx`, `theme.ts` and
+  `package.json` auto-merged — his changes to all three were additive.
+- **Two things in his commit could not come across**, because they referenced
+  machinery this branch deleted: the `OTHER_SCENARIOS` rows (the whole example
+  system, scrapped) and the "Where these numbers come from" link (Sources is a
+  tab now, on screen at all times). A merge that took them would have restored
+  a system removed on explicit request twice.
+- **The stat band's numerals are `ink`, not `accent`, departing from his
+  commit.** The cover already spends accent twice, and the second one is
+  load-bearing: it moves between cash and in-network across the proof panel's
+  two rows, and that inversion is the argument the whole screen makes. Three
+  large blue numerals above it compete for the same meaning while carrying
+  none. His own commit message makes this argument about a second accent
+  *surface*; it applies to text as well.
+- **The stat styles had to move from `StyleSheet.create` and the light-only
+  `color` alias onto `themed()`.** That alias still exists precisely so a
+  branch written before the dark scheme compiles after it — but anything using
+  it renders light colours in dark mode, so it is a migration aid, never a
+  merge resolution.
+- **Instrument Serif's figure one is a plain vertical stroke**, so "11" sets as
+  "ll". Stat numerals are in the sans for that reason; the serif is headline
+  only. `type.lead` came with the pass and is currently unused.
+- **Adding a Google font is not a native rebuild.** `expo-font` is already
+  present for Manrope, so `@expo-google-fonts/instrument-serif` is a bundled
+  asset the existing dev client loads. This is the rare dependency that does
+  not cost a rebuild.
+
 Gate definitions, for the record:
 
 - **Gate 1 — MRF usability.** Open one target payer's Transparency in Coverage file, extract negotiated rates for CPT 73721 (knee MRI) and 70450 (head CT) at 10 real facilities in the target metro. These files are gigabytes and frequently malformed — stream-parse, don't load. *Pass = 10 real facility prices in a spreadsheet.*
