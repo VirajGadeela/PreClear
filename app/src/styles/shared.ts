@@ -11,7 +11,13 @@ import { TAP_TARGET, radius, space, type } from '../theme';
 import { themed } from './themed';
 
 export const sharedSheets = themed((c) => ({
-  h1: { ...type.display, color: c.ink, marginTop: space.lg, marginBottom: space.sm },
+  // The serif, and this is the role that decides where it appears. It arrived
+  // on the cover's headline alone, which read as one screen in a different
+  // typeface rather than as a face doing a job. "Headlines only" means every
+  // screen's headline; the sans keeps everything else, numerals included —
+  // Instrument Serif's figure one is a bare vertical stroke, so "11" sets as
+  // "ll" and `AboutScreen.statValue` stays on `type.display` deliberately.
+  h1: { ...type.serifDisplay, color: c.ink, marginTop: space.lg, marginBottom: space.sm },
   // lg, not xl. The 44pt tap targets made every step taller, and a 32pt gap
   // above each heading spent that budget on air — the scan step's primary
   // button is already the furthest thing from the top of the flow.

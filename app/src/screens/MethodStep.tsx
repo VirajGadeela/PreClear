@@ -65,7 +65,9 @@ export function MethodStep() {
 
   return (
     <View>
-      <Text style={shared.h1}>Where these numbers come from</Text>
+      <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>
+        Where these numbers come from
+      </Text>
       <Text style={shared.body}>{data.disclosure}</Text>
 
       {/* Moved here off the cover. Three lines, not three paragraphs — the

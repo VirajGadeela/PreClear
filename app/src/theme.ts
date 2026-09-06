@@ -291,8 +291,6 @@ export const type = {
     fontFamily: font.serif,
     letterSpacing: -0.5,
   },
-  /** The opening clause of a bold-lead paragraph. Same size as body. */
-  lead: { fontSize: 16, lineHeight: 24, fontWeight: '700' as const, fontFamily: font.bold },
   amount: {
     fontSize: 26,
     lineHeight: 32,
