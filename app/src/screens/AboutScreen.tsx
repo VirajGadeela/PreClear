@@ -268,7 +268,13 @@ const sheets = themed((c) => ({
   // One line under the headline, and the only explanation on the screen. The
   // proof panel below argues it with real numbers, which is a better job than
   // a second paragraph would do.
-  landingSub: { ...type.body, color: c.inkMuted, marginBottom: space.xl },
+  // No bottom margin. `PrimaryButton` already declares `marginTop: space.xl`,
+  // and an `xl` here stacked against it for 64pt of dead space between one
+  // sentence and the button under it, which is two gaps doing the work of one.
+  // That 32pt is the single largest recoverable space on this screen, and what
+  // it buys is the proof panel below the fold showing a whole row rather than
+  // an edge.
+  landingSub: { ...type.body, color: c.inkMuted },
 
   // A hairline-bordered panel on the canvas rather than a raised card. Nothing
   // here is interactive, so elevation would be claiming a hierarchy the panel
@@ -289,11 +295,11 @@ const sheets = themed((c) => ({
   trust: {
     ...type.body,
     color: c.inkMuted,
-    marginTop: space.xl,
+    marginTop: space.lg,
     marginBottom: space.sm,
   },
 
-  stats: { marginTop: space.lg, gap: space.md },
+  stats: { marginTop: space.md, gap: space.sm },
   stat: { flexDirection: 'row', alignItems: 'baseline', gap: space.md },
   // The sans, not the serif, and for a specific reason: Instrument Serif's
   // figure one is a plain vertical stroke, so "11" rendered as "ll". The
