@@ -326,6 +326,36 @@ export function buildRoutes(options: BuildOptions): Route[] {
 }
 
 /**
+ * Whether the cash route is worth putting in front of a member at all.
+ *
+ * Not a cost comparison: it is the question of whether paying cash can be a
+ * reasonable thing to do. A cash payment earns no deductible credit, so it is
+ * only ever sensible for someone who was not going to reach their deductible
+ * anyway. Offering it to a member who will reach theirs is offering the exact
+ * mistake this product exists to correct.
+ *
+ * Exported because two callers need the same answer and disagreeing would be
+ * worse than either answer alone: `App.tsx` decides whether to build the
+ * route, and `ScreenerScreen` explains its absence. A note saying why a route
+ * is missing must not be able to contradict the code that removed it.
+ *
+ * `pipeline/route.py` has the same rule plus an `--uninsured` flag the app does
+ * not model. No parity script covers this one, so keep them in step by hand.
+ *
+ * There is a structural irony here worth knowing before anyone "fixes" it. This
+ * gate shows cash only when the missing credit costs least, so the case where
+ * the penalty is largest is the case the route is hidden in. The app never
+ * displays its own strongest argument as an option, which is why it says the
+ * argument out loud instead.
+ */
+export function cashIsWorthOffering(
+  expectedOtherAllowedSpend: number,
+  deductibleRemaining: number,
+): boolean {
+  return expectedOtherAllowedSpend < deductibleRemaining;
+}
+
+/**
  * Cheapest total for the year first.
  *
  * Ranking on the scan alone would favour cash whenever its sticker price is
