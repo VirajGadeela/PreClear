@@ -162,20 +162,33 @@ export function AboutScreen({ onNext }: { onNext: () => void }) {
         saved.
       </Text>
 
-      {/* Above the proof panel now, and one line rather than three rows. Both
-          changes are for the same reason: the panel is tall enough that a
-          three-row band below it started past the fold, and nothing on a
-          phone tells a reader there is more underneath. Counted from the
-          bundle at render either way, so no figure here can outlive its data.
+      {/* Above the proof panel, which is the half of this that mattered: the
+          panel is tall enough that a band underneath it began past the fold,
+          and nothing on a phone tells a reader there is more below. Moving it
+          up fixes that and leaves the panel ending mid-card at the fold, which
+          is the scroll cue the screen never had.
 
-          One `Text` rather than a flex row is deliberate. Three columns break
-          mid-word at accessibility text sizes, which DESIGN.md §8 already
-          records happening to the indication chips. A sentence reflows.
+          The big numerals stay. They were briefly collapsed to one line of
+          body text, and that traded away the thing they are for: a count set
+          at display size is read before it is read *as* anything, which is
+          what makes three of them work as evidence rather than as a caption.
 
-          What the band lost is the qualifier on each count. The line directly
-          above supplies it for prices, and "citable" survives as the one word
-          carrying a claim. */}
-      <Text style={styles.stats}>{corpusStats().join(' · ')}</Text>
+          A row per stat rather than three across. The labels are sentences,
+          and three columns break mid-word at accessibility text sizes, which
+          DESIGN.md §8 records happening to the indication chips.
+
+          Counted from the bundle at render, so no figure here can outlive the
+          data it describes. */}
+      <View style={styles.stats}>
+        {corpusStats().map((stat) => (
+          <View key={stat.label} style={styles.stat}>
+            <Text style={styles.statValue} maxFontSizeMultiplier={textScale.display}>
+              {stat.value}
+            </Text>
+            <Text style={styles.statLabel}>{stat.label}</Text>
+          </View>
+        ))}
+      </View>
 
       {/* The panel had an uppercase label above it reading "THE SAME KNEE MRI,
           TWICE". The two rows below say the same thing by being two readings of
@@ -234,9 +247,9 @@ function corpusStats() {
     }
   }
   return [
-    `${facilities.size} Indianapolis hospitals`,
-    `${data.requirements.length} citable payer rules`,
-    `${payers.size} insurers`,
+    { value: String(facilities.size), label: 'Indianapolis hospitals, real published prices' },
+    { value: String(data.requirements.length), label: 'payer requirement rules, each one citable' },
+    { value: String(payers.size), label: 'insurers, with prices for every one' },
   ];
 }
 
@@ -280,17 +293,20 @@ const sheets = themed((c) => ({
     marginBottom: space.sm,
   },
 
-  // The numerals sit in the sans, which they get for free as body text now.
-  // That was load-bearing while they were set large: Instrument Serif's figure
-  // one is a plain vertical stroke, so "11" rendered as "ll".
+  stats: { marginTop: space.lg, gap: space.md },
+  stat: { flexDirection: 'row', alignItems: 'baseline', gap: space.md },
+  // The sans, not the serif, and for a specific reason: Instrument Serif's
+  // figure one is a plain vertical stroke, so "11" rendered as "ll". The
+  // reference sets its stat numerals in the geometric sans for the same reason.
   //
-  // They are also no longer in `accent`, which was a deliberate departure from
-  // the commit they came from. This screen spends accent twice already, on the
-  // primary button and on whichever route wins each row of the proof panel,
-  // and that second one is load-bearing: the accent moves between cash and
-  // in-network across the two rows, and that inversion is the argument the
-  // cover makes.
-  stats: { ...type.caption, color: c.inkMuted, marginTop: space.sm },
+  // `ink`, not `accent`, which is a deliberate departure from the commit these
+  // came from. This screen spends accent twice already, on the primary button
+  // and on whichever route wins each row of the proof panel, and that second
+  // one is load-bearing: the accent moves between cash and in-network across
+  // the two rows, and that inversion is the argument the cover makes. Size
+  // already ranks these.
+  statValue: { ...type.display, color: c.ink, minWidth: 56 },
+  statLabel: { ...type.caption, color: c.inkMuted, flex: 1 },
 
   proofRow: { paddingVertical: space.sm },
   // The divider sits between the two scenarios because the inversion between
