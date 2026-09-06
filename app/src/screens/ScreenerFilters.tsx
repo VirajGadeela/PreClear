@@ -407,7 +407,7 @@ export function ScreenerFilters({
             last
           >
             <Slider
-              label="Deductible remaining"
+              label="Deductible left"
               value={query.deductible}
               minimum={0}
               maximum={10000}
@@ -433,9 +433,22 @@ export function ScreenerFilters({
             />
             {/* Min tracks the deductible, so the impossible plan is not
                 reachable by dragging. `App.tsx` normalizes the other
-                direction — raising the deductible pushes this up with it. */}
+                direction: raising the deductible pushes this up with it.
+
+                THE LABELS ABOVE HAVE A WIDTH BUDGET. `Slider` puts the label
+                and its value on one line and only the label can shrink, so a
+                label long enough to collide with the widest value wraps to two
+                lines and changes the row's height. This one read
+                "Out-of-pocket max remaining", which left about four points of
+                slack, so the value crossing into five digits at $10,000 pushed
+                it over and moved every control below it. Hard rule 5 is what
+                makes the values wide: `money()` renders "$20,000.00
+                (estimate)", roughly 107pt at this size, and that is not
+                negotiable. The row is about 243pt, so a label has to stay
+                under about 120pt. "left" rather than "remaining" is also what
+                `summariseYear` already calls this. */}
             <Slider
-              label="Out-of-pocket max remaining"
+              label="Out-of-pocket left"
               value={query.oopMax}
               minimum={query.deductible}
               maximum={20000}
@@ -445,7 +458,7 @@ export function ScreenerFilters({
               helpText="On your card. Everything your plan pays for stops costing you past this."
             />
             <Slider
-              label="Other care you expect this year"
+              label="Other care this year"
               value={query.expectedOtherSpend}
               minimum={0}
               maximum={20000}
