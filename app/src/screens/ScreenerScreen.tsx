@@ -23,7 +23,7 @@ import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { Citation, publisher } from '../components/Citation';
 import { Money } from '../Money';
 import { Row } from '../components/Row';
-import { FacilityBundle, Requirement, Route } from '../routes';
+import { cashIsWorthOffering, FacilityBundle, Requirement, Route } from '../routes';
 import { Status } from '../requirements';
 import { Procedure, data } from '../appData';
 import { Answered, ScreenerQuery, isComplete } from '../screener';
@@ -460,6 +460,39 @@ export function ScreenerScreen({
             />
           ))}
 
+          {/* Why the cash route is not in the list.
+
+              Three different things could have removed it and the screen said
+              nothing about any of them: the gate withheld it, no facility
+              publishes a cash price, or it is there and ranked last. A silent
+              omission looks the same in all three, which is the failure
+              CLAUDE.md already records once for route 3 -- "every requirement
+              is met" and "no requirement is recorded" both hid it.
+
+              The withheld case is the one worth stating plainly, because the
+              reason *is* the product's argument. `cashIsWorthOffering` only
+              offers cash when the missing credit costs least, so the position
+              where paying cash would waste the most money is exactly the
+              position where the route is hidden. Saying so is how the app
+              makes its strongest point without offering the route.
+
+              No figure, deliberately. Naming what a withheld route would have
+              cost re-introduces it as an option, and a member reading a number
+              reads a suggestion. */}
+          {!routes.some((route) => route.kind === 'cash_non_contracted') &&
+            (cashIsWorthOffering(query.expectedOtherSpend, query.deductible) ? (
+              <View style={shared.coverageGap}>
+                <Text style={shared.coverageGapText}>
+                  No facility here publishes a cash price for this scan.
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.cashNote}>
+                Paying cash is not listed. You expect to meet your deductible,
+                so it would earn no credit toward it.
+              </Text>
+            ))}
+
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Share this comparison"
@@ -535,6 +568,11 @@ const sheets = themed((c) => ({
   heroWhy: { ...type.caption, color: c.inkMuted, marginTop: space.sm },
 
   prompt: { marginBottom: space.lg },
+  // Not `coverageGap`. That token is the data-quality flag, and it is right
+  // for a cash price nobody published; this is a deliberate product decision
+  // about what to offer, which is a different kind of thing and should not
+  // wear a warning colour.
+  cashNote: { ...type.body, color: c.inkMuted, marginTop: space.md },
   verdict: { ...type.title, color: c.ink, marginBottom: space.sm },
   scope: { ...type.caption, color: c.inkMuted, marginTop: space.sm },
   columnHead: {

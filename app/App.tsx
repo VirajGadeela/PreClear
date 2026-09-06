@@ -79,6 +79,7 @@ import {
 import {
   availableProducts,
   buildRoutes,
+  cashIsWorthOffering,
   planMatchSummary,
   rankRoutes,
   Route,
@@ -388,8 +389,9 @@ function Preclear() {
         orderedFacilityKey: q.orderedFacility,
         unmetRequirements: unmet.map((finding) => finding.requirement),
         // Surfaced when the deductible is unlikely to be met, which is when the
-        // missing credit costs the patient least.
-        cashIsAppropriate: q.expectedOtherSpend < q.deductible,
+        // missing credit costs the patient least. `ScreenerScreen` asks the
+        // same function why the route is absent, so the two cannot disagree.
+        cashIsAppropriate: cashIsWorthOffering(q.expectedOtherSpend, q.deductible),
       }),
     );
 
