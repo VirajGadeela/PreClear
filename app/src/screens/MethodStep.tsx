@@ -153,7 +153,7 @@ export function MethodStep() {
                 accessibilityRole="link"
                 accessibilityLabel={`Open the source document for ${requirement.summary}`}
                 onPress={() => Linking.openURL(requirement.source_url)}
-                style={styles.link}
+                style={({ pressed }) => [styles.link, pressed && styles.linkPressed]}
               >
                 <Text style={styles.linkText}>Source document</Text>
               </Pressable>
@@ -233,5 +233,9 @@ const sheets = themed((c) => ({
     borderLeftColor: c.line,
   },
   link: { minHeight: TAP_TARGET, justifyContent: 'center' },
+  // This one leaves the app. Without a press state the tap looks ignored for
+  // however long iOS takes to hand over to the browser, which is the longest
+  // wait in the app and the only one with no feedback at all.
+  linkPressed: { opacity: 0.6 },
   linkText: { ...type.caption, fontWeight: '700', color: c.accent },
 }));

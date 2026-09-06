@@ -22,7 +22,11 @@ export function DevTierSwitch({
         accessibilityRole="button"
         accessibilityState={{ selected: !subscribed }}
         onPress={onFree}
-        style={[styles.devChip, !subscribed && styles.devChipOn]}
+        style={({ pressed }) => [
+          styles.devChip,
+          !subscribed && styles.devChipOn,
+          pressed && styles.devChipPressed,
+        ]}
       >
         <Text style={[styles.devChipText, !subscribed && styles.devChipTextOn]}>
           Free
@@ -32,7 +36,11 @@ export function DevTierSwitch({
         accessibilityRole="button"
         accessibilityState={{ selected: subscribed }}
         onPress={onPro}
-        style={[styles.devChip, subscribed && styles.devChipOn]}
+        style={({ pressed }) => [
+          styles.devChip,
+          subscribed && styles.devChipOn,
+          pressed && styles.devChipPressed,
+        ]}
       >
         <Text style={[styles.devChipText, subscribed && styles.devChipTextOn]}>
           Household
@@ -69,6 +77,7 @@ const sheets = themed((c) => ({
     justifyContent: 'center',
   },
   devChipOn: { backgroundColor: c.slate, borderColor: c.slate },
+  devChipPressed: { opacity: 0.7 },
   devChipText: { ...type.caption, color: c.inkMuted },
   devChipTextOn: { ...type.captionStrong, color: c.slateInk },
 }));
