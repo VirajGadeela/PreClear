@@ -76,8 +76,12 @@ export type Route = {
  * Judged against this hospital's own gross charge rather than a flat floor: a
  * $49 row against a $2,486 gross charge is a carve-out, but $49 could be
  * legitimate elsewhere.
+ *
+ * Exported for `yearPlanData.ts`, which needs the same judgement without the
+ * route card that normally carries the warning to the screen. A second copy of
+ * this rule is how the $49 knee MRI comes back.
  */
-function warningsFor(rate: number, grossCharge: number | null): string[] {
+export function warningsFor(rate: number, grossCharge: number | null): string[] {
   const warnings: string[] = [];
   if (grossCharge && rate > grossCharge) {
     warnings.push(

@@ -62,6 +62,11 @@ BUDGETS = [
     ("src/screens/ScreenerScreen.tsx", 175, "the ranking, its verdict, the prompt, and the route rows"),
     ("src/screens/ScreenerFilters.tsx", 90, "four collapsed groups of controls"),
     ("src/screens/HouseholdStep.tsx", 160, "the paid tier and its demo disclosures"),
+    # Added 2026-09-06 with the household year plan. It gets its own line rather
+    # than being folded into HouseholdStep's, because the two sections behind
+    # the paywall answer different questions and one growing at the other's
+    # expense is exactly what a shared cap would hide.
+    ("src/screens/YearPlanSection.tsx", 120, "several scans against one shared deductible"),
     ("src/screens/MethodStep.tsx", 95, "provenance; the FAQ answers live in marketing.ts"),
     ("src/marketing.ts", 330, "how-it-works and FAQ copy, all of it prose"),
     # Not a screen, but it is now a significant source of on-screen prose: every

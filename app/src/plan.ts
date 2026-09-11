@@ -3,15 +3,25 @@
  *
  * Both the offer card on the Routes step and the paywall itself read from here,
  * so the two can never describe different products. Every line in
- * `PLAN_INCLUDES` names a check that exists in `src/claims.ts` — if a claim is
- * made here, the engine performs it. Adding a line without adding the check is
- * how a benefit list turns into marketing.
+ * `PLAN_INCLUDES` names something an engine in this repo actually does — the
+ * first three come from `src/yearPlan.ts`, the rest from `src/claims.ts`. If a
+ * claim is made here, the code performs it. Adding a line without adding the
+ * capability is how a benefit list turns into marketing.
+ *
+ * The list opened with "Every bill and explanation of benefits for everyone in
+ * the household, all year" until 2026-09-06. That named no check: it promised
+ * an intake path this app does not have, since the claims review reads a
+ * bundled synthetic fixture rather than anything of the member's. It is the
+ * exact failure the paragraph above warns about, and it survived here for
+ * three weeks under the rule that forbids it.
  */
 
 export const PLAN_NAME = 'Preclear Household';
 
 export const PLAN_INCLUDES = [
-  'Every bill and explanation of benefits for everyone in the household, all year.',
+  'Several scans planned together, against one shared household deductible.',
+  'Which of them to run through insurance and which to pay cash for.',
+  'A plan you can send to the people scheduling the scans.',
   'Charges above what the in-network contract allows.',
   'Amounts that do not reconcile with their own deductible and coinsurance lines.',
   'The same service billed twice.',

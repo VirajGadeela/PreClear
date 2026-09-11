@@ -465,6 +465,9 @@ export function ScreenerFilters({
               step={500}
               onChange={(value) => onRefine({ expectedOtherSpend: value })}
               format={money}
+              // Excludes the scans being priced, here and in the household year
+              // plan, or the same care is charged twice.
+              helpText="Care beyond the scans you are pricing."
               presets={[
                 { label: 'None planned', value: 0 },
                 { label: 'A few visits', value: 1500 },

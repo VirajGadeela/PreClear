@@ -17,6 +17,7 @@ import household from '../../assets/household-eobs.json';
 import { Eob, HouseholdPlan, review, totalAtStake } from '../claims';
 import { money } from '../costing';
 import { PLAN_INCLUDES, PLAN_NAME, type PlanOption } from '../plan';
+import { YearPlanSection } from './YearPlanSection';
 
 /**
  * The subscription tier: the household's claims, checked against themselves.
@@ -71,7 +72,7 @@ function HouseholdReview() {
 
   return (
     <View style={styles.household}>
-      {/* No heading of its own — the step it sits on already carries one. */}
+      <Text style={shared.h2}>Check your claims</Text>
       <Text style={shared.caption}>
         {household.eobs.length} claims reviewed · {byClaim.length}{' '}
         {byClaim.length === 1 ? 'claim to question' : 'claims to question'}
@@ -119,12 +120,19 @@ export function HouseholdStep({
   note,
   livePricing,
   plans,
+  yearPlan,
   onStart,
   onRestore,
 }: {
   isSubscribed: boolean;
   demo: boolean;
   note: string | null;
+  /**
+   * Everything the year plan needs, passed through rather than re-derived.
+   * The list itself lives in `App.tsx` beside the screener query, because the
+   * benefits it is costed against are the ones the screener already collects.
+   */
+  yearPlan: React.ComponentProps<typeof YearPlanSection>;
   /**
    * Whether the prices below came from the store rather than from the demo
    * placeholders. Drives the strip that says so, and nothing else — the two
@@ -192,6 +200,7 @@ export function HouseholdStep({
             </Text>
           </View>
         )}
+        <YearPlanSection {...yearPlan} />
         <HouseholdReview />
         {note ? <Text style={shared.note}>{note}</Text> : null}
       </View>

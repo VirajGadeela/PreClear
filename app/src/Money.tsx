@@ -19,7 +19,7 @@
 
 import { Text, TextStyle } from 'react-native';
 
-import { type as typography } from './theme';
+import { textScale, type as typography } from './theme';
 import { useStyles } from './ThemeProvider';
 import { themed } from './styles/themed';
 
@@ -73,6 +73,14 @@ export function Money({ value, size = 'body', tone = 'ink' }: Props) {
       // hears a bare figure either.
       accessibilityLabel={`${amount} estimate`}
       style={[SIZES[size], styles[tone]]}
+      // Only the standalone sizes. A `body` or `small` figure sits inside a
+      // sentence, and a nested Text capped lower than the Text around it makes
+      // React Native compute the line box from the parent while drawing the
+      // child at its own size -- the lines overlap. Those sizes are also too
+      // small to be the failure this cap exists for.
+      maxFontSizeMultiplier={
+        size === 'hero' || size === 'large' ? textScale.money : undefined
+      }
     >
       {amount}
       <Text style={[styles.suffix, styles[SUFFIX_TONE[tone]]]}>
