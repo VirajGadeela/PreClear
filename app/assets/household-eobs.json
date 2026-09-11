@@ -1,5 +1,5 @@
 {
-  "_comment": "Synthetic explanations of benefit. No real patient data \u2014 CLAUDE.md hard rule 1. Members are household roles, never names. Constructed so every check in pipeline/claims/eob.py fires at least once, and so most claims are clean, which is what a real year looks like.",
+  "_comment": "GENERATED FILE -- edit data/samples/household_eobs_fhir.json instead, then run `python -m pipeline.claims.fhir`. This is the CARIN bundle flattened into the shape pipeline/claims/eob.py and app/src/claims.ts both read; pipeline/tests/test_fhir.py fails if it drifts from its source. Synthetic only, no real patient data -- CLAUDE.md hard rule 1.",
   "plan": {
     "deductible": 3000.0,
     "oop_max": 7500.0

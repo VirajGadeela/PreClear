@@ -232,6 +232,12 @@ def copy_household_sample(source=EOB_SOURCE, dest=EOB_DEST):
     Python tests and the parity script read `data/samples/`, the app reads its
     own assets, and two files that drift would let the parity check pass while
     the app shows different findings than the engine.
+
+    The file copied here is itself generated, from the CARIN bundle beside it --
+    see `pipeline/claims/fhir.py`. This function stays on the flat side of that
+    mapping deliberately. The app has never made a network call and does not
+    speak FHIR, so the bundle is flattened once, in Python, rather than becoming
+    a second thing `app/src/claims.ts` could parse differently.
     """
     with open(source, encoding="utf-8") as handle:
         payload = json.load(handle)
