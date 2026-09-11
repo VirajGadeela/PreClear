@@ -49,7 +49,7 @@ import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { TabBar, Tab } from './src/components/TabBar';
 import { TopBar } from './src/components/TopBar';
 import { PlanBenefits } from './src/costing';
-import { shareText } from './src/share';
+import { shareText, yearPlanText } from './src/share';
 import {
   INITIAL_QUERY,
   NOTHING_ANSWERED,
@@ -84,6 +84,11 @@ import {
   rankRoutes,
   Route,
 } from './src/routes';
+import { MAX_PROCEDURES, optimizeYearPlan, type PlannedProcedure } from './src/yearPlan';
+import {
+  procedureLabel as procedureLabelFor,
+  resolvePlannedProcedure,
+} from './src/yearPlanData';
 import { HouseholdStep } from './src/screens/HouseholdStep';
 import { AboutScreen } from './src/screens/AboutScreen';
 import { MethodStep } from './src/screens/MethodStep';
@@ -197,6 +202,52 @@ function Preclear() {
   // do, where one open group reads as one long form.
   const [openGroup, setOpenGroup] = useState<FilterGroup | null>(null);
   const [openRouteKind, setOpenRouteKind] = useState<string | null>(null);
+
+  /**
+   * The scans a household knows are coming, for the paid tier's year plan.
+   *
+   * Held here rather than in the section because the benefits it is costed
+   * against are the ones the screener already collects — deductible,
+   * coinsurance, out-of-pocket ceiling and expected other care are all in
+   * `query`. Nothing new is asked for.
+   *
+   * Only what the member chose is stored — who it is for and which scan. The
+   * prices are derived below, so changing payer or plan re-prices the whole
+   * list instead of leaving figures behind that belong to a different
+   * insurer. Storing the resolved prices is the same bug `orderedFacility`
+   * already had once: a stale key that quietly stops matching.
+   *
+   * Empty to begin with, and not persisted, because nothing in this app is.
+   */
+  const [planned, setPlanned] = useState<{ id: string; cpt: string; member: string }[]>(
+    [],
+  );
+
+  const plannedProcedures = useMemo(
+    () =>
+      planned
+        .map((entry) =>
+          resolvePlannedProcedure({
+            ...entry,
+            payer: query.payer,
+            memberPlan: memberPlanOf(query),
+          }),
+        )
+        .filter((item): item is PlannedProcedure => item !== null),
+    [planned, query],
+  );
+
+  const addPlanned = useCallback((member: string, cpt: string) => {
+    setPlanned((current) =>
+      current.length >= MAX_PROCEDURES
+        ? current
+        : [...current, { id: `${cpt}-${member}-${Date.now()}`, cpt, member }],
+    );
+  }, []);
+
+  const removePlanned = useCallback((id: string) => {
+    setPlanned((current) => current.filter((entry) => entry.id !== id));
+  }, []);
 
   // Two independent sources of "unlocked", kept apart on purpose.
   //
@@ -464,6 +515,37 @@ function Preclear() {
     }
   }, [routes, result]);
 
+  /**
+   * The same thing for the household year plan.
+   *
+   * Costed here rather than read out of the section, so the text that leaves
+   * the app comes from the engine and not from what happened to be rendered.
+   */
+  const shareYearPlan = useCallback(async () => {
+    if (plannedProcedures.length === 0) return;
+    try {
+      await Share.share({
+        message: yearPlanText({
+          comparison: optimizeYearPlan(
+            plannedProcedures,
+            {
+              deductibleRemaining: query.deductible,
+              coinsuranceRate: query.coinsurance,
+              oopMaxRemaining: query.oopMax,
+              copay: 0,
+            },
+            query.expectedOtherSpend,
+          ),
+          labelFor: procedureLabelFor,
+          payerLabel: PAYER_LABELS[query.payer] ?? '',
+          metro: data.metro,
+        }),
+      });
+    } catch {
+      setNote('Could not open the share sheet.');
+    }
+  }, [plannedProcedures, query]);
+
   const startPlan = useCallback(
     async (planId: string) => {
       setNote(null);
@@ -655,6 +737,20 @@ function Preclear() {
                   note={note}
                   livePricing={storePlans !== null}
                   plans={storePlans ?? DEMO_PLANS}
+                  yearPlan={{
+                    procedures: plannedProcedures,
+                    benefits: {
+                      deductibleRemaining: query.deductible,
+                      coinsuranceRate: query.coinsurance,
+                      oopMaxRemaining: query.oopMax,
+                      copay: 0,
+                    },
+                    expectedOtherSpend: query.expectedOtherSpend,
+                    payerLabel: PAYER_LABELS[query.payer] ?? '',
+                    onAdd: addPlanned,
+                    onRemove: removePlanned,
+                    onShare: shareYearPlan,
+                  }}
                   onStart={startPlan}
                   onRestore={restore}
                 />

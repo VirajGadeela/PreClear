@@ -28,6 +28,7 @@
 
 import { money } from './costing';
 import { Requirement, Route } from './routes';
+import type { YearPlanComparison } from './yearPlan';
 
 export type Summary =
   | { kind: 'cash_costs_more'; todayGap: number; yearGap: number }
@@ -147,6 +148,83 @@ export function shareText({
       );
     });
   }
+
+  lines.push(
+    '',
+    'Estimates built from the price files payers and hospitals publish.',
+    'Not a quote, and not a coverage decision.',
+    'Made with Preclear.',
+  );
+
+  return lines.join('\n');
+}
+
+/**
+ * The year plan, as text a household can send to itself or to an office.
+ *
+ * Same rules as `shareText`, all load-bearing: every figure goes through
+ * `money()` so "estimate" travels with it out of the app (hard rule 5); no
+ * plan name, no card text, no deductible position leaves (hard rule 1); no
+ * claim of coverage, approval or denial, and no clinical suggestion (hard
+ * rules 5 and 6). Household roles, not names.
+ *
+ * Per-procedure dollar figures appear only for the scans paid in cash. The
+ * year total does not depend on the order the scans happen in, but splitting
+ * it across the insured ones does, so that split is not written down. See
+ * `yearPlan.ts`.
+ *
+ * Pure, and separate from the act of sharing, so the wording can be checked
+ * without a device.
+ */
+export function yearPlanText({
+  comparison,
+  labelFor,
+  payerLabel,
+  metro,
+}: {
+  comparison: YearPlanComparison;
+  /** CPT to display name, from the bundle. Kept out of this file's imports. */
+  labelFor: (cpt: string) => string;
+  payerLabel: string;
+  metro: string;
+}): string {
+  const { best, alternative, allCash, saving } = comparison;
+  if (best.decisions.length === 0) return '';
+
+  const lines: string[] = [
+    `Your year · ${payerLabel} · ${metro}`,
+    '',
+    `Together, these come to ${money(best.totalThisYear)}.`,
+  ];
+
+  if (saving > 0.01) {
+    lines.push(
+      `That is ${money(saving)} less than ${
+        alternative === allCash
+          ? 'paying cash for all of them'
+          : 'running all of them through insurance'
+      }.`,
+    );
+  }
+  lines.push(
+    'Only the insured payments count toward the deductible. Cash earns no',
+    'credit, so later care starts from scratch.',
+    '',
+  );
+
+  best.decisions.forEach((decision, index) => {
+    const { procedure } = decision;
+    lines.push(
+      `${index + 1}. ${procedure.member} · ${labelFor(procedure.cpt)} (CPT ${
+        procedure.cpt
+      })`,
+    );
+    lines.push(
+      decision.payCash && decision.cashPaid !== null
+        ? `   Pay cash at ${decision.facility}: ${money(decision.cashPaid)}`
+        : `   Run through insurance at ${decision.facility}`,
+    );
+  });
 
   lines.push(
     '',

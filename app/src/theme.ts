@@ -415,6 +415,30 @@ export const textScale = {
   /** Pill badges sharing a row with text that already says the same thing. */
   badge: 1.5,
   /**
+   * Dollar figures. Exactly WCAG 1.4.4's 200%, and no lower.
+   *
+   * A formatted amount is one unbreakable token, so it is the third failure
+   * above rather than the first: at `accessibility-extra-large` a four-figure
+   * total set at `amount` (26px) is wider than the content column inside a
+   * card, and React Native breaks *inside* the number rather than overflowing
+   * it -- "$2,445.0" on one line and "4" on the next. A figure split across
+   * two lines is not a smaller figure, it is a different one, which is worse
+   * than any of the word-level breaks this object already guards.
+   *
+   * Found on the household year plan, but it was never that screen's bug: it
+   * is every <Money size="large"> whose value reaches four figures, and the
+   * screener's route totals routinely do.
+   *
+   * Applied to the `hero` and `large` sizes only -- see `Money.tsx`. A figure
+   * set inline in a sentence must scale with the sentence around it.
+   *
+   * 2.0 is the floor the rest of this object respects for content, and it
+   * holds a nine-character figure ($2,445.04) inside a padded card at 375pt.
+   * Ten characters -- a five-figure total -- would still break, and the fix
+   * for that is a wider container, not a smaller cap.
+   */
+  money: 2.0,
+  /**
    * The `fontScale` above which a side-by-side row stacks into a column.
    *
    * Not a cap — a layout threshold, and the one that actually fixes the badge.
