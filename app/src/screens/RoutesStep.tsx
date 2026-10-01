@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
 
   requirement: { borderTopWidth: stroke.hairline, borderTopColor: color.line, marginTop: space.md, paddingTop: space.md },
   requirementStatus: { ...type.captionStrong, color: color.flag },
-  link: { ...type.captionStrong, color: color.accent, marginTop: space.xs },
+  link: { ...type.captionStrong, color: color.accentText, marginTop: space.xs },
   detailHedge: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
 
   // Hairline, matching `card` above: both are containers that happen to be
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
   },
   lockTitle: { ...type.bodyStrong, color: color.ink },
   lockBody: { ...type.caption, color: color.inkMuted, marginTop: space.xs },
-  lockCta: { ...type.label, color: color.accent, marginTop: space.sm },
+  lockCta: { ...type.label, color: color.accentText, marginTop: space.sm },
   planDetail: {
     borderTopWidth: stroke.hairline,
     borderTopColor: color.line,

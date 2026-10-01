@@ -153,5 +153,5 @@ const styles = StyleSheet.create({
   // own 16, because reaching a total by adding two tokens together is the
   // arithmetic theme.ts's spacing scale exists to prevent.
   lede: { marginBottom: space.xl },
-  disclosure: { ...shared.caption, color: color.accentDeep },
+  disclosure: { ...shared.caption, color: color.accentText },
 });

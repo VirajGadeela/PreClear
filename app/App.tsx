@@ -375,7 +375,9 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar style="dark" />
+      {/* "auto", not "dark". The bar's content colour has to invert with the
+          system appearance now that the app follows it. */}
+      <StatusBar style="auto" />
       {step !== -1 && <TopBar backLabel={backLabel} onBack={goBack} />}
       {step >= 0 && <StepBar current={step} onJump={setStep} />}
       {/* The plan-name field sits above the primary button, so without this the

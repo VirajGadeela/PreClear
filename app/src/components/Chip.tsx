@@ -43,7 +43,7 @@ export function Chip({
         {/* Selection is never color-only: a checkmark carries it too, so the
             state reads the same for a colorblind member as for anyone else. */}
         {selected && (
-          <Ionicons name="checkmark" size={16} color={color.surface} style={styles.chipIcon} />
+          <Ionicons name="checkmark" size={16} color={color.slateInk} style={styles.chipIcon} />
         )}
         <Text
           style={[
@@ -84,5 +84,5 @@ const styles = StyleSheet.create({
   chipBlock: { width: '100%', alignItems: 'flex-start' },
   chipTextBlock: { textAlign: 'left' },
   chipText: { ...type.label, color: color.ink },
-  chipTextSelected: { color: color.surface },
+  chipTextSelected: { color: color.slateInk },
 });

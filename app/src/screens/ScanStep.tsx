@@ -46,7 +46,7 @@ export function ScanStep({
           />
         ))}
       </View>
-      <Text style={shared.caption}>{procedure.detail} · CPT {procedure.cpt}</Text>
+      <Text style={styles.cptCaption}>{procedure.detail} · CPT {procedure.cpt}</Text>
 
       {procedure.indications.length > 0 && (
         <>
@@ -130,6 +130,11 @@ export function ScanStep({
 }
 
 const styles = StyleSheet.create({
+  // `shared.caption` carries a bottom margin but no top one, so this line sat
+  // flush against the chip row it describes — the one group boundary in the
+  // app with no space in it at all. Every other group is separated by at
+  // least `sm`.
+  cptCaption: { ...shared.caption, marginTop: space.sm },
   input: {
     ...type.body,
     color: color.ink,

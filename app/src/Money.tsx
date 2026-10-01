@@ -11,13 +11,15 @@
  * recommended route's card and 2.84:1 in the headline, against the 4.5:1 WCAG
  * asks of text that size. The single word this product is required to show was
  * the least legible text in the app. It now renders at full opacity, in
- * `accentDeep` when the figure is accent-toned, which measures 5.2:1.
+ * `accentText` when the figure is accent-toned — the accent hue at a
+ * lightness that clears 4.5:1 for text under 18px, in either theme.
  *
  * Sizes come from the shared scale in `theme.ts`. This file used to carry a
  * private one.
  */
 
 import { StyleSheet, Text, TextStyle } from 'react-native';
+import type { ColorValue } from 'react-native';
 
 import { color, type as typography } from './theme';
 
@@ -27,14 +29,24 @@ type Props = {
   tone?: 'ink' | 'accent' | 'inverse';
 };
 
+const TABULAR = { fontVariant: ['tabular-nums'] as ('tabular-nums')[] };
+
+/**
+ * Every size is tabular, not just `amount`.
+ *
+ * `type.amount` carries `tabular-nums` because a slider-driven number must not
+ * reflow as its digits change. But the headline figures on the routes step are
+ * `hero`, which maps to `display` — also slider-driven, and it was not tabular.
+ * The guard belongs to "this is a number", not to one size.
+ */
 const SIZES: Record<NonNullable<Props['size']>, TextStyle> = {
-  hero: typography.display,
-  large: typography.amount,
-  body: typography.bodyStrong,
-  small: typography.label,
+  hero: { ...typography.display, ...TABULAR },
+  large: { ...typography.amount, ...TABULAR },
+  body: { ...typography.bodyStrong, ...TABULAR },
+  small: { ...typography.label, ...TABULAR },
 };
 
-const TONES: Record<NonNullable<Props['tone']>, string> = {
+const TONES: Record<NonNullable<Props['tone']>, ColorValue> = {
   ink: color.ink,
   accent: color.accent,
   inverse: color.accentInk,
@@ -47,9 +59,9 @@ const TONES: Record<NonNullable<Props['tone']>, string> = {
  * bar) and not for the 13px word beside it. Ink and inverse are already far
  * clear of 4.5:1 at any size, so they are used as-is.
  */
-const SUFFIX_TONES: Record<NonNullable<Props['tone']>, string> = {
+const SUFFIX_TONES: Record<NonNullable<Props['tone']>, ColorValue> = {
   ink: color.ink,
-  accent: color.accentDeep,
+  accent: color.accentText,
   inverse: color.accentInk,
 };
 

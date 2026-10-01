@@ -66,5 +66,5 @@ const styles = StyleSheet.create({
   },
   devChipOn: { backgroundColor: color.slate, borderColor: color.slate },
   devChipText: { ...type.caption, color: color.inkMuted },
-  devChipTextOn: { ...type.captionStrong, color: color.surface },
+  devChipTextOn: { ...type.captionStrong, color: color.slateInk },
 });

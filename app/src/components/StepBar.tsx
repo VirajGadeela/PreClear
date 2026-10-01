@@ -39,7 +39,13 @@ export function StepBar({
                 done && styles.stepDotDone,
               ]}
             >
-              <Text style={[styles.stepNumber, active && styles.stepNumberActive]}>
+              <Text
+                style={[
+                  styles.stepNumber,
+                  done && styles.stepNumberDone,
+                  active && styles.stepNumberActive,
+                ]}
+              >
                 {index + 1}
               </Text>
             </View>
@@ -48,7 +54,6 @@ export function StepBar({
               style={[
                 styles.stepLabel,
                 active && styles.stepLabelActive,
-                locked && styles.stepLabelPending,
               ]}
             >
               {label}
@@ -95,8 +100,16 @@ const styles = StyleSheet.create({
   stepDotActive: { backgroundColor: color.accent },
   stepDotDone: { backgroundColor: color.slate },
   stepNumber: { ...type.captionStrong, color: color.inkMuted },
+  // A done dot is filled with `slate`, and the number on it kept the muted
+  // ink meant for the unfilled pending dot — 2.20:1 in light, 1.58:1 in dark.
+  // The state the member sees most was the one they could not read.
+  stepNumberDone: { color: color.slateInk },
   stepNumberActive: { color: color.accentInk },
   stepLabel: { ...type.label, color: color.inkMuted },
   stepLabelActive: { color: color.ink },
-  stepLabelPending: { opacity: 0.45 },
+  // No `stepLabelPending`. It was `opacity: 0.45` on the label — the last
+  // surviving instance of fading type to imply hierarchy, which is how the
+  // "estimate" suffix reached 2.77:1 in the 2026-08-14 audit. A locked step
+  // still has to be readable; its state is carried by the dot's fill and by
+  // `accessibilityState.disabled`, neither of which costs contrast.
 });

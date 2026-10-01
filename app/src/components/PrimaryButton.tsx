@@ -41,7 +41,7 @@ export function PrimaryButton({
       ]}
     >
       {pending ? (
-        <ActivityIndicator color={tone === 'accent' ? color.accentInk : color.surface} />
+        <ActivityIndicator color={tone === 'accent' ? color.accentInk : color.slateInk} />
       ) : (
         <Text style={[styles.buttonText, tone === 'accent' && styles.buttonTextAccent]}>
           {label}
@@ -67,6 +67,8 @@ const styles = StyleSheet.create({
   // the landing screen.
   buttonAccent: { backgroundColor: color.accent },
   buttonPressed: { opacity: 0.85 },
-  buttonText: { ...type.bodyStrong, color: color.surface },
+  // `slateInk`, not `surface`. These sit on a slate fill; `surface` only ever
+  // worked here because it happened to be white.
+  buttonText: { ...type.bodyStrong, color: color.slateInk },
   buttonTextAccent: { color: color.accentInk },
 });
