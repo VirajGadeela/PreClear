@@ -36,11 +36,6 @@ export const sharedSheets = themed((c) => ({
   detailSummary: { ...type.caption, color: c.ink, marginTop: space.xs },
   citation: { ...type.caption, color: c.inkMuted, marginTop: space.xs },
 
-  planRow: { flexDirection: 'row', gap: space.sm },
-  planBullet: { ...type.captionStrong, color: c.accent },
-  planLine: { ...type.caption, color: c.ink, flex: 1 },
-  planCaveat: { ...type.caption, color: c.inkMuted, marginTop: space.xs },
-
   // Uses the data-quality flag colour, not an alarm colour. A missing rule is
   // a limit of the data, the same class of thing as a suspect rate.
   coverageGap: {
@@ -51,8 +46,9 @@ export const sharedSheets = themed((c) => ({
   },
   coverageGapText: { ...type.caption, color: c.flag },
 
-  // Deliberately quiet. Restore is a recovery path, not an offer, so it must
-  // not compete with the unlock card above it.
+  // Deliberately quiet: a secondary link under a section, never an offer.
+  // Named for its first use, restoring a purchase, which went with the paid
+  // tier. "Share this plan" and the Sources link still use it.
   restore: {
     alignItems: 'center',
     marginTop: space.md,

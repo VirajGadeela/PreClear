@@ -386,9 +386,7 @@ export function rankRoutes(routes: Route[]): Route[] {
  * This exists because the headline used to make a claim ("cash saves $X
  * today, costs $Y more this year") that the card underneath never let a
  * reader verify — the card showed a total with no visible connection back to
- * either headline number. This ties the two together on the card itself, and
- * it renders for every visitor, not just entitled ones: it's the concrete
- * evidence that makes the paywall worth trusting, not something to gate.
+ * either headline number. This ties the two together on the card itself.
  *
  * Only ever describes routes[0] against one counterpart — a cash route if the
  * recommendation is insured (or vice versa), falling back to the runner-up

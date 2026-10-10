@@ -1,26 +1,17 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
-import { TAP_TARGET, radius, size, space, stroke, textScale, type } from '../theme';
+import { useMemo } from 'react';
+import { Text, View } from 'react-native';
+import { radius, space, stroke, textScale, type } from '../theme';
 import { useStyles, useTheme } from '../ThemeProvider';
 import { themed } from '../styles/themed';
 import { sharedSheets } from '../styles/shared';
 import { Money } from '../Money';
-import { PrimaryButton } from '../components/PrimaryButton';
 import household from '../../assets/household-eobs.json';
 import { Eob, HouseholdPlan, review, totalAtStake } from '../claims';
 import { money } from '../costing';
-import { PLAN_INCLUDES, PLAN_NAME, type PlanOption } from '../plan';
 import { YearPlanSection } from './YearPlanSection';
 
 /**
- * The subscription tier: the household's claims, checked against themselves.
+ * The household's claims, checked against themselves.
  *
  * Findings are discrepancies the documents demonstrate — arithmetic that does
  * not reconcile, a service billed twice, a denial that carries appeal rights.
@@ -107,25 +98,16 @@ function HouseholdReview() {
 }
 
 /**
- * The paid step, in both states.
+ * The household destination: several scans planned against one shared
+ * deductible, then the household's claims checked against themselves.
  *
- * Unlocked, it is the household review. Locked, it is the same page with the
- * plan described in full and a way to buy it — not an empty screen and not a
- * teaser. Someone deciding whether to pay should be able to read everything the
- * plan does without paying first.
+ * Free for everyone. There is no paid tier, so there is no locked state and
+ * no sales page standing in for this one.
  */
 export function HouseholdStep({
-  isSubscribed,
-  demo,
   note,
-  livePricing,
-  plans,
   yearPlan,
-  onStart,
-  onRestore,
 }: {
-  isSubscribed: boolean;
-  demo: boolean;
   note: string | null;
   /**
    * Everything the year plan needs, passed through rather than re-derived.
@@ -133,200 +115,13 @@ export function HouseholdStep({
    * benefits it is costed against are the ones the screener already collects.
    */
   yearPlan: React.ComponentProps<typeof YearPlanSection>;
-  /**
-   * Whether the prices below came from the store rather than from the demo
-   * placeholders. Drives the strip that says so, and nothing else — the two
-   * kinds of plan render identically by design.
-   */
-  livePricing: boolean;
-  plans: PlanOption[];
-  onStart: (planId: string) => void;
-  onRestore: () => void;
 }) {
-  const styles = useStyles(sheets);
   const shared = useStyles(sharedSheets);
-  const { c } = useTheme();
-  const [selected, setSelected] = useState(plans[0].id);
-  // Above `stackAbove` the term and the price stop sharing a line. See the
-  // token for the measurement; the short version is that a row cannot be made
-  // to fit by capping the text inside it once the price alone fills it.
-  const { fontScale } = useWindowDimensions();
-  const stacked = fontScale > textScale.stackAbove;
-  // The plans can be replaced after first render: the demo placeholders paint
-  // immediately, then the store answers and the real packages arrive with
-  // entirely different identifiers. Without this the selection would still hold
-  // "annual" while the rows are keyed by RevenueCat package ids, so every row
-  // would draw as unselected and the CTA would buy whatever sorted first.
-  useEffect(() => {
-    if (!plans.some((item) => item.id === selected)) setSelected(plans[0].id);
-  }, [plans, selected]);
-
-  const plan = plans.find((item) => item.id === selected) ?? plans[0];
-  // Local to this screen: `onStart`/`onRestore` are the app's one entry point
-  // for each action regardless of demo vs. real store, so the pending state
-  // for "is this specific tap still in flight" belongs at the call site, not
-  // threaded through App.tsx's state.
-  const [starting, setStarting] = useState(false);
-  const [restoring, setRestoring] = useState(false);
-
-  const handleStart = async () => {
-    setStarting(true);
-    try {
-      await onStart(plan.id);
-    } finally {
-      setStarting(false);
-    }
-  };
-
-  const handleRestore = async () => {
-    setRestoring(true);
-    try {
-      await onRestore();
-    } finally {
-      setRestoring(false);
-    }
-  };
-
-  if (isSubscribed) {
-    return (
-      <View>
-        <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>Your household</Text>
-        {/* A demo unlock must never be mistaken for a purchase. */}
-        {demo && (
-          <View style={shared.coverageGap}>
-            <Text style={shared.coverageGapText}>
-              Unlocked in demo mode. No purchase was made and nothing was
-              charged.
-            </Text>
-          </View>
-        )}
-        <YearPlanSection {...yearPlan} />
-        <HouseholdReview />
-        {note ? <Text style={shared.note}>{note}</Text> : null}
-      </View>
-    );
-  }
-
   return (
     <View>
-      <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>{PLAN_NAME}</Text>
-      <Text style={shared.body}>
-        A scan happens every few years. Bills arrive all year, for everyone on
-        the plan. This is the part that keeps working after the comparison is
-        done.
-      </Text>
-
-      {/* Prices sit above the benefit list, not below it. The list runs to
-          eight lines, and burying the choice under it means the button at the
-          bottom commits to a term the member never saw.
-
-          There were uppercase labels over this group and the one below it
-          ("CHOOSE A PLAN", "WHAT IT WATCHES"). Both are gone with the eyebrow
-          token: the plan rows are visibly a set of options and the list below
-          is visibly a list, so the labels were naming what the layout already
-          showed. Separation is `space.xl` and a hairline now. */}
-      {plans.map((option) => {
-        const active = option.id === selected;
-        return (
-          <Pressable
-            key={option.id}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: active }}
-            accessibilityLabel={`${option.term}, ${option.price} ${option.cadence}`}
-            onPress={() => setSelected(option.id)}
-            style={({ pressed }) => [
-              styles.planOption,
-              stacked && styles.planOptionStacked,
-              active && styles.planOptionActive,
-              pressed && styles.planOptionPressed,
-            ]}
-          >
-            <View style={styles.planOptionMain}>
-              <View style={styles.planOptionHead}>
-                {/* Same non-colour-only selection cue as a Chip. */}
-                {active && (
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={size.icon.sm}
-                    color={c.accent}
-                    style={styles.planOptionCheck}
-                  />
-                )}
-                <Text style={styles.planOptionTerm}>{option.term}</Text>
-                {option.badge ? (
-                  <Text
-                    style={styles.planBadge}
-                    maxFontSizeMultiplier={textScale.badge}
-                  >
-                    {option.badge}
-                  </Text>
-                ) : null}
-              </View>
-              {option.footnote ? (
-                <Text style={styles.planOptionFootnote}>{option.footnote}</Text>
-              ) : null}
-            </View>
-            <View
-              style={[styles.planOptionPrice, stacked && styles.planPriceStacked]}
-            >
-              <Text style={[styles.planPrice, active && styles.planPriceActive]}>
-                {option.price}
-              </Text>
-              <Text style={styles.planCadence}>{option.cadence}</Text>
-            </View>
-          </Pressable>
-        );
-      })}
-
-      <View style={styles.planWatches}>
-        {PLAN_INCLUDES.map((line) => (
-          <View key={line} style={shared.planRow}>
-            <Text style={shared.planBullet}>·</Text>
-            <Text style={shared.planLine}>{line}</Text>
-          </View>
-        ))}
-      </View>
-
-      <Text style={shared.planCaveat}>
-        Findings are discrepancies these documents show against themselves. They
-        are not predictions about what your insurer will decide, and the amounts
-        are what is in dispute rather than what will be refunded.
-      </Text>
-
-      {/* Stated where the prices are, not only next to the button — and only
-          in demo mode, where it is true. Once a RevenueCat key is configured
-          this button opens a real purchase screen instead. */}
-      {!livePricing && (
-        <View style={styles.demoStrip}>
-          <Text style={styles.demoText}>
-            Demo pricing. Nothing is charged, no purchase is made and no payment
-            details are collected. This unlocks the paid tier on this device so
-            it can be seen working.
-          </Text>
-        </View>
-      )}
-
-      <PrimaryButton
-        label={`Start ${plan.term.toLowerCase()} plan`}
-        onPress={handleStart}
-        pending={starting}
-      />
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Restore a previous purchase"
-        accessibilityState={{ disabled: restoring, busy: restoring }}
-        disabled={restoring}
-        onPress={handleRestore}
-        style={({ pressed }) => [shared.restore, pressed && shared.restorePressed]}
-      >
-        {restoring ? (
-          <ActivityIndicator size="small" color={c.inkMuted} />
-        ) : (
-          <Text style={shared.restoreText}>Restore purchase</Text>
-        )}
-      </Pressable>
-
+      <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>Your household</Text>
+      <YearPlanSection {...yearPlan} />
+      <HouseholdReview />
       {note ? <Text style={shared.note}>{note}</Text> : null}
     </View>
   );
@@ -342,82 +137,4 @@ const sheets = themed((c) => ({
     padding: space.md,
   },
   findingHead: { ...type.label, color: c.ink },
-
-  // Carries the separation the removed section label used to: a full step of
-  // space above, and a hairline to close the plan options off from the list.
-  planWatches: {
-    marginTop: space.xl,
-    paddingTop: space.lg,
-    borderTopWidth: stroke.hairline,
-    borderTopColor: c.line,
-    gap: space.sm,
-  },
-
-  planOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space.md,
-    backgroundColor: c.surface,
-    borderRadius: radius.lg,
-    borderWidth: stroke.control,
-    // A control boundary, not a hairline. See `border` in theme.ts.
-    borderColor: c.border,
-    padding: space.md,
-    marginBottom: space.sm,
-    minHeight: TAP_TARGET,
-  },
-  // Stacked. The row's `alignItems: 'center'` would centre a full-width
-  // column, so both it and the price block realign to the leading edge.
-  planOptionStacked: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    gap: space.sm,
-  },
-  planOptionPressed: { opacity: 0.7 },
-  // Selection is carried by the accent border and the price colour — the same
-  // accent the recommended route uses, and nowhere else. Not a cheap/expensive
-  // signal, just "this is the one chosen."
-  planOptionActive: { borderColor: c.accent, backgroundColor: c.accentSoft },
-  planOptionMain: { flex: 1, gap: space.xs },
-  // Wraps. At accessibility text sizes the term, the badge and the price stop
-  // fitting on one line, and a row that cannot fit squeezes its children: the
-  // badge collapsed to a sliver and set one letter per line — "S / a / v / e".
-  // Wrapping drops the badge under the term at its natural width instead.
-  planOptionHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    flexWrap: 'wrap',
-  },
-  planOptionCheck: { marginRight: -space.xs },
-  planOptionTerm: { ...type.bodyStrong, color: c.ink },
-  planBadge: {
-    ...type.captionStrong,
-    color: c.accentInk,
-    backgroundColor: c.accent,
-    borderRadius: radius.sm,
-    paddingHorizontal: space.sm,
-    // Was 2 — the only value in the app that sat off the 8px scale and off its
-    // own 4px half-step. `xs` is the half-step, and the badge grows by 4px.
-    paddingVertical: space.xs,
-    // Never absorb the row's overflow. Without this the badge is the element
-    // that gives, because it is the only one with no intrinsic minimum.
-    flexShrink: 0,
-    overflow: 'hidden',
-  },
-  planOptionFootnote: { ...type.caption, color: c.inkMuted },
-  planOptionPrice: { alignItems: 'flex-end' },
-  planPriceStacked: { alignItems: 'flex-start' },
-  planPrice: { ...type.amount, color: c.ink },
-  planPriceActive: { color: c.accent },
-  planCadence: { ...type.caption, color: c.inkMuted },
-
-  demoStrip: {
-    backgroundColor: c.flagBg,
-    borderRadius: radius.md,
-    padding: space.md,
-    marginTop: space.md,
-  },
-  demoText: { ...type.caption, color: c.flag },
 }));

@@ -44,7 +44,6 @@ import {
   View,
 } from 'react-native';
 import { data, PAYER_LABELS } from './src/appData';
-import { DevTierSwitch } from './src/components/DevTierSwitch';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { TabBar, Tab } from './src/components/TabBar';
 import { TopBar } from './src/components/TopBar';
@@ -60,15 +59,6 @@ import {
 } from './src/screener';
 import { ScreenerScreen } from './src/screens/ScreenerScreen';
 import { type FilterGroup } from './src/screens/ScreenerFilters';
-import {
-  configure as configurePurchases,
-  loadPlans,
-  onEntitlementChange,
-  purchasePlan,
-  refreshEntitlement,
-  restore as restorePurchases,
-} from './src/purchases';
-import { DEMO_PLANS, type PlanOption } from './src/plan';
 import {
   OrderFacts,
   checkOrder,
@@ -249,26 +239,7 @@ function Preclear() {
     setPlanned((current) => current.filter((entry) => entry.id !== id));
   }, []);
 
-  // Two independent sources of "unlocked", kept apart on purpose.
-  //
-  // `storeEntitled` is the real one: RevenueCat's answer, and the only one that
-  // will exist once a store product does. `demoEntitled` is this build's stand-in
-  // — no product exists yet, so the paid tier is unlocked by a demo sheet that
-  // says so on screen. Merging them into one flag would make it impossible to
-  // tell a genuine entitlement from the demo, which is exactly the distinction
-  // that has to stay visible while the store side is unfinished.
-  const [storeEntitled, setStoreEntitled] = useState(false);
-  const [demoEntitled, setDemoEntitled] = useState(false);
-  const [storeReady, setStoreReady] = useState(false);
-  // The store's real packages, or null until they arrive — and permanently null
-  // when there is no key, no current offering, or the network is down. Kept
-  // separate from `storeReady` because a configured SDK that cannot read an
-  // offering is a different state from one that was never configured, and only
-  // the first is worth a diagnostic.
-  const [storePlans, setStorePlans] = useState<PlanOption[] | null>(null);
   const [note, setNote] = useState<string | null>(null);
-
-  const isSubscribed = storeEntitled || demoEntitled;
 
   /**
    * Send each destination back to the top.
@@ -288,35 +259,6 @@ function Preclear() {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, []);
   useEffect(scrollToTop, [tab, showAbout, scrollToTop]);
-
-  useEffect(() => {
-    const ready = configurePurchases();
-    if (!ready.ok) {
-      // Not an error worth showing a patient. Without a key the demo paywall is
-      // the paywall, and it explains itself; the console note is for whoever is
-      // building, and `note` stays clear for purchase outcomes.
-      setStoreReady(false);
-      return;
-    }
-    setStoreReady(true);
-
-    // Read the entitlement once at launch, then keep listening. A renewal, an
-    // expiry, or a restore performed elsewhere arrives through the listener
-    // rather than through any call this screen makes.
-    refreshEntitlement()
-      .then(setStoreEntitled)
-      .catch(() => setStoreEntitled(false));
-
-    // Prices come from the store, not from this repo. `loadPlans` resolves to
-    // null rather than throwing whenever the offering cannot be read, so the
-    // household page falls back to the labelled placeholders instead of showing
-    // an error to a patient who cannot act on it.
-    loadPlans()
-      .then(setStorePlans)
-      .catch(() => setStorePlans(null));
-
-    return onEntitlementChange(setStoreEntitled);
-  }, []);
 
   // Live, because these render the controls the member is touching.
   const procedure = useMemo(
@@ -463,16 +405,6 @@ function Preclear() {
   );
 
   /**
-   * One entry point for "become subscribed", wherever it is tapped from.
-   *
-   * The household step page shows the plans and pricing itself now, so this
-   * only has to decide what happens when a plan is chosen: unlock locally in
-   * demo mode, or hand off to the real RevenueCat paywall when a key is
-   * configured. That handoff still opens the platform's own purchase screen —
-   * no in-app page can substitute for the App Store's purchase sheet — but it
-   * is the one remaining place this app shows a second screen for it.
-   */
-  /**
    * Open a worked example directly on its result.
    *
    * Every answer the scan and coverage steps collect is set at once and the
@@ -546,23 +478,6 @@ function Preclear() {
     }
   }, [plannedProcedures, query]);
 
-  const startPlan = useCallback(
-    async (planId: string) => {
-      setNote(null);
-      // No key, or a key whose offering could not be read. Either way there is
-      // no real package to buy, so the demo unlock stands in — and the strip on
-      // the household page says so on screen.
-      if (!storeReady || !storePlans) {
-        setDemoEntitled(true);
-        return;
-      }
-      const outcome = await purchasePlan(planId);
-      setStoreEntitled(outcome.entitled);
-      setNote(outcome.message);
-    },
-    [storeReady, storePlans],
-  );
-
   /**
    * Choosing a destination, including the one already showing.
    *
@@ -623,19 +538,6 @@ function Preclear() {
     });
     return () => subscription.remove();
   }, [back]);
-
-  const restore = useCallback(async () => {
-    setNote(null);
-    if (!storeReady) {
-      setNote(
-        'Restore needs a live store account. This build has none, so there is nothing to restore.',
-      );
-      return;
-    }
-    const outcome = await restorePurchases();
-    setStoreEntitled(outcome.entitled);
-    setNote(outcome.message);
-  }, [storeReady]);
 
   // After every hook above, never before — conditionally skipping hooks on a
   // later render is the one thing that breaks React's hook order guarantee.
@@ -732,11 +634,7 @@ function Preclear() {
 
               {tab === 'household' && (
                 <HouseholdStep
-                  isSubscribed={isSubscribed}
-                  demo={demoEntitled}
                   note={note}
-                  livePricing={storePlans !== null}
-                  plans={storePlans ?? DEMO_PLANS}
                   yearPlan={{
                     procedures: plannedProcedures,
                     benefits: {
@@ -751,8 +649,6 @@ function Preclear() {
                     onRemove: removePlanned,
                     onShare: shareYearPlan,
                   }}
-                  onStart={startPlan}
-                  onRestore={restore}
                 />
               )}
             </>
@@ -767,23 +663,6 @@ function Preclear() {
           expected to cover it. Hidden on the cover, which is not a tab. */}
       {!showAbout && <TabBar current={tab} onSelect={selectTab} />}
 
-      {/* Development only. Two flows have to be verifiable without a store
-          account, and hunting for a hidden gesture to switch between them is how
-          one of them stops being checked. Stripped from a release build by the
-          same constant that strips the SDK's debug logging. */}
-      {__DEV__ && (
-        <DevTierSwitch
-          subscribed={isSubscribed}
-          onFree={() => {
-            setDemoEntitled(false);
-            setNote(null);
-          }}
-          onPro={() => {
-            setDemoEntitled(true);
-            setNote(null);
-          }}
-        />
-      )}
     </SafeAreaView>
   );
 }
