@@ -68,7 +68,9 @@ function HouseholdReview() {
         {household.eobs.length} claims reviewed · {byClaim.length}{' '}
         {byClaim.length === 1 ? 'claim to question' : 'claims to question'}
       </Text>
-      {atStake > 0 && <Money value={atStake} size="large" tone="accent" />}
+      {/* Ink, not accent: the accent means "recommended route", and an amount
+          in dispute is not a recommendation. */}
+      {atStake > 0 && <Money value={atStake} size="large" />}
 
       {byClaim.map((group) => (
         <View key={group.claimId} style={styles.finding}>

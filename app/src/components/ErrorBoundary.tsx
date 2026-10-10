@@ -72,7 +72,7 @@ function ErrorFallback({ onReset }: { onReset: () => void }) {
         Nothing you entered was saved or sent anywhere, so starting over is
         safe.
       </Text>
-      <PrimaryButton label="Start over" onPress={onReset} tone="accent" />
+      <PrimaryButton label="Start over" onPress={onReset} />
     </View>
   );
 }
