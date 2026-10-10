@@ -9,6 +9,7 @@ export function Chip({
   label,
   spoken,
   block,
+  half,
   onPress,
 }: {
   selected: boolean;
@@ -26,6 +27,17 @@ export function Chip({
    * a single line.
    */
   block?: boolean;
+  /**
+   * Two per row, equal widths, labels wrapping at word boundaries.
+   *
+   * For a long list of options that are each a proper name — the facilities in
+   * the Scan step. Nine of them at full width ran the step taller than a phone.
+   * The column mid-word break `block` exists to avoid needs a single word wider
+   * than the column, and the longest here ("Indianapolis") is well inside it;
+   * callers still switch to `block` above `textScale.stackAbove`, where it no
+   * longer is. An odd last chip grows to the full row.
+   */
+  half?: boolean;
   onPress: () => void;
 }) {
   const styles = useStyles(sheets);
@@ -40,6 +52,7 @@ export function Chip({
       style={({ pressed }) => [
         styles.chip,
         block && styles.chipBlock,
+        half && styles.chipHalf,
         selected && styles.chipSelected,
         pressed && styles.chipPressed,
       ]}
@@ -54,6 +67,7 @@ export function Chip({
           style={[
             styles.chipText,
             block && styles.chipTextBlock,
+            half && styles.chipTextHalf,
             selected && styles.chipTextSelected,
           ]}
         >
@@ -88,6 +102,13 @@ const sheets = themed((c) => ({
   // overflowing, and a three-across row rendered "degenerativ / e spine".
   chipBlock: { width: '100%', alignItems: 'flex-start' },
   chipTextBlock: { textAlign: 'left' },
+  chipHalf: {
+    flexBasis: '45%',
+    flexGrow: 1,
+    alignItems: 'flex-start',
+    paddingVertical: space.sm,
+  },
+  chipTextHalf: { textAlign: 'left', flexShrink: 1 },
   chipText: { ...type.label, color: c.ink },
   chipTextSelected: { color: c.slateInk },
 }));

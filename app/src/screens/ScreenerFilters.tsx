@@ -29,7 +29,7 @@
  * cost math. They belong with the scan.
  */
 
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View, useWindowDimensions } from 'react-native';
 
 import { Chip } from '../components/Chip';
 import { Disclosure } from '../components/Disclosure';
@@ -40,7 +40,7 @@ import { PAYER_CHIP_LABELS, PAYER_LABELS, Procedure, data } from '../appData';
 import { FacilityBundle } from '../routes';
 import { Answered, ScreenerQuery } from '../screener';
 import { sharedSheets } from '../styles/shared';
-import { TAP_TARGET, radius, space, stroke, type } from '../theme';
+import { TAP_TARGET, radius, space, stroke, textScale, type } from '../theme';
 import { useStyles, useTheme } from '../ThemeProvider';
 import { themed } from '../styles/themed';
 
@@ -212,6 +212,10 @@ export function ScreenerFilters({
   const styles = useStyles(sheets);
   const shared = useStyles(sharedSheets);
   const { c } = useTheme();
+  // The facility grid's two columns hold at default text sizes and reflow to
+  // one above this, where a single long word would no longer fit a column.
+  const { fontScale } = useWindowDimensions();
+  const facilityColumns = fontScale > textScale.stackAbove ? 1 : 2;
 
   // One at a time. Two open groups is most of the flat scroll back again, and
   // the whole point of the summary line is that a closed row still answers.
@@ -313,7 +317,8 @@ export function ScreenerFilters({
                       key={facility.facility_key}
                       selected={answered.scan && facility.facility_key === query.orderedFacility}
                       label={facility.facility_name}
-                      block
+                      block={facilityColumns === 1}
+                      half={facilityColumns === 2}
                       onPress={() =>
                         onRefine({
                           orderedFacility:
@@ -327,7 +332,8 @@ export function ScreenerFilters({
                   <Chip
                     selected={answered.scan && query.orderedFacility === undefined}
                     label="Not sure yet"
-                    block
+                    block={facilityColumns === 1}
+                    half={facilityColumns === 2}
                     onPress={() => onRefine({ orderedFacility: undefined })}
                   />
                 </View>
