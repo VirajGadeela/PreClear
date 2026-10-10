@@ -165,51 +165,13 @@ export function AboutScreen({ onNext }: { onNext: () => void }) {
         year.
       </Text>
 
-      {/* One button. There used to be a second, to the household plan, and it
-          is a tab — always on screen, one tap, and it does not need to compete
-          with the only action this screen exists to offer. */}
-      <PrimaryButton label="Compare my options" onPress={onNext} tone="accent" />
+      {/* Straight after the one-line explainer, before the button. This is the
+          only thing on the cover that argues rather than asserts, and it sat
+          fourth — under the button, the trust line and the stat band — so on a
+          667pt phone it began below the fold. Claim, then the real case that
+          proves it, then the action.
 
-      {/* The two facts a sceptic actually wants, and the counts under them are
-          the evidence for the first. Both are checkable rather than
-          reassuring: "must publish" is the federal requirement these files
-          exist under, and "saved" is the claim that survives. An earlier draft
-          read "leaves this phone", which `shareComparison` makes false the
-          moment a member taps Share. */}
-      <Text style={styles.trust}>
-        Prices come from files hospitals must publish. Nothing you enter is
-        saved.
-      </Text>
-
-      {/* Above the proof panel, which is the half of this that mattered: the
-          panel is tall enough that a band underneath it began past the fold,
-          and nothing on a phone tells a reader there is more below. Moving it
-          up fixes that and leaves the panel ending mid-card at the fold, which
-          is the scroll cue the screen never had.
-
-          The big numerals stay. They were briefly collapsed to one line of
-          body text, and that traded away the thing they are for: a count set
-          at display size is read before it is read *as* anything, which is
-          what makes three of them work as evidence rather than as a caption.
-
-          A row per stat rather than three across. The labels are sentences,
-          and three columns break mid-word at accessibility text sizes, which
-          DESIGN.md §8 records happening to the indication chips.
-
-          Counted from the bundle at render, so no figure here can outlive the
-          data it describes. */}
-      <View style={styles.stats}>
-        {corpusStats().map((stat) => (
-          <View key={stat.label} style={styles.stat}>
-            <Text style={styles.statValue} maxFontSizeMultiplier={textScale.display}>
-              {stat.value}
-            </Text>
-            <Text style={styles.statLabel}>{stat.label}</Text>
-          </View>
-        ))}
-      </View>
-
-      {/* The panel had an uppercase label above it reading "THE SAME KNEE MRI,
+          The panel had an uppercase label above it reading "THE SAME KNEE MRI,
           TWICE". The two rows below say the same thing by being two readings of
           one case, and the border already says where the panel starts. */}
       {/* A panel, not a button. It used to open the same case in the screener,
@@ -242,6 +204,51 @@ export function AboutScreen({ onNext }: { onNext: () => void }) {
           Franciscan Health Carmel, one Anthem plan. Yours will differ.
         </Text>
 
+      </View>
+
+
+      {/* One button, under the proof it follows from. There used to be a
+          second, to the household plan, and it is a tab — always on screen,
+          one tap, and it does not need to compete with the only action this
+          screen exists to offer. */}
+      <PrimaryButton label="Compare my options" onPress={onNext} tone="accent" />
+
+      {/* The two facts a sceptic actually wants, and the counts under them are
+          the evidence for the first. Both are checkable rather than
+          reassuring: "must publish" is the federal requirement these files
+          exist under, and "saved" is the claim that survives. An earlier draft
+          read "leaves this phone", which `shareComparison` makes false the
+          moment a member taps Share. */}
+      <Text style={styles.trust}>
+        Prices come from files hospitals must publish. Nothing you enter is
+        saved.
+      </Text>
+
+      {/* Last, as supporting evidence under the action. It sat above the proof
+          panel for a while so the panel would end mid-card at the fold as a
+          scroll cue; the proof now leads, and these counts are what a reader
+          who wants more finds by scrolling.
+
+          The big numerals stay. They were briefly collapsed to one line of
+          body text, and that traded away the thing they are for: a count set
+          at display size is read before it is read *as* anything, which is
+          what makes three of them work as evidence rather than as a caption.
+
+          A row per stat rather than three across. The labels are sentences,
+          and three columns break mid-word at accessibility text sizes, which
+          DESIGN.md §8 records happening to the indication chips.
+
+          Counted from the bundle at render, so no figure here can outlive the
+          data it describes. */}
+      <View style={styles.stats}>
+        {corpusStats().map((stat) => (
+          <View key={stat.label} style={styles.stat}>
+            <Text style={styles.statValue} maxFontSizeMultiplier={textScale.display}>
+              {stat.value}
+            </Text>
+            <Text style={styles.statLabel}>{stat.label}</Text>
+          </View>
+        ))}
       </View>
 
     </>
@@ -287,12 +294,8 @@ const sheets = themed((c) => ({
   // One line under the headline, and the only explanation on the screen. The
   // proof panel below argues it with real numbers, which is a better job than
   // a second paragraph would do.
-  // No bottom margin. `PrimaryButton` already declares `marginTop: space.xl`,
-  // and an `xl` here stacked against it for 64pt of dead space between one
-  // sentence and the button under it, which is two gaps doing the work of one.
-  // That 32pt is the single largest recoverable space on this screen, and what
-  // it buys is the proof panel below the fold showing a whole row rather than
-  // an edge.
+  // No bottom margin: the proof panel under it owns that gap (`marginTop`),
+  // so the two never stack into a double space.
   landingSub: { ...type.body, color: c.inkMuted },
 
   // A hairline-bordered panel on the canvas rather than a raised card. Nothing
