@@ -227,11 +227,17 @@ export function ScreenerFilters({
   const stepAction = (group: FilterGroup) => {
     if (!answered[group]) return null;
     const next = nextStep(group, answered);
+    // Compact, inside one `md` gap. The default button brings its own `xl`
+    // top margin, which stacked on a slider's `lg` bottom margin for a 56pt
+    // hole between the last control and the way forward.
     return (
-      <PrimaryButton
-        label={next ? NEXT_LABEL[next] : 'See my routes'}
-        onPress={() => onAdvance(next)}
-      />
+      <View style={styles.stepAction}>
+        <PrimaryButton
+          label={next ? NEXT_LABEL[next] : 'See my routes'}
+          onPress={() => onAdvance(next)}
+          compact
+        />
+      </View>
     );
   };
 
@@ -348,15 +354,19 @@ export function ScreenerFilters({
                 criteria read them. They sat under "coverage" and did not
                 belong there. */}
             {answered.scan && showTreatment && (
-              <Slider
-                label="Weeks of treatment so far"
-                value={query.treatmentWeeks}
-                minimum={0}
-                maximum={12}
-                step={1}
-                onChange={(value) => onRefine({ treatmentWeeks: value })}
-                format={(value) => `${value} ${value === 1 ? 'week' : 'weeks'}`}
-              />
+              // In a `field` like every other question here. Bare, it sat flush
+              // against the last facility chip with no gap at all.
+              <View style={styles.field}>
+                <Slider
+                  label="Weeks of treatment so far"
+                  value={query.treatmentWeeks}
+                  minimum={0}
+                  maximum={12}
+                  step={1}
+                  onChange={(value) => onRefine({ treatmentWeeks: value })}
+                  format={(value) => `${value} ${value === 1 ? 'week' : 'weeks'}`}
+                />
+              </View>
             )}
 
             {/* Three states, not two. Neither chip selected means the order does
@@ -595,6 +605,7 @@ const sheets = themed((c) => ({
   // now, so these are `rowLabel` rather than `h2` — a second heading level
   // inside a disclosure is what the eight `h2`s here used to be.
   field: { marginTop: space.md },
+  stepAction: { marginTop: space.md },
   input: {
     ...type.body,
     color: c.ink,

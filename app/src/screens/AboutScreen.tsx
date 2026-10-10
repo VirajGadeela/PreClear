@@ -333,7 +333,16 @@ const sheets = themed((c) => ({
   // one is load-bearing: the accent moves between cash and in-network across
   // the two rows, and that inversion is the argument the cover makes. Size
   // already ranks these.
-  statValue: { ...type.display, color: c.ink, minWidth: 56 },
+  // Right-aligned in a fixed column, so the digits stack like a table and
+  // each sits next to its own label. Left-aligned, a narrow "4" left a 36pt
+  // hole before "insurers".
+  statValue: {
+    ...type.display,
+    color: c.ink,
+    minWidth: space.xl + space.md,
+    textAlign: 'right',
+    fontVariant: ['tabular-nums'],
+  },
   statLabel: { ...type.caption, color: c.inkMuted, flex: 1 },
 
   proofRow: { paddingVertical: space.sm },
