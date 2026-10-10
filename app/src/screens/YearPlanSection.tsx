@@ -14,7 +14,7 @@ import { optimizeYearPlan, type PlannedProcedure, MAX_PROCEDURES } from '../year
 import { HOUSEHOLD_MEMBERS, procedureLabel } from '../yearPlanData';
 
 /**
- * The paid tier's first section: several scans, one shared deductible.
+ * The household tab's first section: several scans, one shared deductible.
  *
  * The single-scan screener answers "what does this one cost me this year". A
  * household with three scans coming has a different question, because the

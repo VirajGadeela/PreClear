@@ -194,7 +194,7 @@ function Preclear() {
   const [openRouteKind, setOpenRouteKind] = useState<string | null>(null);
 
   /**
-   * The scans a household knows are coming, for the paid tier's year plan.
+   * The scans a household knows are coming, for the household year plan.
    *
    * Held here rather than in the section because the benefits it is costed
    * against are the ones the screener already collects — deductible,

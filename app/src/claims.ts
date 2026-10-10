@@ -1,5 +1,5 @@
 /**
- * Claims review — the subscription tier.
+ * Claims review — the household tab.
  *
  * This mirrors `pipeline/claims/eob.py` check for check. The Python is the
  * source of truth and is the tested version; `scripts/check-claims-parity.sh`
