@@ -286,7 +286,10 @@ export function ScreenerFilters({
               ))}
             </View>
 
-            {procedure.indications.length > 0 && (
+            {/* Which scan first, then the rest. Before a scan is picked these
+                questions describe the seeded default, which is nobody's scan,
+                and they made the open step a full form on arrival. */}
+            {answered.scan && procedure.indications.length > 0 && (
               <View style={styles.field}>
                 <Text style={shared.rowLabel}>Why it was ordered</Text>
                 <View style={shared.chipWrap}>
@@ -308,7 +311,7 @@ export function ScreenerFilters({
                 order" — see `orderedFacility` in `screener.ts`. "Not sure yet"
                 is a real answer and the route copy changes to match rather than
                 naming a building the member never gave. */}
-            {facilities.length > 0 && (
+            {answered.scan && facilities.length > 0 && (
               <View style={styles.field}>
                 <Text style={shared.rowLabel}>Where is it scheduled?</Text>
                 <View style={shared.chipWrap}>
@@ -344,7 +347,7 @@ export function ScreenerFilters({
                 pays, and they appear only for indications whose published
                 criteria read them. They sat under "coverage" and did not
                 belong there. */}
-            {showTreatment && (
+            {answered.scan && showTreatment && (
               <Slider
                 label="Weeks of treatment so far"
                 value={query.treatmentWeeks}
@@ -359,7 +362,7 @@ export function ScreenerFilters({
             {/* Three states, not two. Neither chip selected means the order does
                 not record this, which is the common case and reads as "not
                 documented" rather than as a criterion the order failed. */}
-            {showHeadacheFeature && (
+            {answered.scan && showHeadacheFeature && (
               <View style={shared.featureBlock}>
                 <Text style={shared.rowLabel}>Concerning headache feature documented?</Text>
                 <View style={shared.chipWrap}>

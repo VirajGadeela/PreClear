@@ -182,15 +182,14 @@ function Preclear() {
   // is: Screener -> Household -> Screener is a common trip now, and losing the
   // group you had open every time you take it is a new annoyance.
   //
-  // Starts closed. It opened on `scan` so the tab would not be a collapsed
-  // strip above an empty screen, and adding the facility chips made that group
-  // taller than a phone: the prompt naming the three questions sat below the
-  // fold, so a member arriving met a form and none of the direction written
-  // for that exact moment. The prompt is above the panel now and carries the
-  // screen on its own, which is what makes closed the better default rather
-  // than merely the shorter one. Three named rows also read as three things to
-  // do, where one open group reads as one long form.
-  const [openGroup, setOpenGroup] = useState<FilterGroup | null>(null);
+  // Opens on step 1. It started closed for a while (407cec2): an open Scan
+  // group was a form taller than a phone, so a member arriving met that form
+  // and not the direction written for the moment. Two things changed. The
+  // rows are numbered steps, so the direction is in the panel itself; and Scan
+  // asks only which scan until one is picked, so on arrival the open step is
+  // three chips with steps 2 and 3 visible beneath it. Closed, the first thing
+  // on screen was three rows to read and a prompt to follow before any tap.
+  const [openGroup, setOpenGroup] = useState<FilterGroup | null>('scan');
   const [openRouteKind, setOpenRouteKind] = useState<string | null>(null);
 
   /**
