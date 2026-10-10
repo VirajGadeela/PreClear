@@ -1,7 +1,7 @@
 ---
 version: 1
 name: preclear
-description: Design system for Preclear — a React Native (Expo) iOS app that ranks routes to an elective MRI or CT by what they actually cost the patient this year. Muted steel/cobalt accent on a faintly cool off-white, Manrope for headline roles over the platform system font, an 8px grid, and one rule that overrides every aesthetic preference below — hue never encodes rank.
+description: Design system for Preclear — a React Native (Expo) iOS app that ranks routes to an elective MRI or CT by what they actually cost the patient this year. Indiana navy and gold on a faintly cool off-white, Instrument Serif for screen headings, Manrope for numbers and labels over the platform system font, an 8px grid, and one rule that overrides every aesthetic preference below — hue never encodes rank.
 platform: react-native
 source-of-truth: app/src/theme.ts
 ---
@@ -42,13 +42,16 @@ actively wrong for this one. See `design/README.md`.
 Quiet, dense, and measured. Closer to a well-set financial statement than to a
 health app. The app is asking a patient to trust an unfamiliar number about
 their own money, so the surface stays calm and admits its own limits — data
-quality flags are a muted olive-brown, not an alarm.
+quality flags are a cool neutral, not an alarm.
 
-Blue and off-white are used deliberately, against an earlier rule that avoided
-both as too clinical. The two failure modes that rule was guarding against are
-avoided directly instead: the blue is a muted steel/cobalt rather than a bright
-generic "SaaS blue," and the background carries a faint cool tint rather than
-sitting at stark white. Neither reads as a hospital portal on its own.
+**Indiana blue and gold (2026-10-10, for the Congressional App Challenge).**
+Navy carries all structure — text, primary buttons, selected chips, step
+markers, links. Gold is the one accent and marks one thing: the recommended
+route (plus the cover's single CTA, which leads to it). It reads as a warm "top
+pick" and they are the state colours of the district panel judging the entry.
+The 2026-08-25 palette chose blue and off-white at explicit request and kept to
+a muted steel to avoid generic "SaaS blue"; it was sensible and forgettable.
+Navy keeps that blue-and-off-white base; the gold is what makes it distinct.
 
 ## 2. Colour palette & roles
 
@@ -66,25 +69,38 @@ amounts, which is what happens to a documented number nobody checks.
 
 | Token | Light | Dark | Role |
 |---|---|---|---|
-| `ink` | `#161B22` | `#E8ECF1` | Primary text |
-| `inkMuted` | `#565F6B` | `#A3AEBA` | Secondary text |
-| `canvas` | `#F4F6F8` | `#12171D` | App background, faint cool tint |
-| `surface` | `#FFFFFF` | `#1C232B` | Cards, lifted off canvas |
-| `line` | `#DEE3E7` | `#262E37` | Decorative hairlines, card edges **only** |
-| `accent` | `#215A8C` | `#6FA8D6` | **Recommended route only** |
-| `accentInk` | `#FFFFFF` | `#0E141A` | On an accent fill |
-| `accentSoft` | `#E4EDF5` | `#18293A` | Accent-tinted recommended card |
-| `accentText` | `#173F63` | `#9FC6E4` | Accent text below 18px |
-| `border` | `#828C97` | `#6E7885` | Boundary of anything interactive |
-| `slate` | `#3B4652` | `#C7D0DA` | Every non-recommended route, equal weight |
-| `slateInk` | `#FFFFFF` | `#12171D` | On a slate fill |
-| `flag` | `#6B5A2E` | `#C9B37E` | Data-quality warnings |
-| `flagBg` | `#EFECE1` | `#2A2822` | Flag background |
+| `ink` | `#13203A` | `#E9EDF5` | Primary text, navy-black |
+| `inkMuted` | `#4E5A70` | `#A7B1C4` | Secondary text |
+| `canvas` | `#F4F6FA` | `#0F1626` | App background, faint cool tint |
+| `surface` | `#FFFFFF` | `#18213A` | Cards, lifted off canvas |
+| `line` | `#DCE1EA` | `#243049` | Decorative hairlines, card edges **only** |
+| `accent` | `#F2B632` | `#F2C14E` | Gold. **Recommended route only. A fill, never text** |
+| `accentInk` | `#13203A` | `#0F1626` | Navy on a gold fill |
+| `accentSoft` | `#FDF1D0` | `#302715` | Gold tint of the recommended card |
+| `accentText` | `#8F5A00` | `#F2C96B` | Gold in text form — accent-toned figures |
+| `border` | `#7B869A` | `#6E7A92` | Boundary of anything interactive |
+| `slate` | `#1F3B70` | `#B7C8EC` | Indiana navy: buttons, selected chips, step markers, **links** |
+| `slateInk` | `#FFFFFF` | `#0F1626` | On a navy fill |
+| `flag` | `#555C69` | `#B9BFCA` | Data-quality limits, a cool neutral |
+| `flagBg` | `#E8EBF0` | `#232A38` | Flag background |
 
-Measured, light · dark: `ink` 15.97 · 15.18 on canvas. `inkMuted` 5.97 · 7.99 on
-canvas. `accent` 6.67 · 7.07 on canvas. `accentText` 9.20 · 8.24 on accentSoft.
-`border` 3.15 · 4.02 on canvas. `slateInk` 9.62 · 11.55 on slate. `flag` 5.68 ·
-7.18 on flagBg. `line` 1.19 · 1.31 on canvas — below the ceiling, by design.
+Measured, light · dark: `ink` 14.98 · 15.39 on canvas. `inkMuted` 6.43 · 8.37 on
+canvas. `accentInk` 8.89 · 10.76 on accent. `accentText` 5.14 · 9.35 on
+accentSoft. `slate` as link text 10.12 · 10.74 on canvas. `slateInk` 10.95 ·
+10.74 on slate. `border` 3.39 · 4.18 on canvas. `flag` 5.63 · 7.79 on flagBg.
+`line` 1.21 · 1.37 on canvas — below the ceiling, by design. `scripts/check-contrast.py`
+asserts 44 pairs across both schemes.
+
+**Gold is a fill, never text.** It measures 1.69:1 on white. Anything set on
+it is `accentInk`; any accent-family text is `accentText`. Gold is also never
+the *only* cue: the recommended card has its position, its rank disc and its
+tint, and the cover CTA is identified by its label. This is why the checker has
+no "accent as text" pair — gold would fail it by design.
+
+**Links are navy, not accent.** They wore the accent until gold made that
+impossible, and the move was overdue: an accent that also means "tappable"
+stops meaning "recommended". Refine, Done, Details, Source document — all
+`slate`.
 
 Three pairings are load-bearing and must not drift:
 
@@ -109,13 +125,19 @@ naming fix, and the reason it still matters is that nothing in the code said
 those two roles had to move together. Lightening `surface` to lift cards further
 off the canvas would have walked a button label toward its own fill, silently.
 
+`flag` was a muted olive until gold arrived. Olive sat too close to the bronze
+`accentText`, and a limit of the data is neither a recommendation nor an alarm,
+so it is a cool neutral now.
+
 There is no `success` and no `error` colour, and adding one is a design change
 that needs an argument, not a token.
 
 ## 3. Typography
 
-Manrope carries every headline-weight role; body and caption stay on the
-platform system font. Mixing a distinctive display face with a native body face
+Three faces, each with one job. **Instrument Serif** sets screen headings and
+nothing else (`serifDisplay`) — every screen's title, the results verdict
+included, so a heading always looks like a heading. **Manrope** carries numbers
+and labels. Body and caption stay on the platform system font. Mixing a distinctive display face with a native body face
 is the considered pairing, not a missing one — loading Manrope for 13px captions
 would spend a font negotiation on text nobody reads as text.
 
@@ -124,6 +146,7 @@ Static weight files, so `fontFamily` names the exact weight:
 
 | Role | Size / line height | Weight | Face |
 |---|---|---|---|
+| `serifDisplay` | 32 / 40 | 400 | Instrument Serif, `-0.5` — screen headings only |
 | `display` | 32 / 40 | 800 | Manrope-ExtraBold, `-0.5` tracking |
 | `amount` | 26 / 32 | 700 | Manrope-Bold, `-0.3`, **`tabular-nums`** |
 | `title` | 22 / 28 | 700 | Manrope-Bold, `-0.2` |
@@ -139,6 +162,10 @@ Static weight files, so `fontFamily` names the exact weight:
   growing the box, and "Your coverage" rendered with its tops cut off.
 - `amount` is tabular by necessity: a slider-driven number must not visibly
   reflow as digits change.
+- Instrument Serif's figure one is a plain vertical stroke, so "11" sets as
+  "ll". Numerals are never in the serif; the cover's stat counts are `display`.
+- Rank numerals on the route list are `bodyStrong` at `ink`, the same role as
+  the route's first line, so each row reads as one numbered sentence.
 - One scale, globally. There used to be two — this one and a private set inside
   `Money.tsx` — which between them defined ten font sizes with no ratio.
 - `bodyStrong` and `captionStrong` are the emphasis step, and they are the only
@@ -161,7 +188,7 @@ Static weight files, so `fontFamily` names the exact weight:
 
 ## 4. Component styling
 
-- `radius`: `sm 8` · `md 12` · `lg 16`.
+- `radius`: `sm 8` · `md 12` · `lg 16` · `xl 24` (the cover's proof panel).
 - `stroke`: `hairline 1` for things that divide (always with `line`);
   `control 1.5` for the boundary of anything a finger operates (always with
   `border`). Pairing a weight with the wrong colour is the failure this token
@@ -176,6 +203,25 @@ Static weight files, so `fontFamily` names the exact weight:
   weight. `stepDot 24` is a token because the radius has to stay exactly half
   the width or the dot stops being round; it belonged to `StepBar`, went with
   it, and came back for About's numbered steps.
+- **Step marker** (`Disclosure`'s `step` and `done` props). A 24pt circle: the
+  step number in a `border` outline until answered, then a `slate` fill with a
+  check. Progress by shape and fill, never hue. For rows that are a sequence —
+  the screener's three questions — and nothing else; Sources' payer groups are
+  not a sequence and leave it off.
+- **Step action.** An answered step ends in a compact `PrimaryButton` inside one
+  `md` gap: "Next: your coverage" / "Next: your year", or "See my routes" once
+  all three are answered. It never appears on an unanswered step. Both actions
+  scroll to the top, because closing a tall step above the member's thumb
+  otherwise strands them mid-page.
+- **Rank disc.** Route 1's rank sits on a 24pt `accent` disc with an
+  `accentInk` numeral; every other rank sits in the same 24pt slot unfilled, so
+  the column holds. This replaced a 1.5pt gold left border that measured
+  1.69:1 and barely registered.
+- **`Chip` variants.** Default sizes to its label. `block` is one per row, for
+  labels that cannot be shortened. `half` is two per row at equal widths,
+  wrapping at word boundaries — for a long list of proper names (the
+  facilities). Callers switch `half` to `block` above `textScale.stackAbove`,
+  where one long word stops fitting a column.
 - Existing components are the reference implementation:
   `BackLink` · `Chip` · `Citation` · `Disclosure` · `PrimaryButton` · `Row` ·
   `TabBar` · `TopBar` · `ErrorBoundary`. Extend these before inventing a
@@ -219,7 +265,9 @@ gradient, or glow anywhere in this app.
   *is* the answer, and the tap is only needed to change it. A row with no
   summary has to be opened to be understood, which is the failure the component
   exists to prevent.
-- Reserve `accent` for the recommended route, exclusively.
+- Reserve `accent` for the recommended route, exclusively — as a fill. Set
+  `accentInk` on it; use `accentText` for accent-toned figures.
+- Put links in `slate`, never in the accent.
 - Draw every non-recommended route at equal weight.
 - Use `tabular-nums` for any number that changes under user input.
 - Treat a missing payer rule as a data limit (`flag`), not an alarm.
@@ -244,8 +292,10 @@ gradient, or glow anywhere in this app.
 
 ## 8. Responsive & platform behaviour
 
-This is a **React Native (Expo) iOS app, not a website.** Guidance written for
-the web does not transfer:
+This is a **React Native (Expo) iOS app, not a website.** `react-native-web` is
+installed only so screens can be clicked through in a browser during design
+review — nothing on this machine can tap the simulator. The product is iOS.
+Guidance written for the web does not transfer:
 
 - **No hover.** On a touch device the pressed state *is* the focus state —
   every `Pressable` answers with `cardPressed` (`opacity: 0.7`).
@@ -269,10 +319,11 @@ the web does not transfer:
 
 When any design skill is used on this repo, hand it these constraints up front:
 
-> React Native (Expo) iOS app, no web. Tokens come from `app/src/theme.ts` —
-> import them, never hardcode a hex or a spacing value. Hue must never encode
-> rank: no red/green for expensive/cheap, ranking is carried by position, number
-> size, and the single `accent` reserved for the recommended route. 8px grid,
+> React Native (Expo) iOS app, no web product. Tokens come from `app/src/theme.ts` —
+> import them, never hardcode a hex or a spacing value. Indiana navy carries
+> structure and links; gold is the single accent, a fill reserved for the
+> recommended route, never text. Hue must never encode rank: no red/green for
+> expensive/cheap, ranking is carried by position, number size, and the gold. 8px grid,
 > one type scale, flat surfaces, 44pt minimum tap targets, WCAG-measured
 > contrast. No hover states, no GSAP, no Tailwind.
 
