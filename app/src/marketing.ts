@@ -38,7 +38,6 @@ export type HowItWorksStep = {
   /** Rendered in the step dot. Kept as data so the list cannot renumber wrong. */
   n: number;
   title: string;
-  body: string;
 };
 
 /**
@@ -53,17 +52,14 @@ export const HOW_IT_WORKS: HowItWorksStep[] = [
   {
     n: 1,
     title: 'Name the scan and the plan',
-    body: 'No member ID, no card photo. Neither changes the answer.',
   },
   {
     n: 2,
     title: 'Say what the rest of your year looks like',
-    body: 'The other care you expect is the number that decides this.',
   },
   {
     n: 3,
     title: 'Read four routes, ranked by the year',
-    body: 'Not by the price on the day. The cheapest today is sometimes last.',
   },
 ];
 

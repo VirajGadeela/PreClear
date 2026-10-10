@@ -84,7 +84,6 @@ export function MethodStep() {
           </View>
           <View style={styles.stepBody}>
             <Text style={styles.stepText}>{step.title}</Text>
-            <Text style={styles.stepNote}>{step.body}</Text>
           </View>
         </View>
       ))}
@@ -203,8 +202,10 @@ export function MethodStep() {
 
 const sheets = themed((c) => ({
   // One line each, numbered. The dot is `slate`, not `accent` — the recommended
-  // route owns that, and a step numeral is not a recommendation.
-  step: { flexDirection: 'row', gap: space.md, marginBottom: space.md },
+  // route owns that, and a step numeral is not a recommendation. Titles only:
+  // each step had a grey note under it, and the questions below answer every
+  // one of them in full (member ID, the year, cash versus the day's price).
+  step: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginBottom: space.md },
   stepDot: {
     width: size.stepDot,
     height: size.stepDot,
@@ -216,7 +217,6 @@ const sheets = themed((c) => ({
   stepNumber: { ...type.label, color: c.slateInk },
   stepBody: { flex: 1 },
   stepText: { ...type.bodyStrong, color: c.ink },
-  stepNote: { ...type.caption, color: c.inkMuted },
 
   faqAnswer: { ...type.body, color: c.inkMuted },
 
