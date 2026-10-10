@@ -101,7 +101,7 @@ function Headline({ routes }: { routes: Route[] }) {
       <View style={styles.hero}>
         <View style={line}>
           <Text style={styles.heroLead}>Cash costs</Text>
-          <Money value={summary.yearGap} size="large" tone="accent" />
+          <Money value={summary.yearGap} size="body" />
           <Text style={styles.heroLead}>more this year.</Text>
         </View>
         <Text style={styles.heroWhy}>
@@ -117,7 +117,7 @@ function Headline({ routes }: { routes: Route[] }) {
       <View style={styles.hero}>
         <View style={line}>
           <Text style={styles.heroLead}>Cash saves</Text>
-          <Money value={summary.todayGap} size="large" tone="accent" />
+          <Money value={summary.todayGap} size="body" />
           <Text style={styles.heroLead}>and stays cheaper.</Text>
         </View>
         <Text style={styles.heroWhy}>
@@ -139,11 +139,8 @@ function Headline({ routes }: { routes: Route[] }) {
     <View style={styles.hero}>
       <View style={line}>
         <Text style={styles.heroLead}>Your options differ by</Text>
-        <Money value={summary.spread} size="large" tone="accent" />
+        <Money value={summary.spread} size="body" />
       </View>
-      <Text style={styles.heroWhy}>
-        Over the whole year. Same scan, same coverage.
-      </Text>
     </View>
   );
 }
@@ -413,38 +410,17 @@ export function ScreenerScreen({
         </View>
       ) : (
         <>
+          {/* The answer first, as the screen's heading — the same serif role
+              every other screen's title uses. It was a 22px sans line sitting
+              under a spread figure and above two captions, so the first big
+              number a reader met was the gap between options rather than what
+              to do, and route 1 landed at the fold. */}
+          {verdict(routes) && (
+            <Text style={shared.h1} maxFontSizeMultiplier={textScale.display}>
+              {verdict(routes)}
+            </Text>
+          )}
           <Headline routes={routes} />
-
-          {/* The column header the card list never had. Until now nothing on
-              screen said what the big number was until a row was expanded.
-              One line, not two columns — DESIGN.md §8 records that equal
-              columns were tried and break mid-word on a 375pt screen. The word
-              "estimate" is deliberately absent: hard rule 5 puts it inside the
-              figure, and <Money> owns that. */}
-          {/* The answer as an instruction, above the list. `summarize()` gives
-              the finding as a figure — "cash costs $62.18 more this year" —
-              which is a fact. This is what to do about it, which is what was
-              actually asked for. */}
-          {verdict(routes) && <Text style={styles.verdict}>{verdict(routes)}</Text>}
-          {/* Says what the big number is, which nothing did. It is
-              `totalThisYear`: what the member pays for the scan plus what they
-              pay for the other care they said to expect, so it is the year and
-              not the scan's price. That distinction is the product's whole
-              finding, and reading these figures as scan prices makes the
-              ranking look wrong rather than surprising. "Ranked by" stays
-              because it is also the only line saying the list is ordered. */}
-          <Text style={styles.columnHead}>
-            Ranked by what you pay all year: this scan plus the other care you
-            expect.
-          </Text>
-          {/* Says the metro out loud. The app has never asked where a member
-              lives and cannot know — it holds one metro's published files, and
-              showing Indianapolis facility names without saying so invites
-              exactly the question it got: "how does it know where I live". */}
-          <Text style={styles.scope}>
-            {facilities.length} {payerLabel} {facilities.length === 1 ? 'facility' : 'facilities'}{' '}
-            in {data.metro} · this build covers one metro
-          </Text>
 
           {routes.map((route, index) => (
             <RouteRow
@@ -500,6 +476,19 @@ export function ScreenerScreen({
                 , so a cash payment would earn no credit.
               </Text>
             ))}
+
+          {/* What every figure above is, and which facilities were compared.
+              A footnote to the list rather than a header over it: each row now
+              names its own figure ("What you pay this year"), so above the list
+              these two lines only pushed route 1 toward the fold. */}
+          <Text style={styles.columnHead}>
+            Ranked by what you pay all year: this scan plus the other care you
+            expect.
+          </Text>
+          <Text style={styles.scope}>
+            {facilities.length} {payerLabel} {facilities.length === 1 ? 'facility' : 'facilities'}{' '}
+            in {data.metro} · this build covers one metro
+          </Text>
 
           <Pressable
             accessibilityRole="button"
@@ -573,7 +562,7 @@ const sheets = themed((c) => ({
   // defeats the one thing results-first is for. The number carries the emphasis;
   // the words around it do not need to compete.
   heroLead: { ...type.body, color: c.ink, marginVertical: space.xs },
-  heroWhy: { ...type.caption, color: c.inkMuted, marginTop: space.sm },
+  heroWhy: { ...type.caption, color: c.inkMuted, marginTop: space.xs },
 
   prompt: { marginBottom: space.lg },
   // Not `coverageGap`. That token is the data-quality flag, and it is right
@@ -581,7 +570,6 @@ const sheets = themed((c) => ({
   // about what to offer, which is a different kind of thing and should not
   // wear a warning colour.
   cashNote: { ...type.body, color: c.inkMuted, marginTop: space.md },
-  verdict: { ...type.title, color: c.ink, marginBottom: space.sm },
   scope: { ...type.caption, color: c.inkMuted, marginTop: space.sm },
   // `body` at `ink`, not `label` at `inkMuted`. This sentence defines what
   // every figure underneath it means, and it was set at 13px in the muted
@@ -589,13 +577,7 @@ const sheets = themed((c) => ({
   // That is the same mistake CLAUDE.md records twice already, once for the
   // word "estimate" inside `<Money>` and once for the reason on a route row.
   // Still below `verdict` at 22px, so the hierarchy holds.
-  columnHead: {
-    ...type.body,
-    color: c.ink,
-    paddingBottom: space.sm,
-    borderBottomWidth: stroke.hairline,
-    borderBottomColor: c.line,
-  },
+  columnHead: { ...type.body, color: c.ink, marginTop: space.lg },
 
   // A row, not a card: separated by a hairline rather than bounded by a border,
   // so the list reads as one ranked sequence.
