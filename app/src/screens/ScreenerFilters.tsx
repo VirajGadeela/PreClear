@@ -33,6 +33,7 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { Chip } from '../components/Chip';
 import { Disclosure } from '../components/Disclosure';
+import { PrimaryButton } from '../components/PrimaryButton';
 import { Slider } from '../Slider';
 import { money } from '../costing';
 import { PAYER_CHIP_LABELS, PAYER_LABELS, Procedure, data } from '../appData';
@@ -77,6 +78,31 @@ function summarise(
 
 /** What an unanswered group's row says instead of its values. */
 const UNSET = 'Not set yet';
+
+/** The three questions, in the order they are asked. */
+const STEPS: FilterGroup[] = ['scan', 'coverage', 'year'];
+
+const NEXT_LABEL: Record<FilterGroup, string> = {
+  scan: 'Next: your scan',
+  coverage: 'Next: your coverage',
+  year: 'Next: your year',
+};
+
+/**
+ * Where the button at the foot of a step goes: the next question still
+ * unanswered, counting on from this one and wrapping, or null once all three
+ * are answered and the ranking exists. Members do not always go in order —
+ * Refine reopens the panel on a finished query — so "the next step" means the
+ * next one that still needs an answer, not the next one in the list.
+ */
+function nextStep(from: FilterGroup, answered: Answered): FilterGroup | null {
+  const start = STEPS.indexOf(from);
+  for (let offset = 1; offset < STEPS.length; offset += 1) {
+    const candidate = STEPS[(start + offset) % STEPS.length];
+    if (!answered[candidate]) return candidate;
+  }
+  return null;
+}
 
 /**
  * Chips in an unanswered group draw as unselected, even though the underlying
@@ -160,6 +186,7 @@ export function ScreenerFilters({
   openGroup,
   onToggle,
   onOpenGroup,
+  onAdvance,
   onRefine,
 }: {
   query: ScreenerQuery;
@@ -174,6 +201,12 @@ export function ScreenerFilters({
   openGroup: FilterGroup | null;
   onToggle: () => void;
   onOpenGroup: (group: FilterGroup | null) => void;
+  /**
+   * Leave a finished step: open `group`, or close the panel when null. The
+   * caller also returns the screen to the top, because collapsing a tall step
+   * above the member otherwise strands them halfway down the page.
+   */
+  onAdvance: (group: FilterGroup | null) => void;
   onRefine: (patch: Partial<ScreenerQuery>) => void;
 }) {
   const styles = useStyles(sheets);
@@ -184,6 +217,19 @@ export function ScreenerFilters({
   // the whole point of the summary line is that a closed row still answers.
   const toggleGroup = (group: FilterGroup) =>
     onOpenGroup(openGroup === group ? null : group);
+
+  // Only once the step has an answer: before that there is nothing to move on
+  // from, and a button saying "Next" over an empty step invites skipping it.
+  const stepAction = (group: FilterGroup) => {
+    if (!answered[group]) return null;
+    const next = nextStep(group, answered);
+    return (
+      <PrimaryButton
+        label={next ? NEXT_LABEL[next] : 'See my routes'}
+        onPress={() => onAdvance(next)}
+      />
+    );
+  };
 
   return (
     <View style={styles.strip}>
@@ -220,6 +266,8 @@ export function ScreenerFilters({
           <Disclosure
             title="Scan"
             summary={answered.scan ? summariseScan(query, procedure, facilities) : UNSET}
+            step={1}
+            done={answered.scan}
             open={openGroup === 'scan'}
             onToggle={() => toggleGroup('scan')}
           >
@@ -330,11 +378,14 @@ export function ScreenerFilters({
                 </View>
               </View>
             )}
+            {stepAction('scan')}
           </Disclosure>
 
           <Disclosure
             title="Coverage"
             summary={answered.coverage ? summariseCoverage(query) : UNSET}
+            step={2}
+            done={answered.coverage}
             open={openGroup === 'coverage'}
             onToggle={() => toggleGroup('coverage')}
           >
@@ -397,11 +448,14 @@ export function ScreenerFilters({
                     : `Matches ${planMatch.matched} of ${planMatch.total} facilities.`}
               </Text>
             </View>
+            {stepAction('coverage')}
           </Disclosure>
 
           <Disclosure
             title="Your year"
             summary={answered.year ? summariseYear(query) : UNSET}
+            step={3}
+            done={answered.year}
             open={openGroup === 'year'}
             onToggle={() => toggleGroup('year')}
             last
@@ -474,6 +528,7 @@ export function ScreenerFilters({
                 { label: 'Ongoing care', value: 6000 },
               ]}
             />
+            {stepAction('year')}
           </Disclosure>
         </View>
       )}

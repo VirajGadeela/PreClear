@@ -298,6 +298,7 @@ export function ScreenerScreen({
   note,
   onToggleFilters,
   onOpenGroup,
+  onAdvance,
   onOpenRoute,
   onRefine,
   onShare,
@@ -321,6 +322,7 @@ export function ScreenerScreen({
   note: string | null;
   onToggleFilters: () => void;
   onOpenGroup: (group: FilterGroup | null) => void;
+  onAdvance: (group: FilterGroup | null) => void;
   onOpenRoute: (kind: string | null) => void;
   onRefine: (patch: Partial<ScreenerQuery>) => void;
   onShare: () => void;
@@ -355,6 +357,7 @@ export function ScreenerScreen({
         openGroup={openGroup}
         onToggle={onToggleFilters}
         onOpenGroup={onOpenGroup}
+        onAdvance={onAdvance}
         onRefine={onRefine}
       />
 

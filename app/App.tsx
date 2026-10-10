@@ -260,6 +260,23 @@ function Preclear() {
   }, []);
   useEffect(scrollToTop, [tab, showAbout, scrollToTop]);
 
+  /**
+   * Leaving a finished step for the next one, or for the ranking.
+   *
+   * Always back to the top. The member is at the foot of the step they just
+   * answered, and closing it removes everything above their thumb — the Scan
+   * step alone is taller than a phone — so without this they land somewhere in
+   * the middle of a screen that has just changed shape under them.
+   */
+  const advance = useCallback(
+    (group: FilterGroup | null) => {
+      setOpenGroup(group);
+      if (group === null) setFiltersOpen(false);
+      scrollToTop();
+    },
+    [scrollToTop],
+  );
+
   // Live, because these render the controls the member is touching.
   const procedure = useMemo(
     () => data.procedures.find((item) => item.cpt === query.cpt) ?? data.procedures[0],
@@ -623,6 +640,7 @@ function Preclear() {
                   note={note}
                   onToggleFilters={() => setFiltersOpen((open) => !open)}
                   onOpenGroup={setOpenGroup}
+                  onAdvance={advance}
                   onOpenRoute={setOpenRouteKind}
                   onRefine={refine}
                   onShare={shareComparison}

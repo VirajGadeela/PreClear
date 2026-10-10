@@ -39,6 +39,14 @@ export function Disclosure({
   onToggle,
   /** Drops the bottom hairline, for the last row in a group. */
   last = false,
+  /**
+   * Position in a sequence, for rows that are steps rather than sections.
+   * Renders a numbered marker that turns into a check once `done`. The filter
+   * panel's three questions use it; Sources' payer groups are not a sequence
+   * and leave it off.
+   */
+  step,
+  done = false,
   children,
 }: {
   title: string;
@@ -46,6 +54,8 @@ export function Disclosure({
   open: boolean;
   onToggle: () => void;
   last?: boolean;
+  step?: number;
+  done?: boolean;
   children: ReactNode;
 }) {
   const styles = useStyles(sheets);
@@ -58,11 +68,28 @@ export function Disclosure({
         accessibilityState={{ expanded: open }}
         // Reads the value aloud rather than only the title, so the collapsed
         // state carries the same information by ear as it does by eye.
-        accessibilityLabel={summary ? `${title}. ${summary}.` : title}
+        accessibilityLabel={[
+          step !== undefined ? `Step ${step}${done ? ', done' : ''}` : null,
+          summary ? `${title}. ${summary}.` : title,
+        ]
+          .filter(Boolean)
+          .join('. ')}
         accessibilityHint={open ? 'Closes this section' : 'Opens this section'}
         onPress={onToggle}
         style={({ pressed }) => [styles.head, pressed && styles.headPressed]}
       >
+        {/* Outlined with its number until answered, then filled with a
+            check. Progress carried by shape and fill, not by hue — DESIGN.md
+            §0 has no colour that means "good". */}
+        {step !== undefined && (
+          <View style={[styles.step, done && styles.stepDone]}>
+            {done ? (
+              <Ionicons name="checkmark" size={size.icon.sm} color={c.slateInk} />
+            ) : (
+              <Text style={styles.stepNumber}>{step}</Text>
+            )}
+          </View>
+        )}
         <View style={styles.headText}>
           <Text style={styles.title}>{title}</Text>
           {/* Closed only, for two reasons that turn out to be one.
@@ -110,6 +137,17 @@ const sheets = themed((c) => ({
     paddingVertical: space.sm,
   },
   headPressed: { opacity: 0.7 },
+  step: {
+    width: size.stepDot,
+    height: size.stepDot,
+    borderRadius: size.stepDot / 2,
+    borderWidth: stroke.control,
+    borderColor: c.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepDone: { backgroundColor: c.slate, borderColor: c.slate },
+  stepNumber: { ...type.label, color: c.ink, fontVariant: ['tabular-nums'] },
   headText: { flex: 1 },
   title: { ...type.bodyStrong, color: c.ink },
   // Two lines, ellipsised. One was the first try and it truncated the only
