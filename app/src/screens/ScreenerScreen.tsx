@@ -602,10 +602,13 @@ const sheets = themed((c) => ({
     paddingHorizontal: space.md,
     minHeight: TAP_TARGET,
   },
-  // Tabular so the numerals sit on one axis down the list.
+  // Tabular so the numerals sit on one axis down the list. `bodyStrong` at
+  // `ink`, the same role as the route's first line, so each row reads as one
+  // numbered sentence: "1  Ask for this scan at…". It was `label` at
+  // `inkMuted` — the faintest text on a row whose whole job is rank.
   rank: {
-    ...type.label,
-    color: c.inkMuted,
+    ...type.bodyStrong,
+    color: c.ink,
     fontVariant: ['tabular-nums'],
     minWidth: space.md,
   },
