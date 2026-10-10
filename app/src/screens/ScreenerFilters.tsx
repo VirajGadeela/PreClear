@@ -587,7 +587,8 @@ const sheets = themed((c) => ({
   },
   headText: { flex: 1 },
   summary: { ...type.body, color: c.ink },
-  toggle: { ...type.label, color: c.accentText },
+  // Navy, like every link: the accent means "recommended", not "tappable".
+  toggle: { ...type.label, color: c.slate },
   body: { paddingHorizontal: space.md },
   // The close control, at the foot rather than the head. Right-aligned to sit
   // where the header's "Refine" was, so the same control stays in the same

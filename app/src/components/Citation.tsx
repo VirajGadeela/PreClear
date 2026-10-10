@@ -164,7 +164,7 @@ const sheets = themed((c) => ({
   linkPressed: { opacity: 0.6 },
   // `accentText`, not `accent`: this is 13px, where WCAG wants 4.5:1 rather
   // than the 3:1 large text is allowed. See the token comments in theme.ts.
-  linkText: { ...type.captionStrong, color: c.accentText },
+  linkText: { ...type.captionStrong, color: c.slate },
 
   hedge: { ...type.caption, color: c.inkMuted, marginBottom: space.sm },
 }));

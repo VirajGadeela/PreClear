@@ -226,11 +226,11 @@ const sheets = themed((c) => ({
   // The accent fill is the same one the recommended route uses and nothing
   // else. It marks the answer, never cheap-or-expensive — hue carries no rank
   // anywhere in this app.
+  // No gold left border: at 1.69:1 it barely registered, and the route list
+  // dropped the same one. The tint is the mark.
   verdict: {
     backgroundColor: c.accentSoft,
     borderRadius: radius.lg,
-    borderLeftWidth: stroke.control,
-    borderLeftColor: c.accent,
     padding: space.md,
     marginTop: space.sm,
     gap: space.xs,

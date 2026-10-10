@@ -31,7 +31,7 @@ import { ScreenerFilters, type FilterGroup } from './ScreenerFilters';
 import { summarize } from '../share';
 import { RouteContext, routeCopy, verdict } from '../routeCopy';
 import { sharedSheets } from '../styles/shared';
-import { TAP_TARGET, radius, space, stroke, textScale, type } from '../theme';
+import { TAP_TARGET, radius, size, space, stroke, textScale, type } from '../theme';
 import { useStyles } from '../ThemeProvider';
 import { themed } from '../styles/themed';
 
@@ -192,9 +192,17 @@ const RouteRow = memo(function RouteRow({
         onPress={onToggle}
         style={({ pressed }) => [styles.rowHead, pressed && shared.cardPressed]}
       >
-        <Text style={styles.rank} maxFontSizeMultiplier={textScale.badge}>
-          {rank}
-        </Text>
+        {/* Route 1's rank sits on a gold disc: the accent as a fill, which is
+            the only way gold can be used, and a literal "top pick" marker.
+            Every other rank sits in the same 24pt slot so the column holds. */}
+        <View style={[styles.rankSlot, recommended && styles.rankBadge]}>
+          <Text
+            style={[styles.rank, recommended && styles.rankOnBadge]}
+            maxFontSizeMultiplier={textScale.badge}
+          >
+            {rank}
+          </Text>
+        </View>
         <View style={styles.rowBody}>
           {/* The instruction, not the category. "Same coverage, cheaper
               facility" describes a kind of route; "Ask for this scan at
@@ -588,16 +596,17 @@ const sheets = themed((c) => ({
     borderBottomWidth: stroke.hairline,
     borderBottomColor: c.line,
   },
-  // The one accent in the app, and the recommended route is what it is for.
-  rowRecommended: {
-    backgroundColor: c.accentSoft,
-    borderLeftWidth: stroke.control,
-    borderLeftColor: c.accent,
-  },
+  // The one accent in the app, and the recommended route is what it is for:
+  // a gold tint here and a gold disc behind the rank. The 1.5pt gold left
+  // border that used to mark it measured 1.69:1 and barely registered; with
+  // the disc carrying the mark it was decoration, so it went.
+  rowRecommended: { backgroundColor: c.accentSoft },
+  // `sm`, not `md`: the rank sits in a 24pt slot now (route 1's is a disc),
+  // and the wider gap on top of it narrowed the reason by a line.
   rowHead: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: space.md,
+    gap: space.sm,
     paddingVertical: space.md,
     paddingHorizontal: space.md,
     minHeight: TAP_TARGET,
@@ -610,8 +619,15 @@ const sheets = themed((c) => ({
     ...type.bodyStrong,
     color: c.ink,
     fontVariant: ['tabular-nums'],
-    minWidth: space.md,
   },
+  rankSlot: {
+    width: size.stepDot,
+    height: size.stepDot,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rankBadge: { backgroundColor: c.accent, borderRadius: size.stepDot / 2 },
+  rankOnBadge: { color: c.accentInk },
   rowBody: { flex: 1 },
   // Muted and small against the figure it names, which is the correct
   // hierarchy here rather than the mistake CLAUDE.md records with the word
@@ -621,8 +637,9 @@ const sheets = themed((c) => ({
   figureLabel: { ...type.caption, color: c.inkMuted, marginTop: space.xs },
   routeLabel: { ...type.bodyStrong, color: c.ink, marginBottom: space.xs },
   reason: { ...type.body, color: c.ink, marginTop: space.sm },
-  evidence: { ...type.caption, color: c.accentText, marginTop: space.xs },
-  chevron: { ...type.label, color: c.accentText },
+  evidence: { ...type.caption, color: c.slate, marginTop: space.xs },
+  // Navy, like every link: the accent means "recommended", not "tappable".
+  chevron: { ...type.label, color: c.slate },
 
   details: {
     paddingHorizontal: space.md,

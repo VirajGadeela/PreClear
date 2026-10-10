@@ -8,17 +8,14 @@
  * size of the number, and by a single accent reserved for the recommended
  * route. Never by hue.
  *
- * Revised 2026-08-25 (second pass). The first two passes both avoided blue and
- * white on purpose — the reasoning on record was that it reads as a clinical
- * portal rather than something on the patient's side. This pass overrides
- * that call deliberately, at explicit request: blue and off-white, chosen to
- * avoid the two failure modes that made the original rule sound reasonable —
- * a bright, generic "SaaS blue" and a stark, clinical white. The blue below is
- * a muted steel/cobalt rather than a primary blue, and the background carries
- * a faint cool tint rather than sitting at true white, so neither reads as a
- * hospital portal on its own. Whether that's actually the case is worth a
- * second look once this has been seen next to real content, not just assumed
- * because the hexes measure fine.
+ * Revised 2026-10-10 for the Congressional App Challenge: Indiana blue and
+ * gold. The 2026-08-25 pass chose blue and off-white at explicit request and
+ * kept to a muted steel so it would not read as generic "SaaS blue"; it was
+ * sensible and forgettable. Navy keeps that blue-and-off-white base and moves
+ * all structure onto it, and gold becomes the one accent — a warm "top pick"
+ * marker on the recommended route, and the state colours of the district
+ * panel judging the entry. Gold cannot be text (1.69:1 on white), which is
+ * what forced links off the accent and onto navy; see `palettes.light`.
  *
  * Every value below is checked against WCAG rather than chosen by eye. The
  * ratios in the comments are measured, and any change to a hex here should be
@@ -67,43 +64,54 @@ export type Palette = {
  * that makes a documented ratio worthless. Change a hex, run the script.
  */
 export const palettes: Record<Scheme, Palette> = {
+  /**
+   * Indiana blue and gold, on a faintly cool off-white.
+   *
+   * Navy carries structure — text, buttons, selected controls, links. Gold is
+   * the one accent and it means one thing: the recommended route (and the
+   * cover's single CTA, which leads to it). Hue still never encodes cheap or
+   * expensive; DESIGN.md §0 stands.
+   *
+   * Gold is a FILL, never text. On white it measures 1.69:1, so anything set on
+   * it is `accentInk` (navy, 8.89:1) and any accent-family text is
+   * `accentText`, a bronze. The gold is never the only cue for anything: the
+   * recommended card also has its position, its rank and its tint, and the CTA
+   * is identified by its label.
+   */
   light: {
-    ink: '#161B22',        // primary text, 15.97:1 on canvas, 17.30:1 on surface
-    inkMuted: '#565F6B',   // secondary text, 5.97:1 on canvas, 6.47:1 on surface
-    canvas: '#F4F6F8',     // off-white with a faint cool tint, not stark white
+    ink: '#13203A',        // navy-black text, 14.98:1 on canvas, 16.21:1 on surface
+    inkMuted: '#4E5A70',   // secondary text, 6.43:1 on canvas, 6.95:1 on surface
+    canvas: '#F4F6FA',     // off-white with a faint cool tint, not stark white
     surface: '#FFFFFF',    // cards lift off the canvas
-    line: '#DEE3E7',       // decorative hairlines and card edges only
+    line: '#DCE1EA',       // decorative hairlines and card edges only, 1.21:1
 
-    // Reserved for the recommended route and nothing else. A muted steel/cobalt
-    // rather than a bright primary blue — the generic "SaaS blue" is as much a
-    // default-AI tell as the clay/oxblood this replaced.
-    accent: '#215A8C',     // 6.67:1 on canvas, 7.23:1 on surface
-    accentInk: '#FFFFFF',  // on accent, 7.23:1
-    accentSoft: '#E4EDF5', // accent-tinted surface for the recommended card
+    // The recommended route's marker and fill, and the cover CTA. Fill only.
+    accent: '#F2B632',     // gold; 1.69:1 on canvas, so never text
+    accentInk: '#13203A',  // navy on gold, 8.89:1
+    accentSoft: '#FDF1D0', // pale gold tint for the recommended card
 
-    // The same blue, darkened, for accent text below 18px — where WCAG wants
-    // 4.5:1 rather than the 3:1 large text is allowed. `accent` already clears
-    // that (6.10:1 on accentSoft), so this exists for the darkest small-text
-    // case rather than out of necessity — 9.20:1 on accentSoft, 10.06:1 on
-    // canvas, 10.89:1 on surface.
-    accentText: '#173F63',
+    // Gold in text form: accent-toned figures and small text on the
+    // recommended card. 5.14:1 on accentSoft, 5.35:1 canvas, 5.78:1 surface.
+    // Warmer than the first try (#7A4A00), which read as brown, not gold.
+    accentText: '#8F5A00',
 
-    // Control outlines — chips, text inputs, the slider track. WCAG 1.4.11 wants
-    // 3:1 for the boundary of an interactive element, and `line` measures 1.19:1,
-    // which is invisible. An unselected chip is white on near-white canvas, so
-    // this border is the only thing that says a control is there.
-    // 3.15:1 on canvas, 3.42:1 on surface.
-    border: '#828C97',
+    // Control outlines — chips, text inputs, the slider track. WCAG 1.4.11
+    // wants 3:1 for an interactive boundary, and `line` is invisible by design.
+    // 3.39:1 on canvas, 3.67:1 on surface.
+    border: '#7B869A',
 
-    // Every non-recommended route uses this, at equal weight. A cash route that
-    // ranks second must look exactly like an in-network route that ranks second.
-    // Kept as a cool slate rather than a second blue, so it reads as neutral
-    // next to the one blue that means "recommended."
-    slate: '#3B4652',      // 8.88:1 on canvas
-    slateInk: '#FFFFFF',   // on slate, 9.62:1
+    // Indiana navy. Primary buttons, selected chips, step markers, and link
+    // text — 10.12:1 on canvas, so it clears 4.5:1 as small text. Links used
+    // to wear the accent, which taught it to mean "tappable" as well as
+    // "recommended"; a gold that cannot be text ended that.
+    slate: '#1F3B70',
+    slateInk: '#FFFFFF',   // on navy, 10.95:1
 
-    flag: '#6B5A2E',       // data-quality warnings; muted olive-brown, not alarm red
-    flagBg: '#EFECE1',     // flag on flagBg, 5.68:1
+    // Data-quality limits. A cool neutral, not the olive it was: olive sat too
+    // close to the bronze `accentText`, and a limit of the data is neither a
+    // recommendation nor an alarm. 5.63:1 on flagBg, 6.22:1 on canvas.
+    flag: '#555C69',
+    flagBg: '#E8EBF0',
   },
 
   /**
@@ -131,34 +139,32 @@ export const palettes: Record<Scheme, Palette> = {
    *     quietly walked the button's label toward its own fill with no test and
    *     no name to catch it. `slateInk` is that name.
    *
-   * The accent stays the same steel/cobalt family, lifted until it reads as
-   * text on a dark ground. It is still the only hue in the app that means
-   * anything, and it still means exactly one thing.
+   * The gold stays gold, a touch lighter so it holds on a navy ground, and
+   * `accentText` swaps from bronze to a light gold for the same reason
+   * `accentText` exists at all: the job is constant, the value inverts.
    */
   dark: {
-    ink: '#E8ECF1',        // primary text, 15.18:1 on canvas, 13.36:1 on surface
-    inkMuted: '#A3AEBA',   // secondary text, 7.99:1 on canvas, 7.04:1 on surface
-    canvas: '#12171D',     // near-black with the same faint cool tint as light
-    surface: '#1C232B',    // lighter than canvas — the lift, since §6 bans shadow
-    line: '#262E37',       // 1.15:1 on surface; decorative, and deliberately barely there
+    ink: '#E9EDF5',        // 15.39:1 on canvas, 13.58:1 on surface
+    inkMuted: '#A7B1C4',   // 8.37:1 on canvas, 7.38:1 on surface
+    canvas: '#0F1626',     // deep navy-black
+    surface: '#18213A',    // lighter than canvas — the lift, since §6 bans shadow
+    line: '#243049',       // 1.21:1 on surface; decorative, barely there
 
-    accent: '#6FA8D6',     // 7.07:1 on canvas, 6.23:1 on surface
-    accentInk: '#0E141A',  // on accent, 7.28:1 — dark ink on a light fill now
-    accentSoft: '#18293A', // accent-tinted surface, still lighter than canvas
+    accent: '#F2C14E',     // gold, lifted for a navy ground; fill only
+    accentInk: '#0F1626',  // navy on gold, 10.76:1
+    accentSoft: '#302715', // warm tint, still lighter than canvas; #2A2617 read olive
 
-    // 8.24:1 on accentSoft, 10.01:1 on canvas, 8.81:1 on surface.
-    accentText: '#9FC6E4',
+    // Light gold text. 9.35:1 on accentSoft, 11.47:1 canvas, 10.13:1 surface.
+    accentText: '#F2C96B',
 
-    // 4.02:1 on canvas, 3.54:1 on surface — clears WCAG 1.4.11's 3:1 on both.
-    // Chosen darker than the first candidate so the slider's filled portion
-    // still separates from its unfilled track (2.87:1, against light's 2.81:1).
-    border: '#6E7885',
+    // 4.18:1 on canvas, 3.69:1 on surface.
+    border: '#6E7A92',
 
-    slate: '#C7D0DA',      // 11.55:1 on canvas
-    slateInk: '#12171D',   // on slate, 11.55:1
+    slate: '#B7C8EC',      // light navy fill; as link text 10.74:1 on canvas
+    slateInk: '#0F1626',   // dark ink on the light fill, 10.74:1
 
-    flag: '#C9B37E',       // the same muted olive, lifted; 8.78:1 on canvas
-    flagBg: '#2A2822',     // flag on flagBg, 7.18:1
+    flag: '#B9BFCA',       // 7.79:1 on flagBg, 9.77:1 on canvas
+    flagBg: '#232A38',
   },
 };
 

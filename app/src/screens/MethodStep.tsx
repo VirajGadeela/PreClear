@@ -237,5 +237,5 @@ const sheets = themed((c) => ({
   // however long iOS takes to hand over to the browser, which is the longest
   // wait in the app and the only one with no feedback at all.
   linkPressed: { opacity: 0.6 },
-  linkText: { ...type.caption, fontWeight: '700', color: c.accent },
+  linkText: { ...type.caption, fontWeight: '700', color: c.slate },
 }));

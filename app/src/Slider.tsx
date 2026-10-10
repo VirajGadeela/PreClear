@@ -327,7 +327,7 @@ const sheets = themed((c) => ({
   // a thumb that changes size while it tracks a finger reads as the value
   // jumping, and this control's whole job is that the number under the finger
   // is the number being set.
-  thumbDragging: { borderWidth: stroke.thumbHeld, borderColor: c.accent },
+  thumbDragging: { borderWidth: stroke.thumbHeld, borderColor: c.slate },
   rangeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

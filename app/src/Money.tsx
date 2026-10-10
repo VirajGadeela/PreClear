@@ -11,7 +11,8 @@
  * recommended route's card and 2.84:1 in the headline, against the 4.5:1 WCAG
  * asks of text that size. The single word this product is required to show was
  * the least legible text in the app. It now renders at full opacity, in
- * `accentText` when the figure is accent-toned, which measures 9.20:1.
+ * `accentText` when the figure is accent-toned, which measures 5.14:1 on the
+ * recommended card.
  *
  * Sizes come from the shared scale in `theme.ts`. This file used to carry a
  * private one.
@@ -92,7 +93,9 @@ export function Money({ value, size = 'body', tone = 'ink' }: Props) {
 
 const sheets = themed((c) => ({
   ink: { color: c.ink },
-  accent: { color: c.accent },
+  // `accentText`, not `accent`: the accent is a gold fill that measures 1.69:1
+  // as text. Bronze is the same hue family at a value that reads.
+  accent: { color: c.accentText },
   inverse: { color: c.accentInk },
 
   suffixInk: { color: c.ink },

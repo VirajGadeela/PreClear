@@ -74,14 +74,19 @@ TEXT_PAIRS = [
     ("inkMuted", "canvas", 4.5, "secondary text on the page ground"),
     ("inkMuted", "surface", 4.5, "secondary text on a card"),
     ("inkMuted", "accentSoft", 4.5, "secondary text on the recommended card"),
-    ("accent", "canvas", 3.0, "the accent at heading sizes"),
-    ("accent", "surface", 3.0, "the accent at heading sizes, on a card"),
-    ("accent", "accentSoft", 3.0, "the accent on its own tinted card"),
-    ("accentInk", "accent", 4.5, "text on an accent fill"),
-    ("accentText", "canvas", 4.5, "small accent text -- the disclosure chevrons"),
-    ("accentText", "surface", 4.5, "small accent text on a card"),
-    ("accentText", "accentSoft", 4.5, "small accent text on the recommended card"),
+    # `accent` is a gold FILL and is never set as text, so it has no text pair
+    # here -- asserting gold at 3:1 would fail by design and teach nobody
+    # anything. What has to hold is whatever sits on it, and the bronze that
+    # stands in for it as text.
+    ("accentInk", "accent", 4.5, "text on an accent fill -- the cover CTA"),
+    ("accentText", "canvas", 4.5, "accent-toned figures on the page ground"),
+    ("accentText", "surface", 4.5, "accent-toned figures on a card -- the cover proof"),
+    ("accentText", "accentSoft", 4.5, "accent-toned figures on the recommended card"),
     ("slateInk", "slate", 4.5, "the primary button's label, and a selected chip's"),
+    # Links are navy now, at caption and label sizes, so they need text contrast
+    # rather than the control floor below.
+    ("slate", "canvas", 4.5, "link text on the page ground -- Refine, Details"),
+    ("slate", "surface", 4.5, "link text on a card -- Source document"),
     ("flag", "flagBg", 4.5, "a data-quality warning in its own block"),
     ("flag", "canvas", 4.5, "a data-quality warning inline"),
     ("flag", "surface", 4.5, "a data-quality warning on a card"),
