@@ -4,9 +4,9 @@
  * Everything else in this app renders a number the engine computed or a
  * sentence a payer published. This file is the exception: it is the app talking
  * about itself, which is exactly the writing most likely to overclaim. It lives
- * as typed data rather than as JSX for the same reason `plan.ts` does — so the
- * strings can be read, reviewed and changed without opening a screen, and so
- * two screens cannot describe the same product differently.
+ * as typed data rather than as JSX so the strings can be read, reviewed and
+ * changed without opening a screen, and so two screens cannot describe the
+ * same product differently.
  *
  * ---
  *
