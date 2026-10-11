@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
 # The household year plan exists twice, for the same reason the deductible
-# math, the requirement checks and the claims checks do:
+# math and the requirement checks do:
 # pipeline/costing/yearplan.py is the source of truth and app/src/yearPlan.ts is
 # a port so the household screen can re-optimise as a slider moves.
 #
-# This is the fourth of these scripts. Drift here tells a household to pay cash
+# This is the third of these scripts. Drift here tells a household to pay cash
 # for scans they should be running through insurance, or the reverse — the exact
 # mistake the whole product exists to correct, made at family scale.
 #

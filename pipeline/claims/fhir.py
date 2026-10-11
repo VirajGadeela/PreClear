@@ -17,10 +17,9 @@ records as a decision to be made deliberately rather than drifted into. Until
 that decision is made, the only bundle this reads is the synthetic fixture in
 `data/samples/`, and hard rule 1 still holds without qualification.
 
-Keeping FHIR on this side of `export_app_data.py` is also what stops the repo
-growing a fourth parity script. `app/src/claims.ts` mirrors `eob.py`; if the app
-parsed bundles too, the mapping below would exist twice and could drift, and
-CLAUDE.md already records claims drift as the worst of the three kinds.
+Keeping FHIR in Python is also what keeps the mapping below in one place. The
+app used to carry a TypeScript port of `eob.py`; it was removed with the
+claims screen on 2026-10-11, and nothing outside `pipeline/` reads claims now.
 
 MATCHING IS BY CODE, NOT BY SYSTEM, AND THAT IS DELIBERATE
 ----------------------------------------------------------
@@ -227,18 +226,16 @@ def load(path):
     return eobs_from_bundle(payload["bundle"]), plan
 
 
-# The flat fixture this writes is what `export_app_data.py` copies into the app
-# bundle and what `check-claims-parity.sh` runs both engines against. Those two
-# deliberately do not know FHIR exists: the parity script's whole job is to
-# compare the Python and TypeScript *checks*, and giving it a second thing to
-# disagree about would blunt it.
+# The flat fixture this writes is what `pipeline/tests/test_claims.py` runs the
+# checks against. It deliberately does not know FHIR exists, so a test failure
+# points at the checks rather than at the mapping.
 FLAT_FIXTURE = "data/samples/household_eobs.json"
 FHIR_FIXTURE = "data/samples/household_eobs_fhir.json"
 
 FLAT_COMMENT = (
     "GENERATED FILE -- edit data/samples/household_eobs_fhir.json instead, then "
     "run `python -m pipeline.claims.fhir`. This is the CARIN bundle flattened "
-    "into the shape pipeline/claims/eob.py and app/src/claims.ts both read; "
+    "into the shape pipeline/claims/eob.py reads; "
     "pipeline/tests/test_fhir.py fails if it drifts from its source. Synthetic "
     "only, no real patient data -- CLAUDE.md hard rule 1."
 )

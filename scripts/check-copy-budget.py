@@ -61,11 +61,10 @@ BUDGETS = [
     # words buying nothing. 140 was the old ceiling and it was hit exactly.
     ("src/screens/ScreenerScreen.tsx", 175, "the ranking, its verdict, the prompt, and the route rows"),
     ("src/screens/ScreenerFilters.tsx", 90, "four collapsed groups of controls"),
-    ("src/screens/HouseholdStep.tsx", 160, "the paid tier and its demo disclosures"),
+    ("src/screens/HouseholdStep.tsx", 40, "the household tab's heading around the year plan"),
     # Added 2026-09-06 with the household year plan. It gets its own line rather
-    # than being folded into HouseholdStep's, because the two sections behind
-    # the paywall answer different questions and one growing at the other's
-    # expense is exactly what a shared cap would hide.
+    # than being folded into HouseholdStep's, so the year plan cannot grow at
+    # the heading's expense, or the reverse, unseen.
     ("src/screens/YearPlanSection.tsx", 120, "several scans against one shared deductible"),
     ("src/screens/MethodStep.tsx", 95, "provenance; the FAQ answers live in marketing.ts"),
     ("src/marketing.ts", 330, "how-it-works and FAQ copy, all of it prose"),

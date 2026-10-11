@@ -1,7 +1,9 @@
 """Check explanations of benefit for discrepancies the EOB itself demonstrates.
 
-This is the paid tier: imaging happens every few years, claims arrive all year,
-so this is what makes Preclear a subscription rather than a one-time tool.
+Imaging happens every few years and claims arrive all year, so this was built
+as ongoing household monitoring. It is no longer shown in the app (removed
+2026-10-11 with the paid tier); the engine and its tests stay because the
+checks are sound and the synthetic fixtures exercise them.
 
 The discipline here is the same one `pipeline/policies/` follows, and it is the
 whole reason this is defensible. Every finding is either **arithmetic that does

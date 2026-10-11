@@ -17,7 +17,7 @@
  * This is presentation, not math. Every value here is read off a `Route` the
  * engine already produced — `kind`, `facilityName`, `unmetRequirements`, and the
  * estimate — and nothing is recomputed. That is why there is no parity script
- * beside this file while `costing`, `requirements` and `claims` all have one:
+ * beside this file while `costing`, `requirements` and `yearPlan` all have one:
  * there is no second implementation to drift from. If a function here ever
  * starts *deciding* something rather than describing it, that has stopped being
  * true and it belongs in `routes.ts`.

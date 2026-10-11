@@ -1,4 +1,4 @@
-"""Claims review — the subscription tier. Synthetic data only."""
+"""Claims review. Synthetic data only, and not shown in the app."""
 
 from pipeline.claims.eob import (
     Eob,

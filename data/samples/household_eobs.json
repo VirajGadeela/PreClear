@@ -1,5 +1,5 @@
 {
-  "_comment": "GENERATED FILE -- edit data/samples/household_eobs_fhir.json instead, then run `python -m pipeline.claims.fhir`. This is the CARIN bundle flattened into the shape pipeline/claims/eob.py and app/src/claims.ts both read; pipeline/tests/test_fhir.py fails if it drifts from its source. Synthetic only, no real patient data -- CLAUDE.md hard rule 1.",
+  "_comment": "GENERATED FILE -- edit data/samples/household_eobs_fhir.json instead, then run `python -m pipeline.claims.fhir`. This is the CARIN bundle flattened into the shape pipeline/claims/eob.py reads; pipeline/tests/test_fhir.py fails if it drifts from its source. Synthetic only, no real patient data -- CLAUDE.md hard rule 1.",
   "plan": {
     "deductible": 3000.0,
     "oop_max": 7500.0
