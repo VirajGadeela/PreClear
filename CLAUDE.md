@@ -4,7 +4,9 @@
 
 A mobile app that tells patients, before an elective MRI or CT, which route to that scan costs them the least **this year** — accounting for the fact that cash payments don't count toward the deductible.
 
-Built for RevenueCat Shipaton 2026, **Next Gen category** (student track: judged on a demo video + this open-source repo, no App Store publication required). Deadline: **September 30, 2026**.
+Entered in the **2026 Congressional App Challenge**: judged by a district panel, mostly through a short demo video, plus this public repo. Deadline: **October 26, 2026, 12:00 PM ET**. The core idea has to be obvious in the video's first 10 seconds — the cheapest way to get your MRI or CT this year, counting what actually hits your deductible.
+
+It was first built for Shipaton 2026 (Next Gen category, due September 30, 2026). That is over; see *Monetization* below for what changed.
 
 ## Market
 
@@ -346,22 +348,20 @@ usable answer and "this facility has no price" is a false one.
 - A "cheaper site" that costs the same is noise, so route 2 requires a real
   saving before it is offered.
 
-**Consumer flow: working** (Sep 8 milestone, early). `app/` is Expo SDK 57 with
-the RevenueCat SDK. Procedure and insurer, then sliders for deductible
-remaining, coinsurance, expected other care and documented treatment weeks, then
-four ranked routes that recompute live. Paywall gates everything past the top
-route.
+**Consumer flow: working** (Sep 8 milestone, early). `app/` is Expo SDK 57.
+Procedure and insurer, then sliders for deductible remaining, coinsurance,
+expected other care and documented treatment weeks, then four ranked routes
+that recompute live. Everything is free and nothing is gated (see
+*Monetization*).
 
 ### App mechanics (verified 2026-08-12)
 
 - **Expo SDK 57 needs Node 22.13+.** Node 18 fails `create-expo-app` with
-  `ReferenceError: File is not defined`. The working toolchain is Homebrew's
-  keg-only `node@22` (22.23.2), at `/opt/homebrew/opt/node@22/bin` — keg-only
-  means it is not symlinked into PATH, so `~/.zprofile` must prepend it, and a
-  terminal opened before that edit still has the wrong node. An earlier note
-  here recorded
-  `node@26`; **corrected 2026-08-13, that path has never existed on this
-  machine.** The default `node` is 18.16.1 from the nodejs.org pkg installer at
+  `ReferenceError: File is not defined`. The working toolchain is Node
+  22.23.2 under nvm, at `~/.nvm/versions/node/v22.23.2/bin`; prepend it to PATH
+  in any shell that runs Expo. **Corrected 2026-10-11:** this note used to say
+  Homebrew's keg-only `node@22` at `/opt/homebrew/opt/node@22/bin`, and before
+  that `node@26`; neither path exists on this machine. The default `node` is 18.16.1 from the nodejs.org pkg installer at
   `/usr/local/bin`, and it is the one that fails.
 - **Read `app/AGENTS.md` before touching app code** — it points at the exact
   versioned docs, and SDK 57 moved a lot.
@@ -388,48 +388,9 @@ route.
   changing an initial value does nothing to a running screen (terminate and
   relaunch the app), and `contentOffset` on a `ScrollView` only applies on
   mount, so scrolling a screen to its lower half needs the same relaunch.
-- **Prices come from RevenueCat, not from this repo** (wired 2026-09-02).
-  `loadPlans()` in `app/src/purchases.ts` reads the current offering and maps
-  each package to a `PlanOption`, using the store's own localised `priceString`.
-  The household page renders those and `purchasePlan(id)` buys the package the
-  member actually selected. Three things this fixed:
-  - The earlier flow called `RevenueCatUI.presentPaywall()`, so the member chose
-    a term on the household page and was then asked to choose again on
-    RevenueCat's sheet. The first selection was collected and discarded.
-  - `DEMO_PLANS` in `app/src/plan.ts` hardcoded `$69.99`, `$7.99` and a
-    `Save 27%` badge. The badge is now computed from the two real prices, so it
-    cannot claim a discount the store does not give.
-  - Hardcoded strings are wrong in every currency but one. `priceString` is the
-    store's, and this app never formats a headline price itself.
-
-  `presentPaywall()` is still exported and is now unused — kept as a way to test
-  a dashboard paywall config, and marked in its docstring as dead until called.
-- **Three states, not two, and the screen says which.** `storeReady` (a key
-  configured) and `storePlans !== null` (an offering actually read) are separate,
-  because a configured SDK that cannot reach an offering is a different failure
-  from one that was never configured. `livePricing` drives the on-screen strip;
-  when it is false the demo placeholders show and say so, and the CTA unlocks
-  locally. The entitlement stays two flags — `storeEntitled` and `demoEntitled`
-  — because merging them would make a demo unlock indistinguishable from a
-  purchase.
-- **Use a RevenueCat Test Store for development and for filming.** Key prefix
-  `test_`, set in `app/.env`. No App Store Connect, no Paid Applications
-  agreement, no sandbox tester accounts, and Next Gen requires no store release
-  at all. Needs `react-native-purchases` 9.5.4+; this repo is on 10.7.0. Test
-  subscriptions renew about every 5 minutes and auto-renew 5 times before
-  cancelling, which is useful for filming a renewal and misleading if left
-  running. The SDK refuses to run a *release* build configured with a test key,
-  so it cannot leak to production.
-- **`EXPO_PUBLIC_` variables are inlined at build time.** Editing `app/.env`
-  does nothing to a running bundler — restart with `npx expo start -c`. A key
-  that "isn't working" is usually a warm cache.
-- Subscription prices deliberately do **not** render through `<Money>`: hard
-  rule 5 exists because every dollar figure in this app is a projected medical
-  cost, and a subscription price is the exact amount charged, so labelling it
-  "estimate" would be false.
-- **`__DEV__` gates a visible Free/Household switch** at the bottom of the
-  screen. Both tiers have to be checkable without a store account, and a hidden
-  gesture is how one of them quietly stops being checked.
+- **Monetization was removed on 2026-10-11.** The purchase SDK, its key, the
+  store test configuration and the `__DEV__` Free/Household switch are gone,
+  and the app reads no environment variables. See *Monetization*.
 - **A `ScrollView` in a flex column needs `flex: 1` on the ScrollView itself**,
   not just on the parent. Without it the ScrollView takes its height from its
   content instead of from the space left over, overflows the screen and never
@@ -893,15 +854,15 @@ If Gate 1 fails, the input layer needs a different data source before writing mo
 
 Three categories. Don't confuse a deadline constraint with a product rule.
 
-### Shipaton-only constraints (temporary — time, not principle)
+### Competition-build constraints (temporary — time, not principle)
 
 - **One metro.** A metro is the area a patient would realistically drive within for a scan — city plus suburbs. Needs ~15+ imaging facilities for price comparison to be meaningful.
 - **Five payers max**, ideally one done properly for the demo. Each payer means a new MRF format to parse and a new set of policy documents.
 - **Deductible remaining is user-reported via slider.** No eligibility API.
-- **No claims monitoring engine** unless routing is genuinely finished by Sept 15.
+- **No claims monitoring in the app.** The engine in `pipeline/claims/` stays, tested, and is not shown.
 - Depth on one payer beats five half-working. This is the success bar.
 
-Also out of scope for Shipaton: provider-facing features, employer/B2B features, voice-agent cash-price collection.
+Also out of scope for this build: provider-facing features, employer/B2B features, voice-agent cash-price collection.
 
 ### Permanent rule — which procedures qualify
 
@@ -954,7 +915,7 @@ Expected_OOP(route) = f(
 
 A cheaper cash payment can be the *worse* financial decision for someone likely to hit their deductible this year, because it earns no deductible credit. No existing consumer tool does this math.
 
-For Shipaton, `deductible_remaining` is **user-reported via a slider.** No eligibility API. That's a beta-phase problem.
+For this build, `deductible_remaining` is **user-reported via a slider.** No eligibility API. That's a beta-phase problem.
 
 ## Data sources
 
@@ -965,50 +926,33 @@ For Shipaton, `deductible_remaining` is **user-reported via a slider.** No eligi
 | Payer requirements per CPT | Published payer medical policy documents | Manual review → structured rule objects |
 | Facility network participation | Derived from presence in a payer's own rate file | Free byproduct |
 
-Cash prices from freestanding centers (voice-agent phone calls) are **phase 2, not Shipaton.**
+Cash prices from freestanding centers (voice-agent phone calls) are **phase 2, not this build.**
 
-## Business model (decided 2026-08-13)
+## Monetization: intentionally removed (2026-10-11)
 
-Two consumer tiers now, one B2B layer much later.
+The app is free, with no account and no purchases. The Shipaton build carried a
+RevenueCat subscription (entitlement `preclear_household`) gating the household
+tab, because Shipaton required a working RevenueCat purchase. For the
+Congressional App Challenge it was removed entirely: both SDK packages,
+`purchases.ts`, `plan.ts`, the StoreKit configuration, the env key and the setup
+doc. Git history has all of it. This is the one place in the repo that names
+the SDK, on purpose.
 
-**Free — the one-time check.** Procedure in, four ranked routes out, with real
-numbers. This is the hook and the demo, and it is what the app does today.
+The sample claims review the subscription paid for left the app at the same
+time. Its engine and tests stay in `pipeline/claims/`, below.
 
-**Paid, ~$6–10/month, billed per household — ongoing claims monitoring.** The
-app keeps reading the bills and EOBs that arrive for everyone in the household
-all year, flagging billing errors, appealable denials and overcharges. The
-one-time comparison becomes a feature inside it. This is what makes it a
-subscription rather than a one-and-done tool: imaging happens every few years,
-claims arrive constantly.
-
-**B2B, later, explicitly not part of the initial build.** Free listing for
-imaging centres so nobody can pay to rank higher, plus a paid analytics or
-pricing-visibility product they choose to buy. Facilities paying for placement
-would be a referral payment, which is anti-kickback territory — criminal
-liability, and it needs a healthcare attorney before any facility pays a dollar.
-
-### Consequences already in the repo
-
-- **The entitlement is `preclear_household`, not `full_comparison`.** Named for
-  who it covers rather than what it unlocks, because it gates the comparison
-  today and is meant to gate monitoring later once the comparison goes free.
-  Renaming an entitlement after products exist in App Store Connect and
-  RevenueCat is painful, so it had to survive that shift.
-- **The product is an auto-renewable monthly subscription**, family shareable,
-  in the `Preclear Household` group — not the non-consumable it started as.
-- **The paywall is inverted, and monitoring is real.** All four routes are
-  free; `pipeline/claims/` reviews a household's EOBs behind the entitlement.
-  The claims are synthetic fixtures in `data/samples/household_eobs.json`, so
-  the tier demonstrates honestly without touching PHI.
+**B2B, if ever.** Facilities paying for placement would be a referral payment,
+which is anti-kickback territory — criminal liability, and it needs a
+healthcare attorney before any facility pays a dollar.
 
 ### Claims review mechanics (built 2026-08-13)
 
-- **`pipeline/claims/eob.py` is the source of truth, `app/src/claims.ts` mirrors
-  it, and `scripts/check-claims-parity.sh` guards the pair.** That is now three
-  duplicated engines with three parity scripts — costing, requirements, claims.
-  Drift here is the worst of the three: a wrong finding tells a member they are
-  owed money they are not, and sends them to argue with their insurer on a false
-  premise.
+- **`pipeline/claims/eob.py` is the engine, and since 2026-10-11 the only
+  copy.** The app carried a TypeScript port, guarded by a parity script, until
+  the claims screen left with the paid tier. If claims ever return to the app,
+  the port needs its parity script back: drift here is the worst kind, because
+  a wrong finding tells a member they are owed money they are not, and sends
+  them to argue with their insurer on a false premise.
 - **Every finding is arithmetic that fails against the EOB's own numbers, or a
   fact the document states about itself.** Nothing predicts whether an appeal
   succeeds. The denial finding is deliberately unpriced — attaching a number
@@ -1020,13 +964,10 @@ liability, and it needs a healthcare attorney before any facility pays a dollar.
   and overstating that is exactly the dishonesty this product exists to correct.
   The bug appeared twice — first in the arithmetic, then reintroduced by the
   layout listing one claim as two cards.
-- `export_app_data.py` copies the EOB fixture into `app/assets/`, so
-  `data/samples/` stays the single source and the app cannot drift from what the
-  parity script tests.
 
 ### Claims data acquisition (verified 2026-08-13)
 
-The paid tier does not require scraping payer portals, and this matters — it is
+Claims monitoring does not require scraping payer portals, and this matters — it is
 the same thesis as the rest of the product.
 
 - Under the CMS Interoperability rules, payers must expose **claims and
@@ -1046,7 +987,7 @@ the same thesis as the rest of the product.
 Claims monitoring means holding **real EOBs for real households**, which is a
 categorically different product from what exists now. Everything built so far
 avoids PHI entirely: inputs are user-reported, nothing is stored, no image is
-captured. Hard rule 1 below is scoped to the Shipaton build, but going past it
+captured. Hard rule 1 below is scoped to this build, but going past it
 means a backend that stores PHI, breach obligations and a BAA posture. Choose it
 deliberately; do not drift into it.
 
@@ -1077,35 +1018,61 @@ preclear/
 │   ├── policies/          # payer requirement rule objects
 │   ├── costing/           # the deductible-aware engine
 │   └── tests/
-├── app/                   # mobile app + RevenueCat SDK
-│   └── .env.example       # the app reads app/.env, not the root one
+├── app/                   # Expo mobile app; reads no env vars
 └── data/
     └── samples/           # synthetic fixtures only — safe to commit
 ```
 
 Never commit anything under `data/` except `data/samples/`. MRF files are gigabytes.
 
-**`LICENSE` is a submission requirement, not housekeeping.** The Next Gen rules
-ask for a public repository with a *visible* license file, so it is checked
+**`LICENSE` is a submission requirement, not housekeeping.** The Shipaton rules
+asked for a public repository with a *visible* license file, and judges still
+read the repo, so it is checked
 rather than assumed: MIT, at the repository root, tracked in git, and linked
 from the README. Verify with `git ls-files LICENSE` — a file that exists on
 disk but was never added proves nothing to a judge reading GitHub.
 
-**There are two `.env.example` files and that is deliberate.** Expo treats
-`app/` as its project root and reads `app/.env`; the root one serves the
-pipeline. Putting the RevenueCat key only in the root file is why it can look
-configured and still be missing.
+**There is one `.env.example`, at the root, for the pipeline.** The app reads no
+environment variables since monetization was removed, so `app/.env` and
+`app/.env.example` went with it.
+
+## Build, run, verify
+
+Node 22 (see App mechanics). From `app/`:
+
+```bash
+npm install
+npx expo start --web --port 8081   # browser; screenshots at 390px wide
+npx expo run:ios                   # dev client; rebuild after any native module change
+```
+
+From the repo root, after any change (pytest runs under
+`/opt/anaconda3/bin/python` on this machine):
+
+```bash
+(cd app && npx tsc --noEmit)
+python -m pytest -q pipeline/tests
+./scripts/check-math-parity.sh
+./scripts/check-requirements-parity.sh
+./scripts/check-year-plan-parity.sh
+python scripts/check-contrast.py
+python scripts/check-copy-budget.py
+(cd app && npx expo export --platform ios)   # catches resolution errors tsc misses
+```
 
 ## Timeline
 
 | By | Milestone |
 |---|---|
-| Aug 18 | Both gates passed. Repo scaffolded, RevenueCat SDK installed. |
-| Sep 1 | Routing engine end-to-end: MRF ingestion → cost math → 4 ranked routes. One payer, real data. |
-| Sep 8 | Consumer flow: card capture, procedure input, deductible slider, results. Paywall wired, sandbox purchases verified. |
-| Sep 15 | Decision point: routing genuinely done? → optionally add thin claims monitoring. Not done? → polish routing. |
-| Sep 25 | Feature freeze. README, code cleanup, license. |
-| Sep 30 | Video + Devpost submission, 11:45pm PT. |
+| Oct 11 | Monetization removed; claims review out of the app. |
+| Oct 13 | Baseline screenshots; results direction confirmed on real screens. |
+| Oct 14 | Tokens and DESIGN.md for the new direction. |
+| Oct 18 | Screen-by-screen refactor done. |
+| Oct 19 | Final verification: checks, Dynamic Type, clean iOS build. |
+| Oct 25 | Demo video recorded, submission prepared. |
+| Oct 26 | **Deadline, 12:00 PM ET.** |
+
+The Shipaton milestones (Aug 18 – Sep 30) are in git history.
 
 Commit daily, even small progress. Judges see commit history — a repo with four commits on Sept 29 reads badly.
 
@@ -1114,8 +1081,7 @@ Commit daily, even small progress. Judges see commit history — a repo with fou
 - One real payer's MRI/CT negotiated rates for real, named facilities in the target metro
 - At least one order failing a specific, real, **citable** payer requirement
 - Deductible-aware cost comparison rendering end-to-end for a sample patient
-- RevenueCat SDK powering at least one purchase (sandbox is fine for Next Gen)
-- Public repo with a strong README, and a demo video ≤2 minutes
+- Public repo with a strong README, and a short demo video whose first 10 seconds carry the core idea
 
 ## How to work with me on this
 

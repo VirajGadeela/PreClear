@@ -126,13 +126,8 @@ python3 -m unittest discover -s pipeline/tests -t .
 ```bash
 python3 -m pipeline.export_app_data      # refresh app/assets/preclear-data.json
 cd app && npm install
-cp ../.env.example .env                  # add your RevenueCat public SDK key
 npx expo run:ios
 ```
-
-The household plan is gated behind the `preclear_household` entitlement. Setting
-that up — and testing it on the simulator without an App Store Connect product —
-is described in [app/REVENUECAT.md](app/REVENUECAT.md).
 
 The deductible math is implemented twice — `pipeline/costing/oop.py` is the
 source of truth and `app/src/costing.ts` is a port, so the sliders recompute
@@ -143,29 +138,13 @@ either:
 ./scripts/check-math-parity.sh
 ```
 
-The requirement checks and the claims checks are duplicated the same way, and
-are guarded the same way:
+The requirement checks and the household year plan are duplicated the same
+way, and are guarded the same way:
 
 ```bash
 ./scripts/check-requirements-parity.sh
-./scripts/check-claims-parity.sh
+./scripts/check-year-plan-parity.sh
 ```
-
-## Tiers
-
-**Free — the one-time check.** All four routes, with reasoning. A scan happens
-every few years, so this is the hook rather than the business.
-
-**Paid — the household plan.** Every bill and explanation of benefits that
-arrives for the household, checked against its own numbers all year: balance
-bills above the in-network contract, amounts that do not reconcile against their
-own deductible and coinsurance lines, the same service billed twice, denials and
-the appeal rights attached to them. Claims arrive constantly; imaging does not.
-
-Every finding is arithmetic that fails against the EOB's own figures, or a fact
-the document states about itself. Nothing predicts whether an appeal will
-succeed — the denial finding carries no dollar amount for exactly that reason.
-The claims shipped in this repo are synthetic.
 
 ## Scope
 
@@ -182,7 +161,7 @@ skipped.
 
 ## Status
 
-Built for RevenueCat Shipaton 2026, Next Gen category. Indianapolis, IN;
+Built for the 2026 Congressional App Challenge. Indianapolis, IN;
 Anthem Blue Cross Blue Shield primary. Every dollar figure is an estimate drawn
 from files hospitals and payers publish, and is labeled as such wherever it is
 shown. Patient data is synthetic throughout — no real patient data appears in
