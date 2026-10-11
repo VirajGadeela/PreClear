@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(npm test *)",
+      "Bash(npm run test *)",
+      "Bash(npx jest *)",
+      "Bash(pytest *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git checkout -- *)",
+      "Bash(git clean -fd app/*)",
+      "Bash(git branch *)",
+      "Bash(curl -s http://localhost:8081*)",
+      "Edit(app/**)",
+      "Write(app/**)",
+      "Edit(README.md)",
+      "Edit(DESIGN.md)",
+      "Write(.claude/ui-loop/**)",
+      "Edit(.claude/ui-loop/**)"
+    ],
+    "deny": [
+      "Bash(git push *)",
+      "Bash(git reset --hard *)",
+      "Bash(git checkout main*)",
+      "Bash(git merge *)",
+      "Bash(rm -rf *)",
+      "Edit(pipeline/**)",
+      "Write(pipeline/**)",
+      "Edit(.claude/agents/**)",
+      "Edit(.claude/skills/**)",
+      "Edit(.claude/settings.json)"
+    ]
+  }
+}

@@ -34,3 +34,6 @@ dist/
 *.ipa
 *.apk
 .DS_Store
+
+# Agent screenshots — local only.
+.claude/screenshots/
