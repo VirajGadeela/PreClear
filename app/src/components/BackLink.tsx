@@ -30,7 +30,7 @@ export function BackLink({ label, onPress }: { label: string; onPress: () => voi
       onPress={onPress}
       style={({ pressed }) => [styles.backLink, pressed && styles.backLinkPressed]}
     >
-      <Ionicons name="chevron-back" size={size.icon.md} color={c.inkMuted} />
+      <Ionicons name="chevron-back" size={size.icon.md} color={c.slate} />
       <Text style={styles.backLinkText}>{label}</Text>
     </Pressable>
   );
@@ -45,5 +45,5 @@ const sheets = themed((c) => ({
     minHeight: TAP_TARGET,
   },
   backLinkPressed: { opacity: 0.6 },
-  backLinkText: { ...type.label, color: c.inkMuted },
+  backLinkText: { ...type.label, color: c.slate },
 }));

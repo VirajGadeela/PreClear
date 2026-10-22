@@ -536,7 +536,7 @@ export function ScreenerScreen({
         onPress={onMethod}
         style={({ pressed }) => [shared.restore, pressed && shared.restorePressed]}
       >
-        <Text style={shared.restoreText}>Where these numbers come from</Text>
+        <Text style={[shared.restoreText, styles.sourcesLinkText]}>Where these numbers come from</Text>
       </Pressable>
       )}
 
@@ -600,7 +600,7 @@ const sheets = themed((c) => ({
   // a gold tint here and a gold disc behind the rank. The 1.5pt gold left
   // border that used to mark it measured 1.69:1 and barely registered; with
   // the disc carrying the mark it was decoration, so it went.
-  rowRecommended: { backgroundColor: c.accentSoft },
+  rowRecommended: { backgroundColor: c.accentSoft, borderRadius: radius.md },
   // `sm`, not `md`: the rank sits in a 24pt slot now (route 1's is a disc),
   // and the wider gap on top of it narrowed the reason by a line.
   rowHead: {
@@ -659,9 +659,12 @@ const sheets = themed((c) => ({
     marginTop: space.lg,
     minHeight: TAP_TARGET,
     borderRadius: radius.md,
-    borderWidth: stroke.hairline,
+    borderWidth: stroke.control,
     borderColor: c.border,
     paddingHorizontal: space.md,
   },
-  shareText: { ...type.body, fontWeight: '600', color: c.ink },
+  shareText: { ...type.bodyStrong, color: c.ink },
+  // Links are navy (DESIGN.md); the shared style is also used by another
+  // screen, so the colour is overridden here rather than changed there.
+  sourcesLinkText: { color: c.slate },
 }));

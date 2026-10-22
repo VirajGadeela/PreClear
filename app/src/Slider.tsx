@@ -264,6 +264,7 @@ const sheets = themed((c) => ({
   value: {
     ...typography.label,
     color: c.ink,
+    fontVariant: ['tabular-nums'],
     // No fontWeight. `label` is Manrope-SemiBold, a static weight file, so
     // fontWeight is not read for this role (see `font` in theme.ts) — the
     // '700' that used to sit here never rendered.

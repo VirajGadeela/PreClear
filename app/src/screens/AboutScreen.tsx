@@ -349,7 +349,7 @@ const sheets = themed((c) => ({
   // The divider sits between the two scenarios because the inversion between
   // them is the point. It separates two readings of one case, not two items.
   proofRowDivided: { borderTopWidth: stroke.hairline, borderTopColor: c.line },
-  proofLine: { ...type.caption, color: c.ink, marginBottom: space.xs },
+  proofLine: { ...type.body, color: c.ink, marginBottom: space.xs },
   proofSource: {
     ...type.caption,
     color: c.inkMuted,

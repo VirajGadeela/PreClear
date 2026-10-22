@@ -35,5 +35,7 @@ dist/
 *.apk
 .DS_Store
 
-# Agent screenshots — local only.
+# Agent screenshots and memory, and the UI loop's log and proposals — local only.
 .claude/screenshots/
+.claude/ui-loop/
+.claude/agent-memory-local/
