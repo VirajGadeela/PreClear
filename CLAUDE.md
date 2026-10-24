@@ -843,6 +843,53 @@ cover. Only one file needed hand resolution and the reason is worth knowing.
   asset the existing dev client loads. This is the rare dependency that does
   not cost a rebuild.
 
+### Seven more scans, prices only (2026-10-24)
+
+`182b292` added brain, shoulder and abdomen MRI and knee, lower back, shoulder
+and abdomen CT, all without contrast (70551, 73221, 74181, 73700, 72131, 73200,
+74150), so the app's MRI/CT × body-part picker has data behind every cell. The
+CT × brain cell is the existing head CT, 70450.
+
+- **Prices only, no requirements.** No payer rules were extracted for the new
+  codes, so they carry no indications and the order check reports "no
+  requirement recorded". Route 3 exists only for 73721, 72148 and 70450. Never
+  describe the order check as covering all ten scans.
+- **The price files are from two dates.** The original three are from
+  2026-08-11 to 08-13; the new seven from 2026-10-24. The originals were
+  deliberately not re-extracted the day before the video, because the demo's
+  Franciscan figures come from them.
+- **Franciscan Orthopedic Hospital Carmel is missing from the new codes.** Its
+  file URL returns 404, and so does the replacement listed in Franciscan's own
+  `cms-hpt.txt` (it hangs with a browser user agent).
+- **Limited studies are skipped when prices load** (`is_limited_study` in
+  `pipeline/route.py`). IU Health and Ascension St. Vincent Carmel publish
+  "MRI BRAIN ... LIMITED/LTD" rows under 70551 at half the full study, and the
+  lowest-cash rule picked Ascension's $291 limited exam over its $582 full one.
+  The original three codes have no such rows.
+- **Labels follow 73721's convention**, which is any lower-extremity joint shown
+  as "Knee MRI". `detail` carries each code's real scope — "Knee CT" is 73700,
+  CT of the lower extremity. Show the detail line.
+- **Abdomen CT is the abdomen alone.** Most abdominal CT is ordered with the
+  pelvis (74176), which is already extracted in `data/gate1/indy_expansion.csv`
+  and would be one more `PROCEDURES` entry.
+- **A full export now adds cash-only facilities the shipped bundle had been
+  missing**, per `085dcf2`. Verified before regenerating: no in-network rate and
+  no cheapest-cash result changed for the original three codes.
+
+Two problems found on the way and deliberately left for after the video:
+
+- **The "where is it scheduled" picker lists cash-only facilities.** Picking one
+  finds no in-network rate, so `buildRoutes` falls back to the median facility
+  and the screen calls that the member's order — the side-door bug in *The app
+  was naming a facility nobody gave it*. The rebuild added more such entries.
+  The picker should list only facilities with `plans.length > 0`.
+- **Routable rates include rows that are not an outpatient patient's price**:
+  96 inpatient rows and modifier rows for professional-only (26),
+  technical-only (TC), bilateral (50) and emergency (ET) billing. Nothing in the
+  pipeline reads `setting` or `modifiers`. The demo's Franciscan rows are clean
+  (setting "both", no modifier); other facilities' medians may not be. Fixing it
+  moves prices, so it is not a night-before-the-video change.
+
 Gate definitions, for the record:
 
 - **Gate 1 — MRF usability.** Open one target payer's Transparency in Coverage file, extract negotiated rates for CPT 73721 (knee MRI) and 70450 (head CT) at 10 real facilities in the target metro. These files are gigabytes and frequently malformed — stream-parse, don't load. *Pass = 10 real facility prices in a spreadsheet.*
