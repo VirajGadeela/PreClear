@@ -28,8 +28,6 @@
       "Bash(git checkout main*)",
       "Bash(git merge *)",
       "Bash(rm -rf *)",
-      "Edit(pipeline/**)",
-      "Write(pipeline/**)",
       "Edit(.claude/agents/**)",
       "Edit(.claude/skills/**)",
       "Edit(.claude/settings.json)"
