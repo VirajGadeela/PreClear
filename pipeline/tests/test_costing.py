@@ -361,3 +361,35 @@ class TestNoiseSuppression(unittest.TestCase):
             prices, "anthem", PlanBenefits(2000, 0.2, 6000), ordered_facility_key="a"
         )
         self.assertNotIn(IN_NETWORK_CHEAPER_SITE, {r.kind for r in routes})
+
+
+class TestLoadPrices(unittest.TestCase):
+    def test_limited_study_is_not_the_price_of_the_full_scan(self):
+        # Mirrors Ascension St. Vincent Carmel's 70551 rows: the full brain MRI
+        # at $582 cash and a limited one at $291 under the same code.
+        import csv
+        import os
+        import tempfile
+
+        from pipeline.hospital.extract_charges import OUTPUT_COLUMNS
+        from pipeline.route import load_prices
+
+        rows = [
+            {"description": "MRI BRAIN WO/C", "cash_price": "582.00"},
+            {"description": "MRI BRAIN WO/C LIMITED", "cash_price": "291.00"},
+            {"description": "MRI BRAIN WO CNT LTD OP", "cash_price": "291.00"},
+        ]
+        with tempfile.TemporaryDirectory() as folder:
+            path = os.path.join(folder, "prices.csv")
+            with open(path, "w", newline="", encoding="utf-8") as handle:
+                writer = csv.DictWriter(handle, fieldnames=OUTPUT_COLUMNS)
+                writer.writeheader()
+                for row in rows:
+                    writer.writerow({
+                        "facility_key": "ascension-st-vincent-carmel",
+                        "facility_name": "Ascension St. Vincent Carmel",
+                        "cpt": "70551",
+                        **row,
+                    })
+            prices = load_prices([path], "70551")
+        self.assertEqual([p.cash_price for p in prices], [582.0])

@@ -18,6 +18,7 @@ import csv
 import glob
 import json
 import os
+import re
 import sys
 
 from pipeline.costing.oop import PlanBenefits, money
@@ -50,6 +51,18 @@ def _number(value):
         return None
 
 
+# A limited study is a shorter exam billed under the same CPT at a lower price.
+# IU Health and Ascension St. Vincent Carmel both publish "MRI BRAIN ... LTD"
+# rows under 70551 at about half the full study, and the lowest cash price at
+# Ascension Carmel was one of them. Quoting it as the price of the scan a
+# patient was ordered is the same mistake as quoting a carve-out.
+_LIMITED_STUDY = re.compile(r"\b(LIMITED|LTD)\b", re.IGNORECASE)
+
+
+def is_limited_study(description):
+    return bool(_LIMITED_STUDY.search(description or ""))
+
+
 def load_prices(paths, cpt):
     """Read facility prices for one CPT from the extractor's CSV output."""
     prices = []
@@ -57,6 +70,8 @@ def load_prices(paths, cpt):
         with open(path, newline="", encoding="utf-8") as handle:
             for row in csv.DictReader(handle):
                 if row.get("cpt") != cpt:
+                    continue
+                if is_limited_study(row.get("description")):
                     continue
                 prices.append(
                     FacilityPrice(

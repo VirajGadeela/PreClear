@@ -108,6 +108,48 @@ PROCEDURES = {
             {"key": "headache", "label": "Headache"},
         ],
     },
+    # Prices only. No payer requirements have been extracted for these codes, so
+    # they carry no indications: the app asks for a fact only when a check reads
+    # it, and the order check reports that nothing is recorded rather than that
+    # everything is met. Labels follow 73721, which is any lower-extremity joint
+    # and is shown as "Knee MRI"; `detail` carries the code's actual scope.
+    "70551": {
+        "label": "Brain MRI",
+        "detail": "MRI, brain, without contrast",
+        "indications": [],
+    },
+    "73221": {
+        "label": "Shoulder MRI",
+        "detail": "MRI, upper extremity joint, without contrast",
+        "indications": [],
+    },
+    "74181": {
+        "label": "Abdomen MRI",
+        "detail": "MRI, abdomen, without contrast",
+        "indications": [],
+    },
+    "73700": {
+        "label": "Knee CT",
+        "detail": "CT, lower extremity, without contrast",
+        "indications": [],
+    },
+    "72131": {
+        "label": "Lower back CT",
+        "detail": "CT, lumbar spine, without contrast",
+        "indications": [],
+    },
+    "73200": {
+        "label": "Shoulder CT",
+        "detail": "CT, upper extremity, without contrast",
+        "indications": [],
+    },
+    # Abdomen alone. Most abdominal CT is ordered with the pelvis (74176), which
+    # is a different code at a different price; the detail line says which.
+    "74150": {
+        "label": "Abdomen CT",
+        "detail": "CT, abdomen, without contrast",
+        "indications": [],
+    },
 }
 
 PAYERS = ("anthem", "unitedhealthcare", "aetna", "cigna")
