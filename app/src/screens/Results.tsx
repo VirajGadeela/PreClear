@@ -100,14 +100,14 @@ export function AnswerScreen({ estimate, state, saved, onToggleSave, onViewSaved
               onPress={onSources}
               hitSlop={6}
               style={({ pressed }) => [
-                // 16% white, as on the close and save buttons: white text on it
-                // measures 4.53:1. At 20% it fell to 4.15:1, under the 4.5:1 floor.
-                { minHeight: 32, paddingLeft: 11, paddingRight: 8, borderRadius: 16, flexDirection: 'row', alignItems: 'center', gap: 1, backgroundColor: 'rgba(255,255,255,0.16)' },
+                // Solid white with the deep blue, as on the saved state of the
+                // save button and the saving pill above: 9.03:1.
+                { minHeight: 32, paddingLeft: 11, paddingRight: 8, borderRadius: 16, flexDirection: 'row', alignItems: 'center', gap: 1, backgroundColor: color.surface },
                 pressed && { opacity: 0.7 },
               ]}
             >
-              <T style={[type.caption, white, { fontFamily: font.semibold }]}>Sources</T>
-              <Ionicons name="chevron-forward" size={14} color={color.onAccent} />
+              <T style={[type.caption, { fontFamily: font.semibold, color: color.accentDeep }]}>Sources</T>
+              <Ionicons name="chevron-forward" size={14} color={color.accentDeep} />
             </Pressable>
           </View>
         </>
