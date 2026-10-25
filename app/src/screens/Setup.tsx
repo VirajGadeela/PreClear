@@ -298,7 +298,7 @@ export function DeductibleBelow({ state, onEditTotal }: { state: State; onEditTo
           because a deductible is the member's own figure, not a constant. */}
       <Pressable accessibilityRole="button" accessibilityHint="Change your yearly deductible" onPress={onEditTotal} hitSlop={10}>
         <T style={[type.bodyMedium, sub]}>
-          of <T style={{ textDecorationLine: 'underline' }}>{dollars(state.deductible)}</T> · {state.carrier}
+          of <T style={{ color: color.inkMuted, textDecorationLine: 'underline' }}>{dollars(state.deductible)}</T> · {state.carrier}
         </T>
       </Pressable>
     </>

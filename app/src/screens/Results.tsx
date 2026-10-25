@@ -93,7 +93,7 @@ export function AnswerScreen({ estimate, state, saved, onToggleSave, onViewSaved
           <Button label="Why this route?" variant="outline" onPress={onWhy} />
           <Pressable accessibilityRole="link" onPress={onSources} style={{ minHeight: 32, alignItems: 'center', justifyContent: 'center' }}>
             <T style={[type.caption, white, { textAlign: 'center' }]}>
-              Estimate based on your plan. Not a quote. <T style={{ textDecorationLine: 'underline', fontFamily: font.semibold }}>Sources</T>
+              Estimate based on your plan. Not a quote. <T style={{ color: color.onAccent, textDecorationLine: 'underline', fontFamily: font.semibold }}>Sources</T>
             </T>
           </Pressable>
         </>
