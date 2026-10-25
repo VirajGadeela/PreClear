@@ -91,11 +91,25 @@ export function AnswerScreen({ estimate, state, saved, onToggleSave, onViewSaved
         <>
           <Button label="See all routes" variant="light" onPress={onRoutes} />
           <Button label="Why this route?" variant="outline" onPress={onWhy} />
-          <Pressable accessibilityRole="link" onPress={onSources} style={{ minHeight: 32, alignItems: 'center', justifyContent: 'center' }}>
-            <T style={[type.caption, white, { textAlign: 'center' }]}>
-              Estimate based on your plan. Not a quote. <T style={{ color: color.onAccent, textDecorationLine: 'underline', fontFamily: font.semibold }}>Sources</T>
-            </T>
-          </Pressable>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <T style={[type.caption, white, { fontSize: 12, lineHeight: 16, flexShrink: 1 }]}>Estimate based on your plan. Not a quote.</T>
+            {/* A pill in the same translucent white as the close and save
+                buttons above, so it reads as a control rather than a word. */}
+            <Pressable
+              accessibilityRole="link"
+              onPress={onSources}
+              hitSlop={6}
+              style={({ pressed }) => [
+                // 16% white, as on the close and save buttons: white text on it
+                // measures 4.53:1. At 20% it fell to 4.15:1, under the 4.5:1 floor.
+                { minHeight: 32, paddingLeft: 11, paddingRight: 8, borderRadius: 16, flexDirection: 'row', alignItems: 'center', gap: 1, backgroundColor: 'rgba(255,255,255,0.16)' },
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <T style={[type.caption, white, { fontFamily: font.semibold }]}>Sources</T>
+              <Ionicons name="chevron-forward" size={14} color={color.onAccent} />
+            </Pressable>
+          </View>
         </>
       }
     >
