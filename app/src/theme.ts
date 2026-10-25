@@ -1,460 +1,154 @@
 /**
- * Design tokens.
+ * Design tokens, taken from the Claude Design walkthrough (2026-10-25).
  *
- * One thing this palette still avoids: red/green for expensive/cheap. The
- * entire finding of this product is that the cheaper payment today can be the
- * worse decision for the year, so colouring the low number green would assert
- * the opposite of what the math says. Ranking is carried by position, by the
- * size of the number, and by a single accent reserved for the recommended
- * route. Never by hue.
+ * The walkthrough is Geist on a warm off-white, with one blue used two ways: as
+ * the ground of the two "answer" screens (the welcome story and the best
+ * route), and as the selected state everywhere else. Hue still never encodes
+ * cheap or expensive. The recommended route is marked by position, by size and
+ * by a "Best" tag, never by a green number, because the whole finding of this
+ * product is that the cheaper payment today can be the worse one for the year.
  *
- * Revised 2026-10-10 for the Congressional App Challenge: Indiana blue and
- * gold. The 2026-08-25 pass chose blue and off-white at explicit request and
- * kept to a muted steel so it would not read as generic "SaaS blue"; it was
- * sensible and forgettable. Navy keeps that blue-and-off-white base and moves
- * all structure onto it, and gold becomes the one accent — a warm "top pick"
- * marker on the recommended route, and the state colours of the district
- * panel judging the entry. Gold cannot be text (1.69:1 on white), which is
- * what forced links off the accent and onto navy; see `palettes.light`.
+ * The design wrote colours in OKLCH. React Native does not parse OKLCH, so each
+ * one is converted to the nearest sRGB hex. Two of the design's greys failed
+ * WCAG and were darkened rather than kept:
  *
- * Every value below is checked against WCAG rather than chosen by eye. The
- * ratios in the comments are measured, and any change to a hex here should be
- * re-measured before it lands.
+ *   - `#777` captions measured 4.10:1 on the canvas, under the 4.5:1 that
+ *     13-15px text needs. `inkSubtle` is `#666`, 5.26:1.
+ *   - `#CFCFCA` radio outlines measured 1.56:1 on white. That outline is the
+ *     only thing showing an unselected option exists, so it is held to the
+ *     3:1 control floor. `border` is `#8A8A85`, 3.47:1 on white.
+ *
+ * Every ratio in a comment is measured by `scripts/check-contrast.py`, which
+ * parses this file. Change a hex, run the script.
  */
 
-export type Scheme = 'light' | 'dark';
-
-/**
- * The role names every stylesheet is written against.
- *
- * A palette is a set of *roles*, not a set of colours, and that is what makes a
- * second scheme possible at all. Nothing below is named for what it looks like
- * — there is no `grey900` or `blue500` — so `surface` can sit above `canvas` in
- * light and below it in dark while every call site stays the same sentence:
- * "cards lift off the canvas."
- */
 export type Palette = {
-  ink: string;
-  inkMuted: string;
+  /** Page ground. */
   canvas: string;
+  /** Cards and rows that sit on the canvas. */
   surface: string;
-  line: string;
-  accent: string;
-  accentInk: string;
-  accentSoft: string;
-  accentText: string;
+  /** Body text and the primary button. 18.9:1 on surface, 17.3:1 on canvas. */
+  ink: string;
+  /** Secondary text. 7.46:1 on surface, 6.83:1 on canvas. */
+  inkMuted: string;
+  /** Captions. 5.74:1 on surface, 5.26:1 on canvas. */
+  inkSubtle: string;
+  /** The grey "not typed yet" figure on a keypad screen. Large text only. 3.02:1 on canvas. */
+  placeholder: string;
+  /** Unselected radio and checkbox outlines. 3.47:1 on surface, 3.18:1 on canvas. */
   border: string;
-  slate: string;
-  slateInk: string;
-  flag: string;
-  flagBg: string;
+  /** Hairline dividers. Decorative and must stay under 1.5:1. 1.15:1 on surface. */
+  line: string;
+  /** Unfilled bars, the segmented control, pressed keys. Decorative. */
+  track: string;
+  /** Inactive progress segments. Decorative. */
+  trackStrong: string;
+  /** The blue. A fill, and also text on light grounds. 6.32:1 on surface. */
+  accent: string;
+  /** Accent text on the tint, and small accent text. 7.76:1 on accentTint. */
+  accentDeep: string;
+  /** Selected tiles and icon wells. */
+  accentTint: string;
+  /** Text on the accent fill. 6.32:1 on accent. */
+  onAccent: string;
+  /** Secondary text on the accent fill. 5.14:1 on accent. */
+  onAccentMuted: string;
 };
 
-/**
- * Two schemes. Only colour varies between them — `space`, `radius`, `stroke`,
- * `type`, `TAP_TARGET`, `size` and `textScale` are invariant, which is why
- * `themed()` in `styles/themed.ts` builds each stylesheet twice and nothing
- * else in this file is duplicated.
- *
- * Every ratio in the comments below is measured by `scripts/check-contrast.py`,
- * which asserts them on both schemes. That script is the source of truth: if a
- * comment and the script disagree, the comment is stale. A few of these were —
- * they were written by hand before anything checked them, and the drift was
- * small (17.6 for ink on surface, actually 17.3) but it is exactly the drift
- * that makes a documented ratio worthless. Change a hex, run the script.
- */
-export const palettes: Record<Scheme, Palette> = {
-  /**
-   * Indiana blue and gold, on a faintly cool off-white.
-   *
-   * Navy carries structure — text, buttons, selected controls, links. Gold is
-   * the one accent and it means one thing: the recommended route (and the
-   * cover's single CTA, which leads to it). Hue still never encodes cheap or
-   * expensive; DESIGN.md §0 stands.
-   *
-   * Gold is a FILL, never text. On white it measures 1.69:1, so anything set on
-   * it is `accentInk` (navy, 8.89:1) and any accent-family text is
-   * `accentText`, a bronze. The gold is never the only cue for anything: the
-   * recommended card also has its position, its rank and its tint, and the CTA
-   * is identified by its label.
-   */
+export const palettes: { light: Palette } = {
   light: {
-    ink: '#13203A',        // navy-black text, 14.98:1 on canvas, 16.21:1 on surface
-    inkMuted: '#4E5A70',   // secondary text, 6.43:1 on canvas, 6.95:1 on surface
-    canvas: '#F4F6FA',     // off-white with a faint cool tint, not stark white
-    surface: '#FFFFFF',    // cards lift off the canvas
-    line: '#DCE1EA',       // decorative hairlines and card edges only, 1.21:1
-
-    // The recommended route's marker and fill, and the cover CTA. Fill only.
-    accent: '#F2B632',     // gold; 1.69:1 on canvas, so never text
-    accentInk: '#13203A',  // navy on gold, 8.89:1
-    accentSoft: '#FDF1D0', // pale gold tint for the recommended card
-
-    // Gold in text form: accent-toned figures and small text on the
-    // recommended card. 5.14:1 on accentSoft, 5.35:1 canvas, 5.78:1 surface.
-    // Warmer than the first try (#7A4A00), which read as brown, not gold.
-    accentText: '#8F5A00',
-
-    // Control outlines — chips, text inputs, the slider track. WCAG 1.4.11
-    // wants 3:1 for an interactive boundary, and `line` is invisible by design.
-    // 3.39:1 on canvas, 3.67:1 on surface.
-    border: '#7B869A',
-
-    // Indiana navy. Primary buttons, selected chips, step markers, and link
-    // text — 10.12:1 on canvas, so it clears 4.5:1 as small text. Links used
-    // to wear the accent, which taught it to mean "tappable" as well as
-    // "recommended"; a gold that cannot be text ended that.
-    slate: '#1F3B70',
-    slateInk: '#FFFFFF',   // on navy, 10.95:1
-
-    // Data-quality limits. A cool neutral, not the olive it was: olive sat too
-    // close to the bronze `accentText`, and a limit of the data is neither a
-    // recommendation nor an alarm. 5.63:1 on flagBg, 6.22:1 on canvas.
-    flag: '#555C69',
-    flagBg: '#E8EBF0',
-  },
-
-  /**
-   * Dark is a role inversion, not a second design.
-   *
-   * Three things constrain it beyond the ratios:
-   *
-   *   - `surface` sits *lighter* than `canvas`, the reverse of light. DESIGN.md
-   *     §6 bans shadow, so a value step plus a hairline is the only lift
-   *     mechanism this system has, and a card that went darker than its ground
-   *     would read as a hole rather than as a card.
-   *   - `line` stays near-invisible (1.15:1 on surface). If it were legible it
-   *     would become a second `border`, and the whole point of keeping the two
-   *     apart is that one divides and one is the boundary of something a finger
-   *     operates.
-   *   - `slate` inverts from a dark fill to a light one, which is why `slateInk`
-   *     exists. Four call sites were using `surface` to mean "text on a slate
-   *     fill" — the primary button's label, a selected chip's label and its
-   *     checkmark, the dev tier switch. That pairing does *not* break here, and
-   *     it is worth being exact about why not: `surface` and `slate` invert
-   *     together, so the label lands at 10.16:1 rather than at anything close
-   *     to a failure. The problem is that nothing said they had to invert
-   *     together. Two unrelated roles were tied by a coincidence of value, and
-   *     lightening `surface` to lift cards further off the canvas would have
-   *     quietly walked the button's label toward its own fill with no test and
-   *     no name to catch it. `slateInk` is that name.
-   *
-   * The gold stays gold, a touch lighter so it holds on a navy ground, and
-   * `accentText` swaps from bronze to a light gold for the same reason
-   * `accentText` exists at all: the job is constant, the value inverts.
-   */
-  dark: {
-    ink: '#E9EDF5',        // 15.39:1 on canvas, 13.58:1 on surface
-    inkMuted: '#A7B1C4',   // 8.37:1 on canvas, 7.38:1 on surface
-    canvas: '#0F1626',     // deep navy-black
-    surface: '#18213A',    // lighter than canvas — the lift, since §6 bans shadow
-    line: '#243049',       // 1.21:1 on surface; decorative, barely there
-
-    accent: '#F2C14E',     // gold, lifted for a navy ground; fill only
-    accentInk: '#0F1626',  // navy on gold, 10.76:1
-    accentSoft: '#302715', // warm tint, still lighter than canvas; #2A2617 read olive
-
-    // Light gold text. 9.35:1 on accentSoft, 11.47:1 canvas, 10.13:1 surface.
-    accentText: '#F2C96B',
-
-    // 4.18:1 on canvas, 3.69:1 on surface.
-    border: '#6E7A92',
-
-    slate: '#B7C8EC',      // light navy fill; as link text 10.74:1 on canvas
-    slateInk: '#0F1626',   // dark ink on the light fill, 10.74:1
-
-    flag: '#B9BFCA',       // 7.79:1 on flagBg, 9.77:1 on canvas
-    flagBg: '#232A38',
+    canvas: '#F5F5F3',
+    surface: '#FFFFFF',
+    ink: '#111111',
+    inkMuted: '#555555',
+    inkSubtle: '#666666',
+    placeholder: '#8E8E89',
+    border: '#8A8A85',
+    line: '#EFEFEB',
+    track: '#ECECE8',
+    trackStrong: '#D6D6D2',
+    accent: '#3453D3',
+    accentDeep: '#2238B8',
+    accentTint: '#E6EEFF',
+    onAccent: '#FFFFFF',
+    onAccentMuted: '#DEE8FF',
   },
 };
 
-/**
- * The light palette, under the name every un-migrated stylesheet still imports.
- *
- * Kept so the theme migration could land file by file with a runnable app after
- * each step rather than as one 148-reference commit. Delete it once nothing
- * imports it; `grep -rn "color\." app/src` is the check.
- */
 export const color = palettes.light;
-/**
- * An 8px grid, with a single 4px half-step.
- *
- * Nothing outside this scale is allowed in a stylesheet. An earlier scale ran
- * 4/8/14/20/28 and the code reached the gaps by writing `space.md + 2` in seven
- * places, which is the symptom of a scale that does not fit its own layout.
- */
+
+/** White at 12% over the accent, for the unselected cards on a blue screen. */
+export const onAccentCard = 'rgba(255,255,255,0.12)';
+
+/** A strict 4px base: 4/8/12/16/20/24/28/32. */
 export const space = {
   xs: 4,
   sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-} as const;
-
-export const radius = {
-  sm: 8,
   md: 12,
   lg: 16,
-  /**
-   * Card corners. The reference this was drawn from rounds panels far more
-   * than controls, which is what separates a surface from a button — at one
-   * shared radius everything reads as the same kind of object.
-   */
-  xl: 24,
-} as const;
+  xl: 20,
+  xxl: 24,
+  page: 24,
+};
 
-/**
- * Two stroke weights, and which one to use is a semantic question rather than
- * a visual one.
- *
- * The app had been following this rule correctly almost everywhere without it
- * being written down: 1px for things that merely divide, 1.5px for the
- * boundary of anything a finger operates. Two places had drifted — the
- * slider's preset chips and the dev tier switch, both interactive, both drawn
- * at the decorative weight — which is what an unnamed convention eventually
- * does.
- *
- * The distinction is not decoration. WCAG 1.4.11 asks 3:1 for the boundary of
- * an interactive element, which is why `control` pairs with `color.border`
- * (3.15:1 on canvas) and never with `color.line` (1.19:1, invisible by
- * design). Pairing a weight with the wrong colour is the failure this token
- * exists to make obvious.
- */
-export const stroke = {
-  /** Card edges, dividers, section rules. Always with `color.line`. */
-  hairline: 1,
-  /** Chips, inputs, plan options, anything pressable. Always with `color.border`. */
-  control: 1.5,
-  /**
-   * The slider thumb's ring, and its held state. Neither of the two weights
-   * above fits: the thumb is not a divider and not the boundary *of* a
-   * control — it is the control. These were `3` and `4` written inline, which
-   * is the same unnamed convention `hairline`/`control` exist to prevent.
-   */
-  thumb: 3,
-  thumbHeld: 4,
-} as const;
+export const radius = {
+  row: 22,
+  card: 24,
+  tile: 26,
+  pill: 999,
+};
 
-/**
- * Font families, loaded once at app start (see `App.tsx`'s `useFonts` gate).
- *
- * Manrope carries every headline-weight role — display, title, amount, and the
- * label weight used for step numbers and section headers. Body and caption
- * stay on the platform system font: it's already legible, it's free, and
- * mixing a distinctive display face with a native body face is a considered
- * pairing, not a missing one. Loading Manrope for 13px captions would be
- * spending a font negotiation on text nobody looks at as text.
- *
- * Static weight files, not a single variable font — so `fontFamily` names the
- * exact weight and `fontWeight` in `type` below is not read for these roles.
- * It stays in the object for type-compatibility with call sites that also set
- * `fontWeight` directly (harmless, and RN ignores a redundant match).
- */
-export const font = {
-  /**
-   * The display serif, used only for the headline on a screen.
-   *
-   * A serif against a geometric sans is the pairing this app was missing: the
-   * two faces do different jobs, so the headline reads as a statement rather
-   * than as larger body text. Reserved for `serif` below — a serif at 13px in
-   * a chip would be costume rather than hierarchy.
-   */
-  serif: 'InstrumentSerif-Regular',
-  bold: 'Manrope-Bold',
-  extraBold: 'Manrope-ExtraBold',
-  semiBold: 'Manrope-SemiBold',
-} as const;
-
-/**
- * One type scale. There used to be two — this one and a private set inside
- * `Money.tsx` — which between them defined ten font sizes with no ratio.
- *
- * Line heights are all multiples of 4 so that stacked text lands on the same
- * grid as the spacing.
- */
-export const type = {
-  // 40, not 36. A 32px bold face needs more than 1.125 line height — React
-  // Native clips the ascenders of the first line rather than growing the box,
-  // and "Your coverage" rendered with its tops cut off by the step bar. 1.25
-  // matches the ratio the other two headings use.
-  display: {
-    fontSize: 32,
-    lineHeight: 40,
-    fontWeight: '800' as const,
-    fontFamily: font.extraBold,
-    letterSpacing: -0.5,
-  },
-  /**
-   * The serif headline. Larger and more open than `display`, because a serif
-   * at the same size reads smaller and needs the leading — 38/44 rather than
-   * 32/40. `fontWeight` is deliberately absent: this is a single-weight face,
-   * and asking React Native to synthesise a bold from it produces a smeared
-   * outline rather than a heavier cut.
-   */
-  serifDisplay: {
-    fontSize: 32,
-    lineHeight: 40,
-    fontFamily: font.serif,
-    letterSpacing: -0.5,
-  },
-  amount: {
-    fontSize: 26,
-    lineHeight: 32,
-    fontWeight: '700' as const,
-    fontFamily: font.bold,
-    letterSpacing: -0.3,
-    // Digits keep a fixed width, so a slider-driven number doesn't visibly
-    // reflow as its digits change from, say, "1" to "8".
-    fontVariant: ['tabular-nums'] as ('tabular-nums')[],
-  },
-  title: {
-    fontSize: 22,
-    lineHeight: 28,
-    fontWeight: '700' as const,
-    fontFamily: font.bold,
-    letterSpacing: -0.2,
-  },
-  body: { fontSize: 16, lineHeight: 24 },
-  // Semibold Manrope, not the system font — this is the step-bar number and
-  // the chip label, places where the display face's character reads even at
-  // small sizes without the weight of a full headline face. It is not
-  // uppercase and has no added tracking; that was the deleted `eyebrow`.
-  label: {
-    fontSize: 13,
-    lineHeight: 16,
-    fontWeight: '600' as const,
-    fontFamily: font.semiBold,
-  },
-  caption: { fontSize: 13, lineHeight: 20 },
-
-  /**
-   * Emphasised body and caption.
-   *
-   * These existed already, as `{ ...type.body, fontWeight: '700' }` written
-   * out at ten call sites across five files. That is a fourth weight role in
-   * everything but name — undeclared, so unenforceable, and impossible to
-   * change in one place. Declared here at the same size and line height, so
-   * the rendering is unchanged and the scale is once again the whole scale.
-   *
-   * Both stay on the system font: 700 on the platform face is the emphasis
-   * step, and reaching for Manrope here would put a display face on a 13px
-   * table value.
-   */
-  bodyStrong: { fontSize: 16, lineHeight: 24, fontWeight: '700' as const },
-  captionStrong: { fontSize: 13, lineHeight: 20, fontWeight: '700' as const },
-
-  // There was an `eyebrow` role here — an uppercase, letter-spaced label set
-  // above a group. It is deliberately gone, not renamed or shrunk. An
-  // uppercase label above content that a heading already identifies is
-  // decoration wearing the clothes of structure, and having it as a token
-  // made it easy to keep reaching for. Grouping is carried by space and a
-  // hairline now. Do not reintroduce it.
-} as const;
-
-/**
- * The minimum height of anything a finger has to hit.
- *
- * Apple's HIG and WCAG 2.5.5 both land on 44.
- */
+/** Every control is at least this tall or wide. */
 export const TAP_TARGET = 44;
 
-/**
- * Fixed component sizes that are not spacing and not tap targets.
- *
- * `icon` is three sizes, and it used to be five. Icons were set at 16, 18, 20,
- * 22 and 24 across five files with nothing choosing between them — 18 and 22
- * existed only because nobody had written down what the scale was. Three sizes
- * with a job each is a scale; five picked per call site is drift that reads as
- * a lack of polish before anyone can say why.
- *
- *   sm  beside a label, inside a control — a chip's checkmark
- *   md  a standalone control's own glyph — the back chevron, the theme toggle
- *   lg  a navigation glyph carrying its own weight — a tab bar icon
- *
- * `stepDot` is one number describing one circle, and it is a token because the
- * border radius has to stay exactly half the width or the dot stops being
- * round — `width: 24, height: 24, borderRadius: 12` was written inline three
- * times before it had a name. It belonged to `StepBar`, went with it, and came
- * back for the About screen's numbered steps. Same value, different component,
- * same reason.
- */
-export const size = {
-  icon: {
-    sm: 16,
-    md: 20,
-    lg: 24,
-  },
-  stepDot: 24,
-} as const;
+export const font = {
+  regular: 'Geist-Regular',
+  medium: 'Geist-Medium',
+  semibold: 'Geist-SemiBold',
+  bold: 'Geist-Bold',
+  extrabold: 'Geist-ExtraBold',
+  mono: 'GeistMono-Medium',
+};
 
 /**
- * Caps on Dynamic Type scaling, by role.
+ * Dynamic Type caps, by what breaks.
  *
- * iOS's accessibility text sizes run to roughly 3.1x, and three things break
- * before they get there — measured on an iPhone SE, the narrowest screen this
- * app supports, at `accessibility-extra-large`:
- *
- *   - `display` at that size makes a single word wider than the 327pt content
- *     column, and React Native breaks mid-word rather than overflowing, so the
- *     household heading rendered "Preclea / r / Househ / old". Same failure
- *     already on record for chips ("degenerativ / e spine").
- *   - The brand wordmark in `TopBar` ran off the right edge of the screen.
- *   - The "Save 27%" badge, in a row that could no longer fit it, was squeezed
- *     to a sliver and set one letter per line — "S / a / v / e".
- *
- * A cap is the right instrument for the first two, because the failure is that
- * one unbreakable word is wider than the screen and no amount of wrapping
- * helps. The third is a layout bug, fixed with `flexWrap` where it happens;
- * the cap there is only a second line of defence.
- *
- * WCAG 1.4.4 asks that text reach 200% without loss of content or function, so
- * nothing here caps below 2.0 except the two roles that are chrome rather than
- * content — the wordmark, and a badge whose saving is also stated in the price
- * beside it. Body, caption and title text is deliberately absent from this
- * object: it carries the meaning, and it scales the whole way.
+ * Body text scales freely up to 2x, which is WCAG 1.4.4's 200%. Headings and
+ * figures are capped lower because their failure is a single unbreakable word
+ * or number wider than the screen, which React Native breaks mid-word rather
+ * than overflowing.
  */
 export const textScale = {
-  /** Screen headings. Holds this app's longest heading word on one line. */
-  display: 1.8,
-  /** The brand wordmark. The screen heading below it carries the content. */
-  chrome: 1.4,
-  /** Pill badges sharing a row with text that already says the same thing. */
-  badge: 1.5,
-  /**
-   * Dollar figures. Exactly WCAG 1.4.4's 200%, and no lower.
-   *
-   * A formatted amount is one unbreakable token, so it is the third failure
-   * above rather than the first: at `accessibility-extra-large` a four-figure
-   * total set at `amount` (26px) is wider than the content column inside a
-   * card, and React Native breaks *inside* the number rather than overflowing
-   * it -- "$2,445.0" on one line and "4" on the next. A figure split across
-   * two lines is not a smaller figure, it is a different one, which is worse
-   * than any of the word-level breaks this object already guards.
-   *
-   * Found on the household year plan, but it was never that screen's bug: it
-   * is every <Money size="large"> whose value reaches four figures, and the
-   * screener's route totals routinely do.
-   *
-   * Applied to the `hero` and `large` sizes only -- see `Money.tsx`. A figure
-   * set inline in a sentence must scale with the sentence around it.
-   *
-   * 2.0 is the floor the rest of this object respects for content, and it
-   * holds a nine-character figure ($2,445.04) inside a padded card at 375pt.
-   * Ten characters -- a five-figure total -- would still break, and the fix
-   * for that is a wider container, not a smaller cap.
-   */
-  money: 2.0,
-  /**
-   * The `fontScale` above which a side-by-side row stacks into a column.
-   *
-   * Not a cap — a layout threshold, and the one that actually fixes the badge.
-   * A capped badge in a row that is still too narrow is a capped badge set one
-   * letter per line. The plan option puts a term and a price on one line, and
-   * at 1.6x the price alone claims most of a 327pt column, leaving the term to
-   * be broken mid-word. Above this the two stack and each gets full width.
-   *
-   * 1.6 is where the measurement puts it, not a round number: `amount` is 26px,
-   * and 26 x 1.6 = 41.6px, at which "$69.99" is about half the content column.
-   */
-  stackAbove: 1.6,
-} as const;
+  body: 2,
+  heading: 1.4,
+  figure: 1.15,
+};
+
+// Letter spacing in the design is in em; React Native wants points.
+const tight = (size: number, em: number) => Math.round(size * em * 100) / 100;
+
+export const type = {
+  display: { fontFamily: font.bold, fontSize: 36, lineHeight: 42, letterSpacing: tight(36, -0.04) },
+  title: { fontFamily: font.bold, fontSize: 30, lineHeight: 36, letterSpacing: tight(30, -0.035) },
+  headline: { fontFamily: font.semibold, fontSize: 24, lineHeight: 30, letterSpacing: tight(24, -0.02) },
+  rowTitle: { fontFamily: font.semibold, fontSize: 17, lineHeight: 22 },
+  rowLarge: { fontFamily: font.semibold, fontSize: 18, lineHeight: 24 },
+  body: { fontFamily: font.regular, fontSize: 16, lineHeight: 23 },
+  bodyMedium: { fontFamily: font.medium, fontSize: 15, lineHeight: 21 },
+  small: { fontFamily: font.medium, fontSize: 14, lineHeight: 20 },
+  caption: { fontFamily: font.medium, fontSize: 13, lineHeight: 18 },
+  tag: { fontFamily: font.semibold, fontSize: 12, lineHeight: 16 },
+  mono: { fontFamily: font.mono, fontSize: 12, lineHeight: 16, letterSpacing: 0.7 },
+  button: { fontFamily: font.semibold, fontSize: 17, lineHeight: 22 },
+};
+
+/** A figure at any size, with the design's tight tracking. */
+export function figure(size: number, weight: 'bold' | 'extrabold' = 'extrabold') {
+  return {
+    fontFamily: weight === 'bold' ? font.bold : font.extrabold,
+    fontSize: size,
+    lineHeight: Math.round(size * 1.08),
+    letterSpacing: tight(size, size >= 60 ? -0.055 : -0.04),
+    fontVariant: ['tabular-nums' as const],
+  };
+}

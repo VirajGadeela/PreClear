@@ -35,7 +35,7 @@
 
 import { money } from './costing';
 import { Route } from './routes';
-import { publisher } from './components/Citation';
+import { publisher } from './citation';
 
 export type RouteCopy = {
   /** The instruction, used as the row's title. */

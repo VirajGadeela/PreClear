@@ -45,33 +45,34 @@ APP = Path(__file__).resolve().parent.parent / "app"
 # 2026-09-03 subtraction pass, rounded up with roughly 25% headroom -- enough
 # that an honest addition does not trip it and a regression does.
 BUDGETS = [
-    # Raised from 60 on 2026-09-06. The cover stated its finding and proved it
-    # but never said what the app was for, so a reader arriving cold could not
-    # tell it was for a scan they had not had yet. The supporting line now names
-    # the situation, which is three words more than the line it replaced. More
-    # words buying an answer to "what is this" is the trade this budget exists
-    # to permit; what it stops is more words buying nothing.
-    ("src/screens/AboutScreen.tsx", 70, "the cover: headline, one line, one button, the proof"),
-    # Raised from 140 on 2026-09-03, deliberately and on the first real test of
-    # this script. The screener gained a verdict line, a three-item prompt for
-    # the unanswered groups, and a body-text reason on every route row -- all of
-    # it the answer to "the reasoning needs to be super obvious, not small
-    # unreadable text". That is more words buying more clarity, which is the
-    # trade this budget is meant to permit; what it is meant to stop is more
-    # words buying nothing. 140 was the old ceiling and it was hit exactly.
-    ("src/screens/ScreenerScreen.tsx", 175, "the ranking, its verdict, the prompt, and the route rows"),
-    ("src/screens/ScreenerFilters.tsx", 90, "four collapsed groups of controls"),
-    ("src/screens/HouseholdStep.tsx", 40, "the household tab's heading around the year plan"),
-    # Added 2026-09-06 with the household year plan. It gets its own line rather
-    # than being folded into HouseholdStep's, so the year plan cannot grow at
-    # the heading's expense, or the reverse, unseen.
-    ("src/screens/YearPlanSection.tsx", 120, "several scans against one shared deductible"),
-    ("src/screens/MethodStep.tsx", 95, "provenance; the FAQ answers live in marketing.ts"),
-    ("src/marketing.ts", 330, "how-it-works and FAQ copy, all of it prose"),
-    # Not a screen, but it is now a significant source of on-screen prose: every
-    # route's instruction and its reason. Budgeting the screen and not the module
-    # feeding it would leave the obvious place to hide growth unwatched.
+    # Reset on 2026-10-25 when the UI was rebuilt from the Claude Design
+    # walkthrough. The old screens and their caps are in git history; these are
+    # the new files, measured on the day they landed, with roughly 25% headroom.
+    # The welcome story is the cover's successor and carries the same job: the
+    # whole idea in ten seconds, so it is held tightest relative to its size.
+    ("src/screens/Welcome.tsx", 90, "the welcome story: four acts and two buttons"),
+    ("src/screens/Terms.tsx", 60, "three things to know before starting"),
+    ("src/screens/ScanStep.tsx", 10, "the scan picker"),
+    ("src/screens/CoverageSteps.tsx", 120, "insurer, plan type and name, where it is booked"),
+    ("src/screens/OrderStep.tsx", 65, "the reason, and the facts a published rule reads"),
+    ("src/screens/AmountStep.tsx", 10, "a keypad and its help line"),
+    ("src/screens/CareStep.tsx", 25, "the planned-care options"),
+    ("src/screens/ReviewStep.tsx", 20, "every answer, each tappable"),
+    ("src/screens/Calculating.tsx", 15, "the work shown on the way to the answer"),
+    ("src/screens/Answer.tsx", 60, "the best route and what it saves"),
+    ("src/screens/AllRoutes.tsx", 15, "every route, with its deductible-credit clause"),
+    ("src/screens/Why.tsx", 30, "why the best route won"),
+    ("src/screens/TheMath.tsx", 45, "the estimate taken apart row by row"),
+    ("src/screens/Facility.tsx", 20, "what to book and say"),
+    ("src/screens/Checklist.tsx", 40, "published criteria against the order"),
+    ("src/screens/Sources.tsx", 135, "provenance and scope"),
+    ("src/screens/Home.tsx", 45, "estimates and the demo account's past scans"),
+    ("src/screens/PlanScreen.tsx", 15, "the plan figures"),
+    # Not screens, but sources of on-screen prose. Budgeting a screen and not the
+    # module feeding it would leave the obvious place to hide growth unwatched.
+    ("src/resultCopy.ts", 55, "the result screens' sentences"),
     ("src/routeCopy.ts", 110, "what to do about each route, and why"),
+    ("src/marketing.ts", 330, "how-it-works and FAQ copy, all of it prose"),
 ]
 
 # String props whose value a member reads on screen. `accessibilityLabel`,

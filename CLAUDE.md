@@ -890,6 +890,43 @@ Two problems found on the way and deliberately left for after the video:
   (setting "both", no modifier); other facilities' medians may not be. Fixing it
   moves prices, so it is not a night-before-the-video change.
 
+### The UI restart (2026-10-25)
+
+The whole UI was replaced from the Claude Design walkthrough
+(`design/Preclear UI redesign/Preclear Walkthrough.dc.html`, v1 by choice).
+Engine files were not touched; the old screens are in git history.
+
+- **The walkthrough's prices were invented and none survive.** The welcome story
+  computes the Franciscan Health Indianapolis case (Anthem Blue Access PPO with
+  COPPS, $574.27 cash vs $992.51, flipping to $3,774.27 vs $3,398.50 with $8,000
+  of later care) from the bundle in `Welcome.tsx`, and names the plan on screen.
+- **Answers start empty and are `undefined` until answered**, `null` where "Not
+  sure" is itself an answer (`src/flow.ts`). The walkthrough asks for yearly
+  totals plus the amount met; `toQuery` subtracts to get what is left, and the
+  out-of-pocket room assumes the deductible met is all that has been paid (the
+  math screen says so).
+- **Cash-only hospitals are no longer offered as "where it's booked"**
+  (`bookableFacilities`), which closes the side-door bug recorded in *Seven
+  more scans*.
+- **The demo account is synthetic and lives in one file**, `src/demoProfile.ts`.
+  Its past scans name real hospitals and codes, and every amount is computed
+  from that hospital's published price for its plan, so the insurance payments
+  that counted equal the deductible shown as met. The Past tab is a preview of
+  claims history, which this build otherwise keeps out of the app. It is
+  introduced in the video as a demo account; there is no sign-in.
+- **Saving is in memory only.** No storage module is installed, so saved
+  estimates last until the app closes and the copy never says "anytime".
+- **`<Money>` gained `stacked` and `fitWidth`.** `adjustsFontSizeToFit` is
+  iOS-only; on the web a 104pt figure truncated to "$376..." and the word
+  "estimate" fell off. Stacked figures are one accessible element read as
+  "$376 estimate". `dollars()` in `resultCopy.ts` is `money()` without cents,
+  for sentences.
+- **Dark mode was dropped.** The walkthrough is light-only and `Info.plist`
+  already pinned Light. `check-contrast.py` now requires only `light`, and both
+  it and `check-copy-budget.py` point at the new tokens and screen files.
+- **Two walkthrough greys failed WCAG** and were darkened: `#777` captions
+  (4.10:1) and `#CFCFCA` radio outlines (1.56:1). Ratios are in `theme.ts`.
+
 Gate definitions, for the record:
 
 - **Gate 1 — MRF usability.** Open one target payer's Transparency in Coverage file, extract negotiated rates for CPT 73721 (knee MRI) and 70450 (head CT) at 10 real facilities in the target metro. These files are gigabytes and frequently malformed — stream-parse, don't load. *Pass = 10 real facility prices in a spreadsheet.*

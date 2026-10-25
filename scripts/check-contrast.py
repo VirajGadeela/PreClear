@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-"""Assert every documented contrast ratio in app/src/theme.ts, on both schemes.
+"""Assert every documented contrast ratio in app/src/theme.ts.
 
 The palette comments carry measured WCAG ratios, and until this existed they
 were measured by hand and then trusted forever. Several had drifted by the time
 a second scheme was added -- small amounts, but a documented ratio nobody checks
 is worse than no ratio at all, because it gets quoted in a review.
 
-Dark mode is the reason this became necessary rather than nice to have. Adding
-a second palette doubles every pair, and the failure mode is silent: a hex that
-looks fine on a laptop can be a 3:1 body text on a phone in daylight, and
-nothing in the build catches it.
+The 2026-10-25 UI restart dropped the dark scheme, so only `light` is required.
+A `dark` palette, if one comes back, is checked against the same pairs.
 
 The rules below are WCAG 2.1:
 
@@ -58,46 +56,47 @@ def read_palettes() -> dict[str, dict[str, str]]:
     for name in ("light", "dark"):
         opened = re.search(rf"^  {name}: \{{$", body, re.MULTILINE)
         if opened is None:
-            sys.exit(f"could not find the {name} palette in {THEME}")
+            if name == "light":
+                sys.exit(f"could not find the light palette in {THEME}")
+            continue
         closed = body.index("\n  },", opened.end())
         block = body[opened.end() : closed]
         schemes[name] = dict(re.findall(r"(\w+): '(#[0-9A-Fa-f]{6})'", block))
     return schemes
 
 
-# (foreground, background, minimum, why). Applied to both schemes -- a pair that
-# holds in light and fails in dark is exactly what this is for.
+# (foreground, background, minimum, why). The palette is the Claude Design
+# walkthrough's (2026-10-25); see app/src/theme.ts.
 TEXT_PAIRS = [
     ("ink", "canvas", 4.5, "body text on the page ground"),
     ("ink", "surface", 4.5, "body text on a card"),
-    ("ink", "accentSoft", 4.5, "body text on the recommended card"),
+    ("ink", "accentTint", 4.5, "text on a selected tile"),
     ("inkMuted", "canvas", 4.5, "secondary text on the page ground"),
     ("inkMuted", "surface", 4.5, "secondary text on a card"),
-    ("inkMuted", "accentSoft", 4.5, "secondary text on the recommended card"),
-    # `accent` is a gold FILL and is never set as text, so it has no text pair
-    # here -- asserting gold at 3:1 would fail by design and teach nobody
-    # anything. What has to hold is whatever sits on it, and the bronze that
-    # stands in for it as text.
-    ("accentInk", "accent", 4.5, "text on an accent fill -- the cover CTA"),
-    ("accentText", "canvas", 4.5, "accent-toned figures on the page ground"),
-    ("accentText", "surface", 4.5, "accent-toned figures on a card -- the cover proof"),
-    ("accentText", "accentSoft", 4.5, "accent-toned figures on the recommended card"),
-    ("slateInk", "slate", 4.5, "the primary button's label, and a selected chip's"),
-    # Links are navy now, at caption and label sizes, so they need text contrast
-    # rather than the control floor below.
-    ("slate", "canvas", 4.5, "link text on the page ground -- Refine, Details"),
-    ("slate", "surface", 4.5, "link text on a card -- Source document"),
-    ("flag", "flagBg", 4.5, "a data-quality warning in its own block"),
-    ("flag", "canvas", 4.5, "a data-quality warning inline"),
-    ("flag", "surface", 4.5, "a data-quality warning on a card"),
+    ("inkMuted", "track", 4.5, "an unselected segment label"),
+    ("inkSubtle", "canvas", 4.5, "captions on the page ground"),
+    ("inkSubtle", "surface", 4.5, "captions on a card"),
+    ("accent", "surface", 4.5, "accent figures and labels on a card"),
+    ("accent", "canvas", 4.5, "accent figures and labels on the page ground"),
+    ("accentDeep", "surface", 4.5, "links and small accent text on a card"),
+    ("accentDeep", "canvas", 4.5, "links on the page ground"),
+    ("accentDeep", "accentTint", 4.5, "accent text on a tinted tag or well"),
+    ("onAccent", "accent", 4.5, "text on the blue screens and the Best tag"),
+    ("onAccentMuted", "accent", 4.5, "secondary text on the blue screens"),
+    ("onAccent", "ink", 4.5, "the primary button's label"),
 ]
 
-# WCAG 1.4.11. `border` is the only thing telling a member a control is there --
-# an unselected chip is surface-on-canvas, which is invisible without it.
+# Large text only (>= 24px bold): the grey not-yet-typed keypad figure.
+LARGE_TEXT_PAIRS = [
+    ("placeholder", "canvas", 3.0, "the keypad placeholder figure, 72pt bold"),
+]
+
+# WCAG 1.4.11. `border` is the only thing showing an unselected radio exists.
 CONTROL_PAIRS = [
-    ("border", "canvas", 3.0, "a chip or input outline on the page ground"),
-    ("border", "surface", 3.0, "a chip or input outline on a card"),
-    ("slate", "canvas", 3.0, "a filled control against the page ground"),
+    ("border", "canvas", 3.0, "an unselected radio or checkbox on the page ground"),
+    ("border", "surface", 3.0, "an unselected radio or checkbox on a card"),
+    ("accent", "surface", 3.0, "a selected radio on a card"),
+    ("ink", "canvas", 3.0, "the primary button against the page ground"),
 ]
 
 # Asserted from below: decorative, and must stay that way.
@@ -115,7 +114,7 @@ def main() -> int:
     for scheme, palette in schemes.items():
         missing = {
             name
-            for pairs in (TEXT_PAIRS, CONTROL_PAIRS, DECORATIVE_MAX)
+            for pairs in (TEXT_PAIRS, LARGE_TEXT_PAIRS, CONTROL_PAIRS, DECORATIVE_MAX)
             for fg, bg, _, _ in pairs
             for name in (fg, bg)
         } - set(palette)
@@ -123,7 +122,7 @@ def main() -> int:
             failures.append(f"{scheme}: palette is missing {', '.join(sorted(missing))}")
             continue
 
-        for fg, bg, floor, why in TEXT_PAIRS + CONTROL_PAIRS:
+        for fg, bg, floor, why in TEXT_PAIRS + LARGE_TEXT_PAIRS + CONTROL_PAIRS:
             checks += 1
             measured = ratio(palette[fg], palette[bg])
             if measured < floor:

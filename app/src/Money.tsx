@@ -4,115 +4,124 @@
  * Hard rule 5 in CLAUDE.md: every dollar figure carries the word "estimate"
  * inside the string itself, not as a footnote. Making this a component rather
  * than a formatting helper means there is one place to enforce it and no path
- * where a caller renders a bare number by accident — the suffix is typographic,
- * never optional.
+ * where a caller renders a bare number by accident. The suffix is part of the
+ * same Text, and part of the accessibility label, so a screen reader never
+ * hears a bare figure either.
  *
- * That word used to be set at `opacity: 0.72`, which measured **2.77:1** on the
- * recommended route's card and 2.84:1 in the headline, against the 4.5:1 WCAG
- * asks of text that size. The single word this product is required to show was
- * the least legible text in the app. It now renders at full opacity, in
- * `accentText` when the figure is accent-toned, which measures 5.14:1 on the
- * recommended card.
- *
- * Sizes come from the shared scale in `theme.ts`. This file used to carry a
- * private one.
+ * The walkthrough sets figures very large (up to 136pt) in whole dollars. The
+ * suffix is drawn small beside the figure, or on the line under it where a
+ * column is too narrow for both (`stacked`), but it is never left out.
+ * Sentences that carry a figure use `money()` from `costing.ts`, which writes
+ * "(estimate)" into the string the same way.
  */
 
-import { Text, TextStyle } from 'react-native';
+import { StyleProp, Text, TextStyle, View } from 'react-native';
 
-import { textScale, type as typography } from './theme';
-import { useStyles } from './ThemeProvider';
-import { themed } from './styles/themed';
+import { font, textScale } from './theme';
 
 type Props = {
   value: number;
-  size?: 'hero' | 'large' | 'body' | 'small';
-  tone?: 'ink' | 'accent' | 'inverse';
+  style?: StyleProp<TextStyle>;
+  /** Size of the word "estimate". Defaults to a third of the figure, at least 12. */
+  suffixSize?: number;
+  /** Show cents. Off by default: the walkthrough sets whole dollars. */
+  cents?: boolean;
+  /** Put "estimate" on its own line under the figure. */
+  stacked?: boolean;
+  /** Dynamic Type cap. Large figures are capped so they cannot outgrow the screen. */
+  maxScale?: number;
+  numberOfLines?: number;
+  adjustsFontSizeToFit?: boolean;
+  /**
+   * Shrink the figure so it fits this many points across. Used instead of
+   * `adjustsFontSizeToFit`, which only works on iOS: on the web the figure was
+   * truncated to "$376..." and the word "estimate" fell off the end.
+   */
+  fitWidth?: number;
 };
 
-const SIZES: Record<NonNullable<Props['size']>, TextStyle> = {
-  hero: typography.display,
-  large: typography.amount,
-  body: typography.bodyStrong,
-  small: typography.label,
-};
+/** Geist's tabular digits, at the walkthrough's tight tracking, run about 0.6em wide. */
+const DIGIT_EM = 0.6;
 
-/**
- * The suffix's colour, which is not always the figure's colour.
- *
- * `accent` is bright enough for a 26px figure (it clears the 3:1 large-text
- * bar) and not for the 13px word beside it, which is held to 4.5:1. Ink and
- * inverse are already far clear at any size, so they are used as-is.
- *
- * Both tone maps used to be module-scope records of raw colours. They are
- * entries in the themed sheet now — the tone is still selected by name, but the
- * name resolves to a style rather than to a hex, which is what lets it differ
- * between schemes without this file knowing there are two.
- */
-const SUFFIX_TONE = {
-  ink: 'suffixInk',
-  accent: 'suffixAccent',
-  inverse: 'suffixInverse',
-} as const;
-
-export function formatAmount(value: number): string {
+export function formatAmount(value: number, cents = false): string {
   return value.toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: cents ? 2 : 0,
+    maximumFractionDigits: cents ? 2 : 0,
   });
 }
 
-export function Money({ value, size = 'body', tone = 'ink' }: Props) {
-  const styles = useStyles(sheets);
-  const amount = formatAmount(value);
+export function Money({
+  value,
+  style,
+  suffixSize,
+  cents = false,
+  stacked = false,
+  maxScale = textScale.figure,
+  numberOfLines,
+  adjustsFontSizeToFit,
+  fitWidth,
+}: Props) {
+  const amount = formatAmount(value, cents);
+  const flat = (Array.isArray(style) ? Object.assign({}, ...style) : style) as TextStyle | undefined;
+  const size = suffixSize ?? Math.max(12, Math.round((flat?.fontSize ?? 16) / 3));
+
+  let fitted: TextStyle | null = null;
+  if (fitWidth && flat?.fontSize) {
+    const fits = Math.floor(fitWidth / (amount.length * DIGIT_EM));
+    if (fits < flat.fontSize) {
+      fitted = { fontSize: fits, lineHeight: Math.round(fits * 1.08), letterSpacing: -0.05 * fits };
+    }
+  }
+
+  if (stacked) {
+    // One accessible element, read as "$376 estimate". The word sits directly
+    // under the figure rather than inside its line box, because a nested Text
+    // inherits the figure's line height and a 120pt figure pushed "estimate"
+    // half a screen away from the number it qualifies.
+    const align = flat?.textAlign;
+    return (
+      <View
+        accessible
+        accessibilityLabel={`${amount} estimate`}
+        style={{ alignItems: align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start' }}
+      >
+        <Text style={[style, fitted]} maxFontSizeMultiplier={maxScale}>
+          {amount}
+        </Text>
+        <Text
+          style={{
+            fontFamily: font.semibold,
+            fontSize: size,
+            lineHeight: Math.round(size * 1.3),
+            color: flat?.color,
+            marginTop: size > 16 ? -2 : 0,
+          }}
+          maxFontSizeMultiplier={maxScale}
+        >
+          estimate
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <Text
-      // The accessible label carries the full phrase so a screen reader never
-      // hears a bare figure either.
       accessibilityLabel={`${amount} estimate`}
-      style={[SIZES[size], styles[tone]]}
-      // Only the standalone sizes. A `body` or `small` figure sits inside a
-      // sentence, and a nested Text capped lower than the Text around it makes
-      // React Native compute the line box from the parent while drawing the
-      // child at its own size -- the lines overlap. Those sizes are also too
-      // small to be the failure this cap exists for.
-      maxFontSizeMultiplier={
-        size === 'hero' || size === 'large' ? textScale.money : undefined
-      }
+      style={[style, fitted]}
+      maxFontSizeMultiplier={maxScale}
+      numberOfLines={numberOfLines}
+      adjustsFontSizeToFit={adjustsFontSizeToFit}
     >
       {amount}
-      <Text style={[styles.suffix, styles[SUFFIX_TONE[tone]]]}>
-        {'  estimate'}
+      <Text
+        style={{ fontFamily: font.semibold, fontSize: size, letterSpacing: 0 }}
+      >
+        {/* An en space: the figure's tight tracking ate an ordinary one, and
+            "$368estimate" read as one word. */}
+        {' estimate'}
       </Text>
     </Text>
   );
 }
-
-const sheets = themed((c) => ({
-  ink: { color: c.ink },
-  // `accentText`, not `accent`: the accent is a gold fill that measures 1.69:1
-  // as text. Bronze is the same hue family at a value that reads.
-  accent: { color: c.accentText },
-  inverse: { color: c.accentInk },
-
-  suffixInk: { color: c.ink },
-  suffixAccent: { color: c.accentText },
-  suffixInverse: { color: c.accentInk },
-
-  // No lineHeight: a nested Text inherits the parent's line box, and setting
-  // one here would fight the figure's leading rather than the suffix's.
-  //
-  // `fontFamily` is named explicitly rather than left to inherit. A nested Text
-  // takes the parent's family, and the parent here is the figure — Manrope
-  // Bold or ExtraBold. Inheriting meant the suffix rendered in the figure's
-  // heavier cut at the label's size, which is not the pairing `type.label`
-  // defines anywhere else in the app.
-  suffix: {
-    fontSize: typography.label.fontSize,
-    fontWeight: typography.label.fontWeight,
-    fontFamily: typography.label.fontFamily,
-  },
-}));
