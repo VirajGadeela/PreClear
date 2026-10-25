@@ -45,32 +45,15 @@ APP = Path(__file__).resolve().parent.parent / "app"
 # 2026-09-03 subtraction pass, rounded up with roughly 25% headroom -- enough
 # that an honest addition does not trip it and a regression does.
 BUDGETS = [
-    # Reset on 2026-10-25 when the UI was rebuilt from the Claude Design
-    # walkthrough. The old screens and their caps are in git history; these are
-    # the new files, measured on the day they landed, with roughly 25% headroom.
-    # The welcome story is the cover's successor and carries the same job: the
-    # whole idea in ten seconds, so it is held tightest relative to its size.
-    ("src/screens/Welcome.tsx", 90, "the welcome story: four acts and two buttons"),
-    ("src/screens/Terms.tsx", 60, "three things to know before starting"),
-    ("src/screens/ScanStep.tsx", 10, "the scan picker"),
-    ("src/screens/CoverageSteps.tsx", 120, "insurer, plan type and name, where it is booked"),
-    ("src/screens/OrderStep.tsx", 65, "the reason, and the facts a published rule reads"),
-    ("src/screens/AmountStep.tsx", 10, "a keypad and its help line"),
-    ("src/screens/CareStep.tsx", 25, "the planned-care options"),
-    ("src/screens/ReviewStep.tsx", 20, "every answer, each tappable"),
-    ("src/screens/Calculating.tsx", 15, "the work shown on the way to the answer"),
-    ("src/screens/Answer.tsx", 60, "the best route and what it saves"),
-    ("src/screens/AllRoutes.tsx", 15, "every route, with its deductible-credit clause"),
-    ("src/screens/Why.tsx", 30, "why the best route won"),
-    ("src/screens/TheMath.tsx", 45, "the estimate taken apart row by row"),
-    ("src/screens/Facility.tsx", 20, "what to book and say"),
-    ("src/screens/Checklist.tsx", 40, "published criteria against the order"),
-    ("src/screens/Sources.tsx", 135, "provenance and scope"),
-    ("src/screens/Home.tsx", 45, "estimates and the demo account's past scans"),
-    ("src/screens/PlanScreen.tsx", 15, "the plan figures"),
-    # Not screens, but sources of on-screen prose. Budgeting a screen and not the
-    # module feeding it would leave the obvious place to hide growth unwatched.
-    ("src/resultCopy.ts", 55, "the result screens' sentences"),
+    # Reset on 2026-10-25 when the UI was rebuilt as a replica of the Claude
+    # Design walkthrough. The wording is the walkthrough's, so these caps hold
+    # it where it landed, with roughly 25% headroom. The old screens and their
+    # caps are in git history.
+    ("src/screens/Welcome.tsx", 75, "the welcome story: four acts and two buttons"),
+    ("src/screens/Setup.tsx", 180, "before you start, the setup steps, review, calculating"),
+    ("src/screens/Results.tsx", 245, "best route, all routes, why, the math, facility, sources"),
+    ("src/screens/Account.tsx", 35, "estimates, past scans, plan"),
+    # Not screens, but sources of on-screen prose.
     ("src/routeCopy.ts", 110, "what to do about each route, and why"),
     ("src/marketing.ts", 330, "how-it-works and FAQ copy, all of it prose"),
 ]

@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
   },
   circleOnAccent: { backgroundColor: 'rgba(255,255,255,0.16)' },
   progress: { flexDirection: 'row', gap: 5 },
-  progressSegment: { width: 18, height: 4, borderRadius: 2 },
+  progressSegment: { width: 22, height: 4, borderRadius: 2 },
   button: { minHeight: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.lg },
   radio: { width: 24, height: 24, borderRadius: 12 },
   list: { backgroundColor: color.surface, borderRadius: radius.card, paddingVertical: space.xs, overflow: 'hidden' },

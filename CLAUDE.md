@@ -892,40 +892,47 @@ Two problems found on the way and deliberately left for after the video:
 
 ### The UI restart (2026-10-25)
 
-The whole UI was replaced from the Claude Design walkthrough
-(`design/Preclear UI redesign/Preclear Walkthrough.dc.html`, v1 by choice).
-Engine files were not touched; the old screens are in git history.
+The UI is a replica of the Claude Design walkthrough
+(`design/Preclear UI redesign/Preclear Walkthrough.dc.html`, v1 by choice):
+same screens, order, wording and starting values, with every price replaced by
+a published one. A first pass that reworked the flow (empty defaults, a plan
+step, an order check) was rejected the same day as "you changed it"; it is in
+git history.
 
-- **The walkthrough's prices were invented and none survive.** The welcome story
-  computes the Franciscan Health Indianapolis case (Anthem Blue Access PPO with
-  COPPS, $574.27 cash vs $992.51, flipping to $3,774.27 vs $3,398.50 with $8,000
-  of later care) from the bundle in `Welcome.tsx`, and names the plan on screen.
-- **Answers start empty and are `undefined` until answered**, `null` where "Not
-  sure" is itself an answer (`src/flow.ts`). The walkthrough asks for yearly
-  totals plus the amount met; `toQuery` subtracts to get what is left, and the
-  out-of-pocket room assumes the deductible met is all that has been paid (the
-  math screen says so).
-- **Cash-only hospitals are no longer offered as "where it's booked"**
-  (`bookableFacilities`), which closes the side-door bug recorded in *Seven
-  more scans*.
-- **The demo account is synthetic and lives in one file**, `src/demoProfile.ts`.
-  Its past scans name real hospitals and codes, and every amount is computed
-  from that hospital's published price for its plan, so the insurance payments
-  that counted equal the deductible shown as met. The Past tab is a preview of
-  claims history, which this build otherwise keeps out of the app. It is
-  introduced in the video as a demo account; there is no sign-in.
-- **Saving is in memory only.** No storage module is installed, so saved
-  estimates last until the app closes and the copy never says "anytime".
+- **Routes are the walkthrough's model**, priced by the engine: every hospital
+  within the radius, paid with insurance and in cash, ranked by the year
+  (`compute` in `src/flow.ts`). In-network prices are the median plausible rate
+  (`representativeRate` with no plan), because the walkthrough has no plan
+  step. Cash is shown whenever a hospital publishes it, not gated.
+- **The location screen is real.** ZIP centres and hospital coordinates come
+  from Census sources (`pipeline/export_geo.py`, `app/assets/preclear-geo.json`).
+  The radius filters hospitals, and distances are straight-line miles. From
+  46220, Franciscan Indianapolis is 15.2 mi, so the default 15-mile radius
+  leaves out the hospital the welcome story is about. That is the data.
+- **What differs from the walkthrough, and why:** "estimate" on every figure
+  (hard rule 5); "only in the Indianapolis area" where it said Indiana; the
+  Terms and Privacy names are not links (nothing to link to); "Scan your card"
+  says it is not available instead of doing nothing; "of $3,000" on the
+  deductible screen is tappable so the deductible can be changed; Call to book
+  opens the hospital's Apple Maps place card, which carries its phone number;
+  the Why paragraph has a third sentence for the case its two would make false;
+  Sources says August and October.
+- **What the walkthrough does not have, and the app therefore lost:** the order
+  check (route 3), the cheaper-hospital route as a named route, plan type,
+  where the scan is booked. The definition of done asks for a citable failing
+  requirement, and the requirement engine and parity checks are untouched if it
+  comes back.
+- **The demo account is synthetic and lives in one file**, `src/demoProfile.ts`:
+  the walkthrough's four past scans at real hospitals, priced from their files.
+  The starting "deductible met" is what its 2026 insurance scan counted, so Past
+  and Plan agree. Introduced in the video as a demo account; no sign-in.
 - **`<Money>` gained `stacked` and `fitWidth`.** `adjustsFontSizeToFit` is
-  iOS-only; on the web a 104pt figure truncated to "$376..." and the word
-  "estimate" fell off. Stacked figures are one accessible element read as
-  "$376 estimate". `dollars()` in `resultCopy.ts` is `money()` without cents,
-  for sentences.
-- **Dark mode was dropped.** The walkthrough is light-only and `Info.plist`
-  already pinned Light. `check-contrast.py` now requires only `light`, and both
-  it and `check-copy-budget.py` point at the new tokens and screen files.
-- **Two walkthrough greys failed WCAG** and were darkened: `#777` captions
-  (4.10:1) and `#CFCFCA` radio outlines (1.56:1). Ratios are in `theme.ts`.
+  iOS-only; on the web a 104pt figure truncated to "$376..." and lost the word
+  "estimate". Never truncate a figure: no `numberOfLines` on anything carrying one.
+- **Dark mode was dropped.** `check-contrast.py` requires only `light`; it and
+  `check-copy-budget.py` point at the new tokens and screen files. Two
+  walkthrough greys failed WCAG and were darkened (`#777` captions, `#CFCFCA`
+  radio outlines); ratios are in `theme.ts`.
 
 Gate definitions, for the record:
 

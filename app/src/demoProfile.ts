@@ -1,51 +1,40 @@
 /**
- * The demo account: one synthetic member, used by "I have an account".
+ * The demo account's scan history: the walkthrough's four past scans, priced.
  *
- * Synthetic, per hard rule 1. Nobody's real scans or plan are here. It exists
- * so the video can show the returning-member screens (estimates, past scans,
- * plan), and it is introduced in the video as a demo account.
- *
- * Nothing in it is typed in as a dollar figure. Each past scan names a real
- * hospital and code, and its amount is computed from that hospital's published
- * price for this plan, so the history is consistent with the engine: the
- * insurance payments that counted add up to the deductible the Plan screen
- * shows as met, and the cash payments add nothing to it.
+ * Synthetic, per hard rule 1. Nobody's real scans are here; the video
+ * introduces this as a demo account. The scans, dates and payment methods are
+ * the walkthrough's. The hospitals are real Indianapolis hospitals and every
+ * amount is computed from that hospital's published price (Anthem, as "Blue
+ * Cross", with no plan known, so the median published rate), so the history
+ * agrees with the engine: what the 2026 insurance payment put toward the
+ * deductible is what the app starts with as "deductible met".
  *
  * Kept in this one file so the repo is plain about which data is sample data.
  */
 
 import { data } from './appData';
 import { PlanBenefits, estimatePayment } from './costing';
-import { Answers } from './flow';
 import { representativeRate } from './routes';
 
-export const DEMO_NAME = 'Jordan Rivera';
 export const DEMO_INITIALS = 'JR';
 
-const PLAN = {
-  payer: 'anthem',
-  product: 'ppo',
-  planText: 'Blue Access PPO with COPPS',
-  deductibleTotal: 3000,
-  coinsurancePct: 20,
-  oopTotal: 7000,
-};
-
-export const DEMO_PLAN_LABEL = 'Anthem Blue Access PPO with COPPS';
+const PAYER = 'anthem';
+const DEDUCTIBLE = 3000;
 
 type PastSpec = {
   year: string;
   date: string;
+  name: string;
   cpt: string;
   facilityKey: string;
   paidBy: 'insurance' | 'cash';
 };
 
 const PAST: PastSpec[] = [
-  { year: '2026', date: 'Mar 12', cpt: '70450', facilityKey: 'iu-health-indianapolis', paidBy: 'cash' },
-  { year: '2026', date: 'Jan 28', cpt: '72148', facilityKey: 'franciscan-indianapolis', paidBy: 'insurance' },
-  { year: '2025', date: 'Aug 3', cpt: '73221', facilityKey: 'eskenazi', paidBy: 'insurance' },
-  { year: '2025', date: 'Feb 19', cpt: '73721', facilityKey: 'iu-health-indianapolis', paidBy: 'cash' },
+  { year: '2026', date: 'Mar 12', name: 'Brain CT', cpt: '70450', facilityKey: 'iu-health-indianapolis', paidBy: 'cash' },
+  { year: '2026', date: 'Jan 28', name: 'Lower back MRI', cpt: '72148', facilityKey: 'franciscan-carmel', paidBy: 'insurance' },
+  { year: '2025', date: 'Aug 3', name: 'Abdomen CT', cpt: '74150', facilityKey: 'iu-health-north', paidBy: 'insurance' },
+  { year: '2025', date: 'Feb 19', name: 'Knee MRI', cpt: '73721', facilityKey: 'iu-health-indianapolis', paidBy: 'cash' },
 ];
 
 export type PastScan = {
@@ -58,42 +47,30 @@ export type PastScan = {
   counted: number;
 };
 
-function startOfYear(): PlanBenefits {
-  return {
-    deductibleRemaining: PLAN.deductibleTotal,
-    coinsuranceRate: PLAN.coinsurancePct / 100,
-    oopMaxRemaining: PLAN.oopTotal,
-    copay: 0,
-  };
-}
-
-/**
- * Each year's scans, paid in date order against that year's fresh deductible.
- * Computed once at load; the bundle does not change while the app runs.
- */
+/** Each year's scans, paid oldest first against that year's fresh deductible. */
 function buildHistory(): PastScan[] {
   const scans: PastScan[] = [];
   for (const year of ['2026', '2025']) {
-    let benefits = startOfYear();
-    const inYear = PAST.filter((spec) => spec.year === year).reverse();
+    let benefits: PlanBenefits = {
+      deductibleRemaining: DEDUCTIBLE,
+      coinsuranceRate: 0.2,
+      oopMaxRemaining: 6000,
+      copay: 0,
+    };
     const priced: PastScan[] = [];
-    for (const spec of inYear) {
-      const procedure = data.procedures.find((item) => item.cpt === spec.cpt);
-      const facility = procedure?.payers[PLAN.payer]?.find(
-        (item) => item.facility_key === spec.facilityKey,
-      );
-      if (!procedure || !facility) continue;
-      const price =
-        spec.paidBy === 'cash'
-          ? facility.cash_price
-          : representativeRate(facility, PLAN.planText)?.rate ?? null;
+    for (const spec of PAST.filter((item) => item.year === year).reverse()) {
+      const facility = data.procedures
+        .find((item) => item.cpt === spec.cpt)
+        ?.payers[PAYER]?.find((item) => item.facility_key === spec.facilityKey);
+      if (!facility) continue;
+      const price = spec.paidBy === 'cash' ? facility.cash_price : representativeRate(facility)?.rate ?? null;
       if (price === null) continue;
       const paid = estimatePayment(price, benefits, spec.paidBy === 'insurance');
       benefits = paid.benefitsAfter;
       priced.push({
         year,
         date: spec.date,
-        name: procedure.label,
+        name: spec.name,
         facilityName: facility.facility_name,
         paidBy: spec.paidBy,
         amount: paid.patientPays,
@@ -108,27 +85,5 @@ function buildHistory(): PastScan[] {
 export const DEMO_HISTORY = buildHistory();
 
 const thisYear = DEMO_HISTORY.filter((scan) => scan.year === '2026');
-export const DEMO_SPENT_THIS_YEAR = thisYear.reduce((sum, scan) => sum + scan.amount, 0);
+export const DEMO_SPENT = thisYear.reduce((sum, scan) => sum + scan.amount, 0);
 export const DEMO_MET = thisYear.reduce((sum, scan) => sum + scan.counted, 0);
-
-/** The demo member's plan, as answers, so a new estimate starts from it. */
-export const DEMO_PLAN_ANSWERS: Answers = {
-  payer: PLAN.payer,
-  product: PLAN.product,
-  planText: PLAN.planText,
-  deductibleTotal: PLAN.deductibleTotal,
-  deductibleMet: Math.round(DEMO_MET * 100) / 100,
-  coinsurancePct: PLAN.coinsurancePct,
-  oopTotal: PLAN.oopTotal,
-};
-
-/** The estimate waiting on the demo account's Estimates screen. */
-export const DEMO_UPCOMING: Answers = {
-  ...DEMO_PLAN_ANSWERS,
-  modality: 'MRI',
-  part: 'Knee',
-  orderedFacility: 'franciscan-indianapolis',
-  indication: 'meniscal_tear',
-  treatmentWeeks: 2,
-  care: 'major',
-};

@@ -45,7 +45,6 @@ const CASE = {
   payer: 'anthem',
   facilityKey: 'franciscan-indianapolis',
   plan: 'Blue Access PPO with COPPS',
-  planLabel: 'Anthem Blue Access PPO with COPPS',
   benefits: { deductibleRemaining: 2000, coinsuranceRate: 0.2, oopMaxRemaining: 6000, copay: 0 },
   laterCare: 8000,
 };
@@ -193,7 +192,7 @@ export function Welcome({ onStart, onAccount }: Props) {
 
           {/* Hero */}
           <View style={{ position: 'absolute', top: 0, bottom: 70, left: 28, right: 28, justifyContent: 'center', gap: space.lg, opacity: heroFade, transform: [{ translateY: -40 * (1 - heroFade) }] }}>
-            <Money value={FIG.cashScan} style={[figure(120), white]} suffixSize={20} stacked fitWidth={width - 56} />
+            <Money value={FIG.cashScan} style={[figure(136), white]} suffixSize={20} stacked fitWidth={width - 56} />
             <T style={[type.title, { fontFamily: font.semibold, fontSize: 26, lineHeight: 31 }, white]} maxFontSizeMultiplier={textScale.heading}>
               Cheaper isn’t always cheaper.
             </T>
@@ -208,7 +207,7 @@ export function Welcome({ onStart, onAccount }: Props) {
             <T style={[type.title, white, { paddingHorizontal: 8 }]} maxFontSizeMultiplier={textScale.heading}>
               Cash looks cheaper.
             </T>
-            <View style={{ height: 160, borderRadius: 26, padding: 22, backgroundColor: color.surface, flexDirection: 'row', justifyContent: 'space-between', marginTop: space.md }}>
+            <View style={{ height: 190, borderRadius: 26, padding: 22, backgroundColor: color.surface, flexDirection: 'row', justifyContent: 'space-between', marginTop: space.md }}>
               <View style={{ justifyContent: 'space-between' }}>
                 <View style={{ gap: 4 }}>
                   <T style={{ fontFamily: font.semibold, fontSize: 20 }}>Cash</T>
@@ -220,16 +219,13 @@ export function Welcome({ onStart, onAccount }: Props) {
               </View>
               <Money value={FIG.cashScan} style={[figure(54), { color: color.accentDeep, alignSelf: 'flex-end' }]} suffixSize={14} />
             </View>
-            <View style={{ height: 160, borderRadius: 26, padding: 22, backgroundColor: onAccentCard, flexDirection: 'row', justifyContent: 'space-between' }}>
+            <View style={{ height: 190, borderRadius: 26, padding: 22, backgroundColor: onAccentCard, flexDirection: 'row', justifyContent: 'space-between' }}>
               <View style={{ gap: 4 }}>
                 <T style={[{ fontFamily: font.semibold, fontSize: 20 }, white]}>Insurance</T>
                 <T style={[type.small, muted]}>Scan price</T>
               </View>
               <Money value={FIG.insScan} style={[figure(54), white, { alignSelf: 'flex-end' }]} suffixSize={14} />
             </View>
-            <T style={[type.caption, muted, { paddingHorizontal: 8 }]}>
-              Knee MRI at {FIG.facilityName}, {CASE.planLabel}. Real published prices.
-            </T>
           </View>
 
           {/* Act 2: cash earns no deductible credit */}
@@ -262,10 +258,10 @@ export function Welcome({ onStart, onAccount }: Props) {
                 </View>
               </View>
             ))}
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.3)', paddingTop: space.md }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.3)', paddingTop: space.md }}>
+              <Money value={0} style={[type.small, muted]} suffixSize={12} maxScale={2} />
               <T style={[type.small, muted]}>
-                Deductible left:{' '}
-                <Money value={CASE.benefits.deductibleRemaining} style={[type.small, muted]} suffixSize={14} maxScale={2} />
+                <Money value={CASE.benefits.deductibleRemaining} style={[type.small, muted]} suffixSize={12} maxScale={2} /> · insurance starts paying
               </T>
             </View>
           </View>
@@ -279,8 +275,8 @@ export function Welcome({ onStart, onAccount }: Props) {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, paddingHorizontal: 18, borderRadius: 22, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.55)' }}>
                 <Ionicons name="add" size={20} color={color.onAccent} />
                 <T style={[type.bodyMedium, { fontFamily: font.semibold }, white]}>
-                  Surgery ·{' '}
-                  <Money value={CASE.laterCare} style={[type.bodyMedium, { fontFamily: font.semibold }, white]} suffixSize={13} maxScale={2} /> in bills
+                  Knee surgery ·{' '}
+                  <Money value={CASE.laterCare} style={[type.bodyMedium, { fontFamily: font.semibold }, white]} suffixSize={13} maxScale={2} />
                 </T>
               </View>
             </View>
@@ -307,9 +303,6 @@ export function Welcome({ onStart, onAccount }: Props) {
               <T style={[type.rowTitle, white, { flex: 1, textAlign: 'center' }]}>Cash</T>
               <T style={[type.rowTitle, white, { flex: 1, textAlign: 'center' }]}>Insurance</T>
             </View>
-            <T style={[type.caption, muted, { textAlign: 'center', marginTop: space.md }]}>
-              Same scan and plan, for the whole year.
-            </T>
           </View>
 
           {/* Act 4: Preclear does this math */}
@@ -319,7 +312,7 @@ export function Welcome({ onStart, onAccount }: Props) {
             </T>
             <View style={{ marginTop: space.xxl + 8, opacity: answer, transform: [{ scale: 0.94 + 0.06 * answer }] }}>
               <T style={[type.rowTitle, { fontSize: 16 }, muted]}>With insurance, you keep</T>
-              <Money value={keep} style={[figure(104), white, { marginTop: 14 }]} suffixSize={20} stacked fitWidth={width - 56} />
+              <Money value={keep} style={[figure(120), white, { marginTop: 14 }]} suffixSize={20} stacked fitWidth={width - 56} />
               <T style={[type.headline, { fontSize: 22 }, white, { marginTop: 10 }]}>this year.</T>
               <View style={{ marginTop: space.xxl + 4, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: color.surface, borderRadius: 999, paddingVertical: 8, paddingLeft: 8, paddingRight: 18, maxWidth: '100%' }}>
                 <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: color.accent, alignItems: 'center', justifyContent: 'center' }}>
