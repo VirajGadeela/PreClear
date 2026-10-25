@@ -36,6 +36,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import { data } from '../appData';
 import { Money } from '../Money';
+import { dollars } from '../resultCopy';
 import { buildRoutes, rankRoutes } from '../routes';
 import { color, figure, font, onAccentCard, space, textScale, type } from '../theme';
 import { Button, T } from '../ui';
@@ -258,10 +259,10 @@ export function Welcome({ onStart, onAccount }: Props) {
                 </View>
               </View>
             ))}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.3)', paddingTop: space.md }}>
-              <Money value={0} style={[type.small, muted]} suffixSize={12} maxScale={2} />
-              <T style={[type.small, muted]}>
-                <Money value={CASE.benefits.deductibleRemaining} style={[type.small, muted]} suffixSize={12} maxScale={2} /> · insurance starts paying
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.md, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.3)', paddingTop: space.md }}>
+              <T style={[type.small, muted]}>{dollars(0)}</T>
+              <T style={[type.small, muted, { flexShrink: 1, textAlign: 'right' }]}>
+                {dollars(CASE.benefits.deductibleRemaining)} · insurance starts paying
               </T>
             </View>
           </View>
@@ -290,7 +291,7 @@ export function Welcome({ onStart, onAccount }: Props) {
                     // Wider than its column on purpose, so "less" never wraps under the figure.
                     <View style={{ width: 176, alignItems: 'center', backgroundColor: color.surface, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 6 }}>
                       <T style={[type.caption, { fontFamily: font.semibold, color: color.accentDeep }]} maxFontSizeMultiplier={1.3}>
-                        <Money value={keep} style={[type.caption, { fontFamily: font.semibold, color: color.accentDeep }]} suffixSize={12} maxScale={1.3} /> less
+                        {dollars(keep)} less
                       </T>
                     </View>
                   ) : null}

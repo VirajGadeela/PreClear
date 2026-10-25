@@ -96,7 +96,10 @@ export function Money({
             fontSize: size,
             lineHeight: Math.round(size * 1.3),
             color: flat?.color,
-            marginTop: size > 16 ? -2 : 0,
+            // Pull the word up into the figure's empty line space, so it sits
+            // under the digits rather than a line below them. Large figures
+            // carry the most slack (a 136pt figure has about 20pt of it).
+            marginTop: -Math.round(((fitted?.fontSize ?? flat?.fontSize ?? 16) as number) * 0.12),
           }}
           maxFontSizeMultiplier={maxScale}
         >
