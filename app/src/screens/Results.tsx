@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Linking, Pressable, View, useWindowDimensions } from 'react-native';
 
 import { CARE_SHORT, Estimate, Option, State, isCash } from '../flow';
-import { formatMiles } from '../geo';
+import { formatMiles, geocodedAddress } from '../geo';
 import { Money } from '../Money';
 import { addressLines, dollars } from '../resultCopy';
 import { color, figure, font, radius, space, textScale, type } from '../theme';
@@ -349,7 +349,11 @@ export function MathScreen({ estimate, state, onSources, onBack }: { estimate: E
 // 11 · Facility -------------------------------------------------------------
 
 export function FacilityScreen({ route, cpt, onBack }: { route: Option; cpt: string; onBack: () => void }) {
-  const address = addressLines(route.facilityAddress)[0] ?? '';
+  // Eskenazi's price file publishes no address. Searched by name alone, Maps
+  // picked the nearest Eskenazi clinic, so fall back to the address the
+  // hospital's coordinates were geocoded from.
+  const facilityKey = route.kind.slice(route.kind.indexOf(':') + 1);
+  const address = addressLines(route.facilityAddress || geocodedAddress(facilityKey))[0] ?? '';
   const open = (url: string) => Linking.openURL(url).catch(() => undefined);
   // Apple Maps for both. Directions route to the published address; booking
   // opens the hospital's place card, which carries its phone number. The price
@@ -370,8 +374,9 @@ export function FacilityScreen({ route, cpt, onBack }: { route: Option; cpt: str
       </View>
       <Screen bare contentStyle={{ paddingTop: 24, gap: 6 }} footer={
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <View style={{ flex: 1 }}><Button label="Directions" variant="light" onPress={directions} /></View>
-          <View style={{ flex: 2 }}><Button label="Call to book" onPress={book} /></View>
+          {/* Sized to its label: a third of the row broke the word on iOS. */}
+          <View><Button label="Directions" variant="light" onPress={directions} /></View>
+          <View style={{ flex: 1 }}><Button label="Call to book" onPress={book} /></View>
         </View>
       }>
         <T style={[type.mono, { fontSize: 11, color: color.inkMuted }]}>{isCash(route) ? 'CASH' : 'INSURANCE'} · {formatMiles(route.distance)}</T>

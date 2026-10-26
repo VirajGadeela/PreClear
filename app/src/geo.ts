@@ -82,4 +82,10 @@ export function distanceTo(centre: [number, number], facilityKey: string): numbe
   return miles(centre, [facility.lat, facility.lon]);
 }
 
+/** The street address a hospital's coordinates were geocoded from, or '' when it has none. */
+export function geocodedAddress(facilityKey: string): string {
+  // The Census geocoder writes "IN, 46202"; the hospital files write "IN 46202".
+  return (geo.facilities[facilityKey]?.matched ?? '').replace(/, (\d{5})$/, ' $1');
+}
+
 export const formatMiles = (value: number) => `${value.toFixed(1)} mi`;

@@ -44,7 +44,11 @@ type Props = {
 const DIGIT_EM = 0.6;
 
 export function formatAmount(value: number, cents = false): string {
-  return value.toLocaleString('en-US', {
+  // Rounded here, half up, because Hermes rounds a half to even and browsers
+  // round it up: $5,270.50 showed as $5,270 on the phone and $5,271 on the web.
+  const scale = cents ? 100 : 1;
+  const rounded = Math.round(value * scale) / scale;
+  return rounded.toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: cents ? 2 : 0,
